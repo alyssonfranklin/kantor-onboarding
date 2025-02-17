@@ -17,10 +17,6 @@ interface FormData {
   branding: string;
 }
 
-interface ErrorResponse {
-  message: string;
-}
-
 const CompanyOnboardingForm = () => {
   const [formData, setFormData] = useState<FormData>({
     expectations: '',
