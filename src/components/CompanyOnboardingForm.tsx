@@ -770,12 +770,12 @@ ${data.branding}
   };
 
   const textareaClasses = "w-full p-2 border rounded-md min-h-32 mb-4 text-black placeholder:text-gray-400 focus:border-blue-500 focus:ring-1 focus:ring-blue-500";
-  const labelClasses = "block font-medium text-gray-700 mb-2";
+  const labelClasses = "block font-bold text-white mb-2"; // Updated to be bold and white
 
   return (
-    <Card className="max-w-4xl mx-auto">
+    <Card className="max-w-4xl mx-auto bg-gray-800"> {/* Added dark background */}
       <CardHeader>
-        <CardTitle>Company Onboarding Form</CardTitle>
+        <CardTitle className="text-white">Company Onboarding Form</CardTitle>
       </CardHeader>
       <CardContent>
         <form onSubmit={handleSubmit} className="space-y-6">
@@ -908,7 +908,7 @@ ${data.branding}
 
           <Button 
             type="submit" 
-            className="w-full"
+            className="w-full font-bold bg-[#E62E05] hover:bg-[#E62E05]/90"
             disabled={isSubmitting}
           >
             {isSubmitting ? (
