@@ -7,8 +7,22 @@ import { Button } from '@/components/ui/button';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Loader2 } from 'lucide-react';
 
+interface FormData {
+  expectations: string;
+  mission: string;
+  vision: string;
+  values: string;
+  history: string;
+  products: string;
+  branding: string;
+}
+
+interface ErrorResponse {
+  message: string;
+}
+
 const CompanyOnboardingForm = () => {
-  const [formData, setFormData] = useState({
+  const [formData, setFormData] = useState<FormData>({
     expectations: '',
     mission: '',
     vision: '',
@@ -18,13 +32,12 @@ const CompanyOnboardingForm = () => {
     branding: ''
   });
 
-  // Add assistant ID input
   const [assistantId, setAssistantId] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState(false);
 
-  const handleChange = (e) => {
+  const handleChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
     const { name, value } = e.target;
     setFormData(prev => ({
       ...prev,
@@ -32,7 +45,7 @@ const CompanyOnboardingForm = () => {
     }));
   };
 
-  const formatInstructions = (data) => {
+  const formatInstructions = (data: FormData): string => {
     return `
 COMPANY PROFILE INFORMATION:
 
@@ -59,7 +72,7 @@ ${data.branding}
     `.trim();
   };
 
-  const handleSubmit = async (e) => {
+  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setIsSubmitting(true);
     setError('');
@@ -92,9 +105,8 @@ ${data.branding}
       }
 
       setSuccess(true);
-      // Optionally clear form
-      // setFormData({expectations: '', mission: '', vision: '', values: '', history: '', products: '', branding: ''});
-    } catch (err: any) {
+    } catch (error: unknown) {
+      const err = error as Error;
       setError(err.message);
     } finally {
       setIsSubmitting(false);
@@ -111,7 +123,6 @@ ${data.branding}
       </CardHeader>
       <CardContent>
         <form onSubmit={handleSubmit} className="space-y-6">
-          {/* Assistant ID input */}
           <div>
             <label htmlFor="assistantId" className={labelClasses}>
               Assistant ID

@@ -6,6 +6,12 @@ const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY,
 });
 
+interface ErrorResponse {
+  message: string;
+  code?: string;
+  type?: string;
+}
+
 export async function POST(req: Request) {
   try {
     const { instructions, assistantId } = await req.json();
@@ -21,15 +27,16 @@ export async function POST(req: Request) {
     const assistant = await openai.beta.assistants.update(
       assistantId,
       {
-        instructions: instructions,
+        instructions,
       }
     );
 
     return NextResponse.json({ success: true, assistant });
-  } catch (error: any) {
-    console.error('Error updating assistant:', error);
+  } catch (error: unknown) {
+    const errorResponse = error as ErrorResponse;
+    console.error('Error updating assistant:', errorResponse);
     return NextResponse.json(
-      { error: error.message || 'Failed to update assistant' },
+      { error: errorResponse.message || 'Failed to update assistant' },
       { status: 500 }
     );
   }
