@@ -109,7 +109,7 @@ ${data.branding}
     }
   };
 
-  const textareaClasses = "w-full p-2 border rounded-md min-h-32 mb-4";
+  const textareaClasses = "w-full p-2 border rounded-md min-h-32 mb-4 text-black placeholder:text-gray-400 focus:border-blue-500 focus:ring-1 focus:ring-blue-500";
   const labelClasses = "block font-medium text-gray-700 mb-2";
 
   return (
@@ -128,7 +128,7 @@ ${data.branding}
               id="assistantId"
               value={assistantId}
               onChange={(e) => setAssistantId(e.target.value)}
-              className="w-full p-2 border rounded-md mb-4"
+              className="w-full p-2 border rounded-md mb-4 text-black placeholder:text-gray-400 focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
               required
               placeholder="Enter OpenAI Assistant ID"
             />
