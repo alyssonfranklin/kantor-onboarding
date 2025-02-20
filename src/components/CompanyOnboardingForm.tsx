@@ -33,7 +33,7 @@ const CompanyOnboardingForm = () => {
   const [error, setError] = useState('');
   const [success, setSuccess] = useState(false);
   const [tokenCount, setTokenCount] = useState(0);
-  const tokenizer = new PromptTokenizer();
+ 
 
   const handleChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
     const { name, value } = e.target;
@@ -42,7 +42,7 @@ const CompanyOnboardingForm = () => {
       [name]: value
     }));
   };
-
+  const tokenizer = new PromptTokenizer();
   const formatInstructions = (data: FormData): string => {
     return `
 COMPANY PROFILE INFORMATION:
@@ -734,7 +734,7 @@ ${data.branding}
     const instructions = formatInstructions(formData);
     const count = tokenizer.estimatePromptTokens(instructions);
     setTokenCount(count);
-  }, [formData]);
+  }, [formData, formatInstructions]);
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -784,9 +784,6 @@ ${data.branding}
     <Card className="max-w-4xl mx-auto bg-gray-800"> {/* Added dark background */}
       <CardHeader>
         <CardTitle className="text-white">Company Onboarding Form</CardTitle>
-        <div className="text-white text-sm">
-          Estimated token count: {tokenCount}
-        </div>
       </CardHeader>
       <CardContent>
         <form onSubmit={handleSubmit} className="space-y-6">

@@ -1,4 +1,21 @@
 // src/lib/tokenizer.ts
+
+type PromptMessage = {
+    role?: string;
+    content?: string;
+};
+
+type PromptInput = string | PromptMessage[] | Record<string, unknown>;
+
+type PromptAnalysis = {
+    totalTokens: number;
+    characterCount: number;
+    whitespacesCount: number;
+    punctuationCount: number;
+    numbersCount: number;
+    tokensPerCharacter: number;
+};
+
 export class PromptTokenizer {
     private AVG_TOKENS_PER_CHAR = 0.25;
     
@@ -38,7 +55,7 @@ export class PromptTokenizer {
         return Math.ceil(tokenCount);
     }
 
-    estimatePromptTokens(promptObject: any): number {
+    estimatePromptTokens(promptObject: PromptInput): number {
         let totalTokens = 0;
 
         if (typeof promptObject === 'string') {
@@ -47,7 +64,7 @@ export class PromptTokenizer {
             for (const message of promptObject) {
                 if (typeof message === 'string') {
                     totalTokens += this.estimateTokens(message);
-                } else if (typeof message === 'object') {
+                } else if (typeof message === 'object' && message !== null) {
                     if (message.content) {
                         totalTokens += this.estimateTokens(message.content);
                     }
@@ -56,12 +73,12 @@ export class PromptTokenizer {
                     }
                 }
             }
-        } else if (typeof promptObject === 'object') {
+        } else if (typeof promptObject === 'object' && promptObject !== null) {
             for (const key in promptObject) {
                 if (typeof promptObject[key] === 'string') {
-                    totalTokens += this.estimateTokens(promptObject[key]);
+                    totalTokens += this.estimateTokens(promptObject[key] as string);
                 } else if (typeof promptObject[key] === 'object') {
-                    totalTokens += this.estimatePromptTokens(promptObject[key]);
+                    totalTokens += this.estimatePromptTokens(promptObject[key] as PromptInput);
                 }
             }
         }
@@ -69,13 +86,14 @@ export class PromptTokenizer {
         return totalTokens;
     }
 
-    analyzePrompt(prompt: any) {
+    analyzePrompt(prompt: PromptInput): PromptAnalysis {
         const analysis = {
             totalTokens: this.estimatePromptTokens(prompt),
             characterCount: typeof prompt === 'string' ? prompt.length : JSON.stringify(prompt).length,
             whitespacesCount: (typeof prompt === 'string' ? prompt : JSON.stringify(prompt)).match(this.PATTERNS.whitespace)?.length || 0,
             punctuationCount: (typeof prompt === 'string' ? prompt : JSON.stringify(prompt)).match(this.PATTERNS.punctuation)?.length || 0,
-            numbersCount: (typeof prompt === 'string' ? prompt : JSON.stringify(prompt)).match(this.PATTERNS.numbers)?.length || 0
+            numbersCount: (typeof prompt === 'string' ? prompt : JSON.stringify(prompt)).match(this.PATTERNS.numbers)?.length || 0,
+            tokensPerCharacter: 0
         };
 
         analysis.tokensPerCharacter = analysis.totalTokens / analysis.characterCount;
