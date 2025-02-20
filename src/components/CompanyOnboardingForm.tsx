@@ -1,11 +1,12 @@
 // src/components/CompanyOnboardingForm.tsx
 "use client";
 
-import React, { useState } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Loader2 } from 'lucide-react';
+import { PromptTokenizer } from '@/lib/tokenizer';
 
 interface FormData {
   expectations: string;
@@ -16,6 +17,9 @@ interface FormData {
   products: string;
   branding: string;
 }
+
+// Create tokenizer instance outside component
+const tokenizer = new PromptTokenizer();
 
 const CompanyOnboardingForm = () => {
   const [formData, setFormData] = useState<FormData>({
@@ -33,7 +37,6 @@ const CompanyOnboardingForm = () => {
   const [error, setError] = useState('');
   const [success, setSuccess] = useState(false);
   const [tokenCount, setTokenCount] = useState(0);
- 
 
   const handleChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
     const { name, value } = e.target;
@@ -42,9 +45,10 @@ const CompanyOnboardingForm = () => {
       [name]: value
     }));
   };
-  const tokenizer = new PromptTokenizer();
-  const formatInstructions = (data: FormData): string => {
+
+  const formatInstructions = useMemo(() => (data: FormData): string => {
     return `
+      
 COMPANY PROFILE INFORMATION:
 [PROPÓSITO DO AGENTE]
 Você é um Assistente Executivo especializado em Comunicação e Dinâmica Interpessoal, com expertise em Psicologia Organizacional e Análise Comportamental. Sua missão é otimizar a comunicação em ambientes corporativos, combinando análise de dados comportamentais com estratégias práticas de liderança, sempre pautado por rigorosos princípios éticos.
@@ -728,7 +732,7 @@ ${data.products}
 [BRANDING E PROMESSAS DE MARCA]
 ${data.branding}
     `.trim();
-  };
+  }, []);
 
   useEffect(() => {
     const instructions = formatInstructions(formData);
@@ -750,7 +754,7 @@ ${data.branding}
 
     try {
       const instructions = formatInstructions(formData);
-
+      
       const response = await fetch('/api/update-assistant', {
         method: 'POST',
         headers: {
@@ -778,12 +782,15 @@ ${data.branding}
   };
 
   const textareaClasses = "w-full p-2 border rounded-md min-h-32 mb-4 text-black placeholder:text-gray-400 focus:border-blue-500 focus:ring-1 focus:ring-blue-500";
-  const labelClasses = "block font-bold text-white mb-2"; // Updated to be bold and white
+  const labelClasses = "block font-bold text-white mb-2";
 
   return (
-    <Card className="max-w-4xl mx-auto bg-gray-800"> {/* Added dark background */}
-      <CardHeader>
+    <Card className="max-w-4xl mx-auto bg-gray-800">
+      <CardHeader className="space-y-1">
         <CardTitle className="text-white">Company Onboarding Form</CardTitle>
+        <div className="text-white text-sm font-medium bg-gray-700 px-3 py-1 rounded-md inline-block">
+          Estimated token count: {tokenCount}
+        </div>
       </CardHeader>
       <CardContent>
         <form onSubmit={handleSubmit} className="space-y-6">
