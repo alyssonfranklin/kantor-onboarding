@@ -21,6 +21,15 @@ interface FormData {
   branding: string;
 }
 
+interface FieldTokens {
+  count: number;
+  cost: string;
+}
+
+interface TokenCounts {
+  [key: string]: FieldTokens;
+}
+
 // Create tokenizer instance outside component
 const tokenizer = new PromptTokenizer();
 
@@ -41,6 +50,7 @@ const CompanyOnboardingForm = () => {
   const [error, setError] = useState('');
   const [success, setSuccess] = useState(false);
   const [tokenCount, setTokenCount] = useState(0);
+  const [fieldTokens, setFieldTokens] = useState<TokenCounts>({});
 
   const handleChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
     const { name, value } = e.target;
@@ -77,6 +87,20 @@ ${data.products}
 ${data.branding}
     `.trim();
   }, []);
+
+  const calculateFieldTokens = (text: string): FieldTokens => {
+    const count = tokenizer.estimatePromptTokens(text);
+    const cost = ((count / 1000) * COST_PER_1K_TOKENS).toFixed(4);
+    return { count, cost };
+  };
+
+  useEffect(() => {
+    const newFieldTokens: TokenCounts = {};
+    Object.entries(formData).forEach(([field, value]) => {
+      newFieldTokens[field] = calculateFieldTokens(value);
+    });
+    setFieldTokens(newFieldTokens);
+  }, [formData]);
 
   useEffect(() => {
     const instructions = formatInstructions(formData);
@@ -125,6 +149,44 @@ ${data.branding}
     }
   };
 
+  const TextareaWithStats = ({ 
+    id, 
+    name, 
+    label, 
+    value, 
+    onChange 
+  }: { 
+    id: string; 
+    name: string; 
+    label: string; 
+    value: string; 
+    onChange: (e: React.ChangeEvent<HTMLTextAreaElement>) => void; 
+  }) => (
+    <div>
+      <div className="flex justify-between items-center mb-2">
+        <label htmlFor={id} className={labelClasses}>
+          {label}
+        </label>
+        <div className="flex gap-4">
+          <span className="text-white text-sm bg-gray-700 px-2 py-1 rounded">
+            Tokens: {fieldTokens[name]?.count.toLocaleString() || 0}
+          </span>
+          <span className="text-white text-sm bg-gray-700 px-2 py-1 rounded">
+            Cost: ${fieldTokens[name]?.cost || "0.0000"}
+          </span>
+        </div>
+      </div>
+      <textarea
+        id={id}
+        name={name}
+        value={value}
+        onChange={onChange}
+        className={textareaClasses}
+        required
+      />
+    </div>
+  );
+
   const textareaClasses = "w-full p-2 border rounded-md min-h-32 mb-4 text-black placeholder:text-gray-400 focus:border-blue-500 focus:ring-1 focus:ring-blue-500";
   const labelClasses = "block font-bold text-white mb-2";
 
@@ -132,12 +194,12 @@ ${data.branding}
     <Card className="max-w-4xl mx-auto bg-gray-800">
       <CardHeader className="space-y-1">
         <CardTitle className="text-white">Company Onboarding Form</CardTitle>
-        <div className="flex space-x-4">
+        <div className="flex flex-wrap gap-4">
           <div className="text-white text-sm font-medium bg-gray-700 px-3 py-1 rounded-md inline-block">
-            Estimated tokens: {tokenCount}
+            Total tokens: {tokenCount.toLocaleString()}
           </div>
           <div className="text-white text-sm font-medium bg-gray-700 px-3 py-1 rounded-md inline-block">
-            Estimated cost: ${((tokenCount / 1000) * COST_PER_1K_TOKENS).toFixed(4)} USD
+            Total cost: ${((tokenCount / 1000) * COST_PER_1K_TOKENS).toFixed(4)} USD
           </div>
         </div>
       </CardHeader>
@@ -157,116 +219,70 @@ ${data.branding}
               placeholder="Enter OpenAI Assistant ID"
             />
           </div>
-          <div>
-            <label htmlFor="standardPrompt" className={labelClasses}>
-              Standard Prompt
-            </label>
-            <textarea
-              id="standardPrompt"
-              name="standardPrompt"
-              value={formData.standardPrompt}
-              onChange={handleChange}
-              className={textareaClasses}
-              required
-            />
-          </div>
-          <div>
-            <label htmlFor="expectations" className={labelClasses}>
-              Expectativas do Cliente
-            </label>
-            <textarea
-              id="expectations"
-              name="expectations"
-              value={formData.expectations}
-              onChange={handleChange}
-              className={textareaClasses}
-              required
-            />
-          </div>
 
-          <div>
-            <label htmlFor="mission" className={labelClasses}>
-              Missão do Cliente
-            </label>
-            <textarea
-              id="mission"
-              name="mission"
-              value={formData.mission}
-              onChange={handleChange}
-              className={textareaClasses}
-              required
-            />
-          </div>
+          <TextareaWithStats
+            id="standardPrompt"
+            name="standardPrompt"
+            label="Standard Prompt"
+            value={formData.standardPrompt}
+            onChange={handleChange}
+          />
 
-          <div>
-            <label htmlFor="vision" className={labelClasses}>
-              Visão do Cliente
-            </label>
-            <textarea
-              id="vision"
-              name="vision"
-              value={formData.vision}
-              onChange={handleChange}
-              className={textareaClasses}
-              required
-            />
-          </div>
+          <TextareaWithStats
+            id="expectations"
+            name="expectations"
+            label="Expectativas do Cliente"
+            value={formData.expectations}
+            onChange={handleChange}
+          />
 
-          <div>
-            <label htmlFor="values" className={labelClasses}>
-              Valores Fundamentais do Cliente
-            </label>
-            <textarea
-              id="values"
-              name="values"
-              value={formData.values}
-              onChange={handleChange}
-              className={textareaClasses}
-              required
-            />
-          </div>
+          <TextareaWithStats
+            id="mission"
+            name="mission"
+            label="Missão do Cliente"
+            value={formData.mission}
+            onChange={handleChange}
+          />
 
-          <div>
-            <label htmlFor="history" className={labelClasses}>
-              História do Cliente
-            </label>
-            <textarea
-              id="history"
-              name="history"
-              value={formData.history}
-              onChange={handleChange}
-              className={textareaClasses}
-              required
-            />
-          </div>
+          <TextareaWithStats
+            id="vision"
+            name="vision"
+            label="Visão do Cliente"
+            value={formData.vision}
+            onChange={handleChange}
+          />
 
-          <div>
-            <label htmlFor="products" className={labelClasses}>
-              O que Vende o Cliente
-            </label>
-            <textarea
-              id="products"
-              name="products"
-              value={formData.products}
-              onChange={handleChange}
-              className={textareaClasses}
-              required
-            />
-          </div>
+          <TextareaWithStats
+            id="values"
+            name="values"
+            label="Valores Fundamentais do Cliente"
+            value={formData.values}
+            onChange={handleChange}
+          />
 
-          <div>
-            <label htmlFor="branding" className={labelClasses}>
-              Branding e Promessas de Marca
-            </label>
-            <textarea
-              id="branding"
-              name="branding"
-              value={formData.branding}
-              onChange={handleChange}
-              className={textareaClasses}
-              required
-            />
-          </div>
+          <TextareaWithStats
+            id="history"
+            name="history"
+            label="História do Cliente"
+            value={formData.history}
+            onChange={handleChange}
+          />
+
+          <TextareaWithStats
+            id="products"
+            name="products"
+            label="O que Vende o Cliente"
+            value={formData.products}
+            onChange={handleChange}
+          />
+
+          <TextareaWithStats
+            id="branding"
+            name="branding"
+            label="Branding e Promessas de Marca"
+            value={formData.branding}
+            onChange={handleChange}
+          />
 
           {error && (
             <Alert variant="destructive">
