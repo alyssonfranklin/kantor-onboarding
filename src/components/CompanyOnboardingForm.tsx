@@ -1,7 +1,7 @@
 // src/components/CompanyOnboardingForm.tsx
 "use client";
 
-import React, { useState, useEffect, useMemo, useCallback } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Alert, AlertDescription } from '@/components/ui/alert';
@@ -9,17 +9,6 @@ import { Loader2 } from 'lucide-react';
 import { PromptTokenizer } from '@/lib/tokenizer';
 
 const COST_PER_1K_TOKENS = 0.0037;
-
-function debounce<T extends unknown[]>(
-  func: (...args: T) => void,
-  wait: number
-): (...args: T) => void {
-  let timeout: NodeJS.Timeout;
-  return (...args: T) => {
-    clearTimeout(timeout);
-    timeout = setTimeout(() => func(...args), wait);
-  };
-}
 
 interface FormData {
   standardPrompt: string;
@@ -41,7 +30,6 @@ interface TokenCounts {
   [key: string]: FieldTokens;
 }
 
-// Create tokenizer instance outside component
 const tokenizer = new PromptTokenizer();
 
 const CompanyOnboardingForm = () => {
@@ -65,12 +53,10 @@ const CompanyOnboardingForm = () => {
 
   const handleChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
     const { name, value } = e.target;
-    requestAnimationFrame(() => {
-      setFormData(prev => ({
-        ...prev,
-        [name]: value
-      }));
-    });
+    setFormData(prev => ({
+      ...prev,
+      [name]: value
+    }));
   };
 
   const formatInstructions = useMemo(() => (data: FormData): string => {
@@ -107,34 +93,17 @@ ${data.branding}
     return { count, cost };
   };
 
-  const updateFieldTokens = useCallback((formData: FormData) => {
+  useEffect(() => {
     const newFieldTokens: TokenCounts = {};
     Object.entries(formData).forEach(([field, value]) => {
       newFieldTokens[field] = calculateFieldTokens(value);
     });
     setFieldTokens(newFieldTokens);
-  }, []);
 
-  const debouncedUpdateFieldTokens = useMemo(
-    () => debounce(updateFieldTokens, 300),
-    [updateFieldTokens]
-  );
-
-  const updateTotalTokens = useCallback((instructions: string) => {
+    const instructions = formatInstructions(formData);
     const count = tokenizer.estimatePromptTokens(instructions);
     setTokenCount(count);
-  }, []);
-
-  const debouncedUpdateTotalTokens = useMemo(
-    () => debounce(updateTotalTokens, 300),
-    [updateTotalTokens]
-  );
-
-  useEffect(() => {
-    debouncedUpdateFieldTokens(formData);
-    const instructions = formatInstructions(formData);
-    debouncedUpdateTotalTokens(instructions);
-  }, [formData, formatInstructions, debouncedUpdateFieldTokens, debouncedUpdateTotalTokens]);
+  }, [formData, formatInstructions]);
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -211,8 +180,6 @@ ${data.branding}
         onChange={onChange}
         className={textareaClasses}
         required
-        autoComplete="off"
-        spellCheck="false"
       />
     </div>
   );
