@@ -1,7 +1,7 @@
 // src/components/CompanyOnboardingForm.tsx
 "use client";
 
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Alert, AlertDescription } from '@/components/ui/alert';
@@ -9,6 +9,17 @@ import { Loader2 } from 'lucide-react';
 import { PromptTokenizer } from '@/lib/tokenizer';
 
 const COST_PER_1K_TOKENS = 0.0037;
+
+function debounce<T extends (...args: any[]) => void>(
+  func: T,
+  wait: number
+): (...args: Parameters<T>) => void {
+  let timeout: NodeJS.Timeout;
+  return (...args: Parameters<T>) => {
+    clearTimeout(timeout);
+    timeout = setTimeout(() => func(...args), wait);
+  };
+}
 
 interface FormData {
   standardPrompt: string;
@@ -54,10 +65,12 @@ const CompanyOnboardingForm = () => {
 
   const handleChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
     const { name, value } = e.target;
-    setFormData(prev => ({
-      ...prev,
-      [name]: value
-    }));
+    requestAnimationFrame(() => {
+      setFormData(prev => ({
+        ...prev,
+        [name]: value
+      }));
+    });
   };
 
   const formatInstructions = useMemo(() => (data: FormData): string => {
@@ -94,19 +107,30 @@ ${data.branding}
     return { count, cost };
   };
 
-  useEffect(() => {
-    const newFieldTokens: TokenCounts = {};
-    Object.entries(formData).forEach(([field, value]) => {
-      newFieldTokens[field] = calculateFieldTokens(value);
-    });
-    setFieldTokens(newFieldTokens);
-  }, [formData]);
+  const updateFieldTokens = useCallback(
+    debounce((formData: FormData) => {
+      const newFieldTokens: TokenCounts = {};
+      Object.entries(formData).forEach(([field, value]) => {
+        newFieldTokens[field] = calculateFieldTokens(value);
+      });
+      setFieldTokens(newFieldTokens);
+    }, 300),
+    []
+  );
+
+  const updateTotalTokens = useCallback(
+    debounce((instructions: string) => {
+      const count = tokenizer.estimatePromptTokens(instructions);
+      setTokenCount(count);
+    }, 300),
+    []
+  );
 
   useEffect(() => {
+    updateFieldTokens(formData);
     const instructions = formatInstructions(formData);
-    const count = tokenizer.estimatePromptTokens(instructions);
-    setTokenCount(count);
-  }, [formData, formatInstructions]);
+    updateTotalTokens(instructions);
+  }, [formData, formatInstructions, updateFieldTokens, updateTotalTokens]);
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -183,6 +207,8 @@ ${data.branding}
         onChange={onChange}
         className={textareaClasses}
         required
+        autoComplete="off"
+        spellCheck="false"
       />
     </div>
   );
