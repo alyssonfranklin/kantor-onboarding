@@ -10,12 +10,12 @@ import { PromptTokenizer } from '@/lib/tokenizer';
 
 const COST_PER_1K_TOKENS = 0.0037;
 
-function debounce<T extends (...args: any[]) => void>(
-  func: T,
+function debounce<T extends unknown[]>(
+  func: (...args: T) => void,
   wait: number
-): (...args: Parameters<T>) => void {
+): (...args: T) => void {
   let timeout: NodeJS.Timeout;
-  return (...args: Parameters<T>) => {
+  return (...args: T) => {
     clearTimeout(timeout);
     timeout = setTimeout(() => func(...args), wait);
   };
@@ -107,30 +107,34 @@ ${data.branding}
     return { count, cost };
   };
 
-  const updateFieldTokens = useCallback(
-    debounce((formData: FormData) => {
-      const newFieldTokens: TokenCounts = {};
-      Object.entries(formData).forEach(([field, value]) => {
-        newFieldTokens[field] = calculateFieldTokens(value);
-      });
-      setFieldTokens(newFieldTokens);
-    }, 300),
-    []
+  const updateFieldTokens = useCallback((formData: FormData) => {
+    const newFieldTokens: TokenCounts = {};
+    Object.entries(formData).forEach(([field, value]) => {
+      newFieldTokens[field] = calculateFieldTokens(value);
+    });
+    setFieldTokens(newFieldTokens);
+  }, []);
+
+  const debouncedUpdateFieldTokens = useMemo(
+    () => debounce(updateFieldTokens, 300),
+    [updateFieldTokens]
   );
 
-  const updateTotalTokens = useCallback(
-    debounce((instructions: string) => {
-      const count = tokenizer.estimatePromptTokens(instructions);
-      setTokenCount(count);
-    }, 300),
-    []
+  const updateTotalTokens = useCallback((instructions: string) => {
+    const count = tokenizer.estimatePromptTokens(instructions);
+    setTokenCount(count);
+  }, []);
+
+  const debouncedUpdateTotalTokens = useMemo(
+    () => debounce(updateTotalTokens, 300),
+    [updateTotalTokens]
   );
 
   useEffect(() => {
-    updateFieldTokens(formData);
+    debouncedUpdateFieldTokens(formData);
     const instructions = formatInstructions(formData);
-    updateTotalTokens(instructions);
-  }, [formData, formatInstructions, updateFieldTokens, updateTotalTokens]);
+    debouncedUpdateTotalTokens(instructions);
+  }, [formData, formatInstructions, debouncedUpdateFieldTokens, debouncedUpdateTotalTokens]);
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
