@@ -8,6 +8,8 @@ import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Loader2 } from 'lucide-react';
 import { PromptTokenizer } from '@/lib/tokenizer';
 
+const COST_PER_1K_TOKENS = 0.0037;
+
 interface FormData {
   standardPrompt: string;
   expectations: string;
@@ -130,8 +132,13 @@ ${data.branding}
     <Card className="max-w-4xl mx-auto bg-gray-800">
       <CardHeader className="space-y-1">
         <CardTitle className="text-white">Company Onboarding Form</CardTitle>
-        <div className="text-white text-sm font-medium bg-gray-700 px-3 py-1 rounded-md inline-block">
-          Estimated token count: {tokenCount}
+        <div className="flex space-x-4">
+          <div className="text-white text-sm font-medium bg-gray-700 px-3 py-1 rounded-md inline-block">
+            Estimated tokens: {tokenCount}
+          </div>
+          <div className="text-white text-sm font-medium bg-gray-700 px-3 py-1 rounded-md inline-block">
+            Estimated cost: ${((tokenCount / 1000) * COST_PER_1K_TOKENS).toFixed(4)} USD
+          </div>
         </div>
       </CardHeader>
       <CardContent>
