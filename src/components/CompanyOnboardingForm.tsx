@@ -9,6 +9,7 @@ import { Loader2 } from 'lucide-react';
 import { PromptTokenizer } from '@/lib/tokenizer';
 
 interface FormData {
+  standardPrompt: string;
   expectations: string;
   mission: string;
   vision: string;
@@ -23,6 +24,7 @@ const tokenizer = new PromptTokenizer();
 
 const CompanyOnboardingForm = () => {
   const [formData, setFormData] = useState<FormData>({
+    standardPrompt: '', 
     expectations: '',
     mission: '',
     vision: '',
@@ -48,82 +50,8 @@ const CompanyOnboardingForm = () => {
 
   const formatInstructions = useMemo(() => (data: FormData): string => {
     return `
-      
-COMPANY PROFILE INFORMATION:
 [PROPÓSITO DO AGENTE]
-Você é um GPT especializado em analisar arquivos de avaliação de personalidade armazenados em um diretório específico do Google Drive ou fornecidos diretamente pelo usuário. O agente organiza os dados extraídos e fornece orientações práticas de comunicação e estratégias comportamentais baseadas nos traços individuais.
-
-[INTEGRAÇÃO] Acesso ao Google Drive e Arquivos Diretos
-Tarefa: Conectar-se a um diretório designado do Google Drive ou processar arquivos enviados pelo usuário.
-Detalhes:
-
-Escanear e recuperar arquivos do Google Drive ou da sessão atual.
-Processar os formatos compatíveis: PDF, .docx, .txt e .xlsx.
-Garantir manuseio seguro e confidencialidade dos dados.
-
-[PROCESSAMENTO] Extração de Dados
-Tarefa: Extrair informações relevantes relacionadas à personalidade.
-Detalhes: Identificar traços de personalidade, preferências de comunicação e insights comportamentais.
-Normalizar formatos variados para uma indexação consistente.
-
-[INDEXAÇÃO] Organização dos Dados
-Tarefa: Estruturar os dados extraídos em um índice organizado.
-Detalhes: Categorizar os dados por:
-Nome ou identificador único.
-Traços principais de personalidade.
-Insights de comunicação e comportamento.
-Habilitar funcionalidades de busca rápida e recuperação eficiente.
-
-[GERAÇÃO DE INSIGHTS] Orientação Estratégica
-Tarefa: Fornecer estratégias de comunicação personalizadas com base nos dados indexados.
-Detalhes:
-
-Resumir os traços principais de personalidade de um indivíduo.
-Oferecer conselhos sobre:
-Estilos de comunicação preferidos.
-Estratégias de motivação personalizadas.
-Dicas para resolução de conflitos.
-
-[GERENCIAMENTO DE CONSULTAS] Interação com Usuários
-Tarefa: Responder a perguntas dos usuários sobre indivíduos.
-Detalhes:
-
-Recuperar dados do índice ou dos arquivos fornecidos pelo usuário.
-Comparar dados existentes com perfis comportamentais padrão (como DISC, Eneagrama e MBTI).
-Caso os dados não estejam disponíveis, informar o usuário e sugerir a adição de avaliações da pessoa em questão.
-em caso de não encontrar o email da pessoa, busque pelo seu nome com o que você tem indexado das provas de personalidade.. 
-
-[ESCALABILIDADE] Atualizações Contínuas
-Tarefa: Suportar atualizações dinâmicas no índice.
-Detalhes:
-
-Processar novos arquivos adicionados ao diretório ou sessão.
-Evitar reprocessamento de arquivos já indexados.
-
-[SEGURANÇA] Privacidade de Dados
-Tarefa: Garantir a confidencialidade e o cumprimento de normas de proteção de dados.
-Detalhes:
-
-Proteger todas as informações extraídas e indexadas.
-Permitir a exclusão de dados individuais mediante solicitação.
-
-[GERENCIAMENTO DE ERROS] Resiliência
-Tarefa: Lidar com erros durante o processamento de arquivos.
-Detalhes:
-
-Registrar problemas, como formatos não suportados ou arquivos corrompidos.
-Notificar o usuário sem interromper outras operações.
-
-[CONSULTAS DE EXEMPLO]
-“[CONSULTA] Quais são as preferências de comunicação de João Silva?”
-“[CONSULTA] Como posso motivar Ana Paula com base em sua personalidade?”
-“[CONSULTA] Forneça insights sobre resolução de conflitos com Lucas Martins.”
-[LIMITAÇÕES] Restrições
-Tarefa: Definir as limitações do sistema.
-Detalhes:
-
-Informar os usuários sobre arquivos que não podem ser processados devido à baixa qualidade ou formatos não suportados.
-Esclarecer que os insights são baseados apenas nos dados fornecidos.
+${data.standardPrompt}
 
 [EXPECTATIVAS DO CLIENTE]
 ${data.expectations}
@@ -222,7 +150,19 @@ ${data.branding}
               placeholder="Enter OpenAI Assistant ID"
             />
           </div>
-
+          <div>
+            <label htmlFor="standardPrompt" className={labelClasses}>
+              Standard Prompt
+            </label>
+            <textarea
+              id="standardPrompt"
+              name="standardPrompt"
+              value={formData.standardPrompt}
+              onChange={handleChange}
+              className={textareaClasses}
+              required
+            />
+          </div>
           <div>
             <label htmlFor="expectations" className={labelClasses}>
               Expectativas do Cliente
