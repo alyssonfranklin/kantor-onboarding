@@ -125,7 +125,7 @@ export async function POST(req: Request) {
     // Prepare data for the Users sheet
     // Format: [id, email, name, company_id, system_role, last_access, company_role, department, password]
     const userValues = [
-      [userId, email, name, companyId, 'orgadmin', timestamp, 'leader', 'Management', password]
+      [userId, email, name, companyId, 'orgadmin', timestamp, 'leader', 'INTERNAL', password]
     ];
 
     // Append data to the Users sheet
