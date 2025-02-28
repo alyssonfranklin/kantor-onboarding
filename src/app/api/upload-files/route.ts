@@ -84,10 +84,12 @@ export async function POST(req: Request) {
     // Associate files with the assistant
     const attachments = [];
     for (const fileId of fileIds) {
-      const attachment = await openai.beta.assistants.files.create(
+      // Updated API call based on OpenAI's current API structure
+      const attachment = await openai.beta.assistants.addFile(
         assistantId,
         { file_id: fileId }
       );
+      
       attachments.push(attachment);
     }
     
