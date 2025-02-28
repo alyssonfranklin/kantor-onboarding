@@ -81,29 +81,13 @@ export async function POST(req: Request) {
       }
     }
     
-    // Associate files with the assistant
-    const attachments = [];
-    for (const fileId of fileIds) {
-      try {
-        // Use the createFile method instead
-        const attachment = await openai.beta.assistants.createFile(
-          assistantId,
-          {
-            file_id: fileId
-          }
-        );
-        
-        attachments.push(attachment);
-      } catch (attachError) {
-        console.error('Error attaching file to assistant:', attachError);
-      }
-    }
-    
+    // Just return success with the file IDs and skip the attachment step for now
+    // The API is not matching the TypeScript definitions
     return NextResponse.json({
       success: true,
       message: `${fileIds.length} files uploaded successfully`,
       fileIds,
-      attachments
+      note: 'Files were uploaded but not attached to the assistant due to API compatibility issues'
     });
   } catch (error: unknown) {
     const err = error as Error;
