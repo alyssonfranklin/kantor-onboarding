@@ -1,34 +1,10 @@
 // src/app/api/upload-files/route.ts
 import { NextResponse } from 'next/server';
 import { OpenAI } from 'openai';
-import { join } from 'path';
-import { mkdir, writeFile } from 'fs/promises';
-import { existsSync } from 'fs';
-import { createReadStream } from 'fs';
 
 const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY,
 });
-
-// This helper function saves the file to disk and returns the filepath
-async function saveFileToDisk(file: File): Promise<string> {
-  // Create uploads directory if it doesn't exist
-  const uploadsDir = join(process.cwd(), 'uploads');
-  if (!existsSync(uploadsDir)) {
-    await mkdir(uploadsDir, { recursive: true });
-  }
-
-  // Create a unique filename
-  const filename = `${Date.now()}-${file.name.replace(/[^a-zA-Z0-9.-]/g, '_')}`;
-  const filepath = join(uploadsDir, filename);
-  
-  // Convert file to buffer and save to disk
-  const bytes = await file.arrayBuffer();
-  const buffer = Buffer.from(bytes);
-  await writeFile(filepath, buffer);
-  
-  return filepath;
-}
 
 export async function POST(req: Request) {
   try {
@@ -60,40 +36,79 @@ export async function POST(req: Request) {
     
     // Upload files to OpenAI
     const fileIds = [];
+    const fileErrors = [];
+    
     for (const file of files) {
       try {
-        // First save the file to disk
-        const filepath = await saveFileToDisk(file);
+        // Convert File to Blob for direct upload
+        const fileBlob = new Blob([await file.arrayBuffer()], { type: file.type });
         
-        // Create a read stream from the file
-        const fileStream = createReadStream(filepath);
+        // Add .name property to make it compatible with OpenAI's API
+        Object.defineProperty(fileBlob, 'name', {
+          value: file.name,
+          writable: false
+        });
         
-        // Upload to OpenAI using the file stream
+        // Upload directly using the file Blob
         const uploadedFile = await openai.files.create({
-          file: fileStream,
+          file: fileBlob as any, // Using any here as a workaround for TypeScript
           purpose: 'assistants',
         });
         
         fileIds.push(uploadedFile.id);
-      } catch (uploadError) {
+      } catch (uploadError: any) {
         console.error('Error uploading file:', file.name, uploadError);
-        throw new Error(`Failed to upload file ${file.name}: ${(uploadError as Error).message}`);
+        fileErrors.push({
+          fileName: file.name,
+          error: uploadError.message || 'Unknown error'
+        });
       }
     }
     
-    // Just return success with the file IDs and skip the attachment step for now
-    // The API is not matching the TypeScript definitions
+    // Now try to associate files with the assistant
+    const attachmentResults = [];
+    
+    for (const fileId of fileIds) {
+      try {
+        // Try to manually call the API endpoint to attach the file
+        const url = `https://api.openai.com/v1/assistants/${assistantId}/files`;
+        const response = await fetch(url, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${process.env.OPENAI_API_KEY}`,
+            'OpenAI-Beta': 'assistants=v1'
+          },
+          body: JSON.stringify({ file_id: fileId })
+        });
+        
+        if (!response.ok) {
+          const errorData = await response.json();
+          throw new Error(errorData.error?.message || 'Failed to attach file to assistant');
+        }
+        
+        const attachmentData = await response.json();
+        attachmentResults.push(attachmentData);
+      } catch (attachError: any) {
+        console.error('Error attaching file to assistant:', attachError);
+        // Continue with other files even if one fails
+      }
+    }
+    
     return NextResponse.json({
-      success: true,
-      message: `${fileIds.length} files uploaded successfully`,
+      success: fileIds.length > 0,
+      message: fileIds.length > 0 
+        ? `${fileIds.length} files uploaded successfully` 
+        : 'No files were uploaded successfully',
       fileIds,
-      note: 'Files were uploaded but not attached to the assistant due to API compatibility issues'
+      attachmentResults,
+      fileErrors: fileErrors.length > 0 ? fileErrors : undefined
     });
   } catch (error: unknown) {
     const err = error as Error;
-    console.error('Error uploading files:', err);
+    console.error('Error processing files:', err);
     return NextResponse.json(
-      { error: err.message || 'Failed to upload files' },
+      { error: err.message || 'Failed to process files' },
       { status: 500 }
     );
   }
