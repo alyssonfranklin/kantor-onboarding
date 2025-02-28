@@ -113,6 +113,7 @@ export async function POST(req: Request) {
     console.log('Adding user:', {
       id: userId,
       email: email,
+      name: name,
       company_id: companyId,
       system_role: 'orgadmin',
       last_access: timestamp,
@@ -122,9 +123,9 @@ export async function POST(req: Request) {
     });
 
     // Prepare data for the Users sheet
-    // Format: [id, email, company_id, system_role, last_access, company_role, department, password]
+    // Format: [id, email, name, company_id, system_role, last_access, company_role, department, password]
     const userValues = [
-      [userId, email, companyId, 'orgadmin', timestamp, 'leader', 'Management', password]
+      [userId, email, name, companyId, 'orgadmin', timestamp, 'leader', 'Management', password]
     ];
 
     // Append data to the Users sheet
