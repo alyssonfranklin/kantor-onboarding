@@ -12,7 +12,6 @@ const COST_PER_1K_TOKENS = 0.0037;
 
 interface FormData {
   standardPrompt: string;
-  expectations: string;
   mission: string;
   vision: string;
   values: string;
@@ -35,7 +34,6 @@ const tokenizer = new PromptTokenizer();
 const CompanyOnboardingForm = () => {
   const [formData, setFormData] = useState<FormData>({
     standardPrompt: '', 
-    expectations: '',
     mission: '',
     vision: '',
     values: '',
@@ -63,9 +61,6 @@ const CompanyOnboardingForm = () => {
     return `
 [PROPÓSITO DO AGENTE]
 ${data.standardPrompt}
-
-[EXPECTATIVAS DO CLIENTE]
-${data.expectations}
 
 [MISSAO DO CLIENTE]
 ${data.mission}
@@ -222,14 +217,6 @@ ${data.branding}
             name="standardPrompt"
             label="Standard Prompt"
             value={formData.standardPrompt}
-            onChange={handleChange}
-          />
-
-          <TextareaWithStats
-            id="expectations"
-            name="expectations"
-            label="Expectativas do Cliente"
-            value={formData.expectations}
             onChange={handleChange}
           />
 
