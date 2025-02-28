@@ -83,6 +83,16 @@ export async function POST(req: Request) {
     // Current timestamp
     const timestamp = new Date().toISOString();
 
+    // Debug the company data structure
+    console.log('Adding company:', {
+      company_id: companyId,
+      name: companyName,
+      assistant_id: assistantId,
+      status: 'active',
+      created_at: timestamp,
+      updated_at: timestamp
+    });
+
     // Prepare data for the Companies sheet
     // Format: [company_id, name, assistant_id, status, created_at, updated_at]
     const companyValues = [
@@ -97,6 +107,18 @@ export async function POST(req: Request) {
       requestBody: {
         values: companyValues,
       },
+    });
+
+    // Debug the user data structure
+    console.log('Adding user:', {
+      id: userId,
+      email: email,
+      company_id: companyId,
+      system_role: 'orgadmin',
+      last_access: timestamp,
+      company_role: 'leader',
+      department: 'Management',
+      password: password
     });
 
     // Prepare data for the Users sheet
@@ -114,26 +136,6 @@ export async function POST(req: Request) {
         values: userValues,
       },
     });
-
-    // Since this is the first user (organization admin), there's no leader relationship to add
-    // If we need to create a self-referential leader relationship, uncomment this:
-    /*
-    // Prepare data for the Users.Leaders sheet
-    // Format: [user_ID, leader_ID]
-    const leaderValues = [
-      [userId, userId] // Self-reference as the org admin has no leader
-    ];
-
-    // Append data to the Users.Leaders sheet
-    await sheets.spreadsheets.values.append({
-      spreadsheetId,
-      range: 'Users.Leaders!A2:B',
-      valueInputOption: 'USER_ENTERED',
-      requestBody: {
-        values: leaderValues,
-      },
-    });
-    */
 
     return NextResponse.json({ 
       success: true,
