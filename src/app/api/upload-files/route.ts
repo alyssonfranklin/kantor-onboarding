@@ -1,7 +1,7 @@
 // src/app/api/upload-files/route.ts
 import { NextResponse } from 'next/server';
 import { OpenAI } from 'openai';
-import { readFile } from 'fs/promises';
+import { writeFile } from 'fs/promises';
 import { join } from 'path';
 import { mkdir } from 'fs/promises';
 import { existsSync } from 'fs';
@@ -25,6 +25,9 @@ async function saveAndReadFile(file: File): Promise<{ filepath: string, buffer: 
   // Convert file to buffer and save to disk
   const bytes = await file.arrayBuffer();
   const buffer = Buffer.from(bytes);
+  
+  // Optional: Save the file to disk
+  // await writeFile(filepath, buffer);
   
   return { filepath, buffer };
 }
