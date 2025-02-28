@@ -18,11 +18,12 @@ export async function POST(req: Request) {
     }
 
     // Create a new assistant with the company name
+    // Enable File Search, disable Code Interpreter, and use gpt-3.5-turbo
     const assistant = await openai.beta.assistants.create({
       name: `${name} Agent`,
       instructions: `You are the AI assistant for ${name}. Help users with their queries and provide information about ${name}.`,
-      model: "gpt-4-turbo-preview",
-      tools: [{ type: "code_interpreter" }]
+      model: "gpt-3.5-turbo",
+      tools: [{ type: "retrieval" }] // Enable File Search (retrieval) and remove Code Interpreter
     });
 
     return NextResponse.json({ 
