@@ -2,15 +2,16 @@
 import { NextResponse } from 'next/server';
 import { OpenAI } from 'openai';
 import { join } from 'path';
-import { mkdir } from 'fs/promises';
+import { mkdir, writeFile } from 'fs/promises';
 import { existsSync } from 'fs';
+import { createReadStream } from 'fs';
 
 const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY,
 });
 
-// This helper function will prepare files and return a buffer
-async function prepareFile(file: File): Promise<{ filepath: string, buffer: Buffer }> {
+// This helper function saves the file to disk and returns the filepath
+async function saveFileToDisk(file: File): Promise<string> {
   // Create uploads directory if it doesn't exist
   const uploadsDir = join(process.cwd(), 'uploads');
   if (!existsSync(uploadsDir)) {
@@ -21,11 +22,12 @@ async function prepareFile(file: File): Promise<{ filepath: string, buffer: Buff
   const filename = `${Date.now()}-${file.name.replace(/[^a-zA-Z0-9.-]/g, '_')}`;
   const filepath = join(uploadsDir, filename);
   
-  // Convert file to buffer
+  // Convert file to buffer and save to disk
   const bytes = await file.arrayBuffer();
   const buffer = Buffer.from(bytes);
+  await writeFile(filepath, buffer);
   
-  return { filepath, buffer };
+  return filepath;
 }
 
 export async function POST(req: Request) {
@@ -59,17 +61,24 @@ export async function POST(req: Request) {
     // Upload files to OpenAI
     const fileIds = [];
     for (const file of files) {
-      // Get the file data
-      const { buffer } = await prepareFile(file);
-      
-      // Upload directly using the buffer
-      const uploadedFile = await openai.files.create({
-        file: buffer,
-        purpose: 'assistants',
-        filename: file.name
-      });
-      
-      fileIds.push(uploadedFile.id);
+      try {
+        // First save the file to disk
+        const filepath = await saveFileToDisk(file);
+        
+        // Create a read stream from the file
+        const fileStream = createReadStream(filepath);
+        
+        // Upload to OpenAI using the file stream
+        const uploadedFile = await openai.files.create({
+          file: fileStream,
+          purpose: 'assistants',
+        });
+        
+        fileIds.push(uploadedFile.id);
+      } catch (uploadError) {
+        console.error('Error uploading file:', file.name, uploadError);
+        throw new Error(`Failed to upload file ${file.name}: ${(uploadError as Error).message}`);
+      }
     }
     
     // Associate files with the assistant
