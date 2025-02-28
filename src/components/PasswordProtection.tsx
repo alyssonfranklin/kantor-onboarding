@@ -1,3 +1,4 @@
+// src/components/PasswordProtection.tsx
 "use client";
 
 import React, { useState, useEffect } from 'react';
@@ -49,7 +50,8 @@ export default function PasswordProtection({ children }: PasswordProtectionProps
       } else {
         setError('Incorrect password. Please try again.');
       }
-    } catch (err) {
+    } catch (error) {
+      console.error('Authentication error:', error);
       setError('An error occurred. Please try again.');
     }
   };
