@@ -6,6 +6,13 @@ const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY,
 });
 
+interface FileWithError {
+  fileName: string;
+  error: string;
+}
+
+type UploadableFile = Blob & { name: string };
+
 export async function POST(req: Request) {
   try {
     const formData = await req.formData();
@@ -35,8 +42,8 @@ export async function POST(req: Request) {
     }
     
     // Upload files to OpenAI
-    const fileIds = [];
-    const fileErrors = [];
+    const fileIds: string[] = [];
+    const fileErrors: FileWithError[] = [];
     
     for (const file of files) {
       try {
@@ -49,18 +56,21 @@ export async function POST(req: Request) {
           writable: false
         });
         
-        // Upload directly using the file Blob
+        // Upload directly using the file Blob with correct typing
+        const uploadableFile = fileBlob as unknown as UploadableFile;
+        
         const uploadedFile = await openai.files.create({
-          file: fileBlob as any, // Using any here as a workaround for TypeScript
+          file: uploadableFile,
           purpose: 'assistants',
         });
         
         fileIds.push(uploadedFile.id);
-      } catch (uploadError: any) {
+      } catch (uploadError) {
         console.error('Error uploading file:', file.name, uploadError);
+        const errorMessage = uploadError instanceof Error ? uploadError.message : 'Unknown error';
         fileErrors.push({
           fileName: file.name,
-          error: uploadError.message || 'Unknown error'
+          error: errorMessage
         });
       }
     }
@@ -84,12 +94,13 @@ export async function POST(req: Request) {
         
         if (!response.ok) {
           const errorData = await response.json();
-          throw new Error(errorData.error?.message || 'Failed to attach file to assistant');
+          const errorMessage = errorData.error?.message || 'Failed to attach file to assistant';
+          throw new Error(errorMessage);
         }
         
         const attachmentData = await response.json();
         attachmentResults.push(attachmentData);
-      } catch (attachError: any) {
+      } catch (attachError) {
         console.error('Error attaching file to assistant:', attachError);
         // Continue with other files even if one fails
       }
@@ -105,7 +116,7 @@ export async function POST(req: Request) {
       fileErrors: fileErrors.length > 0 ? fileErrors : undefined
     });
   } catch (error: unknown) {
-    const err = error as Error;
+    const err = error instanceof Error ? error : new Error('Unknown error');
     console.error('Error processing files:', err);
     return NextResponse.json(
       { error: err.message || 'Failed to process files' },
