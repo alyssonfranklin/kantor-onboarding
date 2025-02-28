@@ -5,7 +5,7 @@ export default function LandingPage() {
   return (
     <main className="min-h-screen bg-gray-800 py-16 px-4 flex flex-col items-center">
       <div className="max-w-3xl w-full text-center">
-        <h1 className="text-4xl font-bold text-white mb-8">Kantor Admin Portal</h1>
+        <h1 className="text-4xl font-bold text-white mb-8">Voxerion Admin Portal</h1>
         
         <div className="grid gap-6 md:grid-cols-2 mt-12">
           <Link href="/onboarding-company" 
