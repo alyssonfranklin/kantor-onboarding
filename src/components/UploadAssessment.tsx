@@ -1,4 +1,5 @@
 // src/components/UploadAssessment.tsx
+
 "use client";
 
 import React, { useState, useEffect } from 'react';
@@ -141,19 +142,20 @@ const UploadAssessment = () => {
       });
       
       if (!response.ok) {
-        const data = await response.json();
-        throw new Error(data.error || 'Failed to upload files');
+        const responseData = await response.json();
+        throw new Error(responseData.error || 'Failed to upload files');
       }
       
-      const data = await response.json();
+      await response.json(); // Get data but not using it directly
       
       setSuccess(true);
       setFiles([]);
       setFileContents([]);
       setTokenCount(0);
-    } catch (error: any) {
-      console.error('Upload error:', error);
-      setError(error.message || 'An error occurred during upload');
+    } catch (error: unknown) {
+      const err = error as Error;
+      console.error('Upload error:', err);
+      setError(err.message || 'An error occurred during upload');
     } finally {
       setIsSubmitting(false);
     }

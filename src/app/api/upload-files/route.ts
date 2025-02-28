@@ -89,10 +89,11 @@ export async function POST(req: Request) {
       fileIds,
       attachments
     });
-  } catch (error: any) {
-    console.error('Error uploading files:', error);
+  } catch (error: unknown) {
+    const err = error as Error;
+    console.error('Error uploading files:', err);
     return NextResponse.json(
-      { error: error.message || 'Failed to upload files' },
+      { error: err.message || 'Failed to upload files' },
       { status: 500 }
     );
   }
