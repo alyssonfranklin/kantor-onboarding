@@ -84,13 +84,19 @@ export async function POST(req: Request) {
     // Associate files with the assistant
     const attachments = [];
     for (const fileId of fileIds) {
-      // Updated API call based on OpenAI's current API structure
-      const attachment = await openai.beta.assistants.addFile(
-        assistantId,
-        { file_id: fileId }
-      );
-      
-      attachments.push(attachment);
+      try {
+        // Use the createFile method instead
+        const attachment = await openai.beta.assistants.createFile(
+          assistantId,
+          {
+            file_id: fileId
+          }
+        );
+        
+        attachments.push(attachment);
+      } catch (attachError) {
+        console.error('Error attaching file to assistant:', attachError);
+      }
     }
     
     return NextResponse.json({
