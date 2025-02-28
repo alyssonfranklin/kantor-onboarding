@@ -1,4 +1,3 @@
-// src/components/PasswordProtection.tsx
 "use client";
 
 import React, { useState, useEffect } from 'react';
@@ -10,7 +9,6 @@ interface PasswordProtectionProps {
   children: React.ReactNode;
 }
 
-const CORRECT_PASSWORD = "VAMOGALOCARALEO";
 const STORAGE_KEY = "kantor_admin_auth";
 
 export default function PasswordProtection({ children }: PasswordProtectionProps) {
@@ -28,16 +26,31 @@ export default function PasswordProtection({ children }: PasswordProtectionProps
     setIsLoading(false);
   }, []);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (password === CORRECT_PASSWORD) {
-      // Save authentication status in session storage
-      sessionStorage.setItem(STORAGE_KEY, "authenticated");
-      setIsAuthenticated(true);
-      setError('');
-    } else {
-      setError('Incorrect password. Please try again.');
+    try {
+      // Verify password through an API route instead of client-side
+      const response = await fetch('/api/verify-password', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ password }),
+      });
+
+      const data = await response.json();
+      
+      if (data.success) {
+        // Save authentication status in session storage
+        sessionStorage.setItem(STORAGE_KEY, "authenticated");
+        setIsAuthenticated(true);
+        setError('');
+      } else {
+        setError('Incorrect password. Please try again.');
+      }
+    } catch (err) {
+      setError('An error occurred. Please try again.');
     }
   };
 
