@@ -1,7 +1,6 @@
 // src/app/api/upload-files/route.ts
 import { NextResponse } from 'next/server';
 import { OpenAI } from 'openai';
-import { writeFile } from 'fs/promises';
 import { join } from 'path';
 import { mkdir } from 'fs/promises';
 import { existsSync } from 'fs';
@@ -10,8 +9,8 @@ const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY,
 });
 
-// This helper function will save files to disk and return a buffer
-async function saveAndReadFile(file: File): Promise<{ filepath: string, buffer: Buffer }> {
+// This helper function will prepare files and return a buffer
+async function prepareFile(file: File): Promise<{ filepath: string, buffer: Buffer }> {
   // Create uploads directory if it doesn't exist
   const uploadsDir = join(process.cwd(), 'uploads');
   if (!existsSync(uploadsDir)) {
@@ -22,12 +21,9 @@ async function saveAndReadFile(file: File): Promise<{ filepath: string, buffer: 
   const filename = `${Date.now()}-${file.name.replace(/[^a-zA-Z0-9.-]/g, '_')}`;
   const filepath = join(uploadsDir, filename);
   
-  // Convert file to buffer and save to disk
+  // Convert file to buffer
   const bytes = await file.arrayBuffer();
   const buffer = Buffer.from(bytes);
-  
-  // Optional: Save the file to disk
-  // await writeFile(filepath, buffer);
   
   return { filepath, buffer };
 }
@@ -64,7 +60,7 @@ export async function POST(req: Request) {
     const fileIds = [];
     for (const file of files) {
       // Get the file data
-      const { buffer } = await saveAndReadFile(file);
+      const { buffer } = await prepareFile(file);
       
       // Upload directly using the buffer
       const uploadedFile = await openai.files.create({
