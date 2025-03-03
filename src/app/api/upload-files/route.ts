@@ -26,7 +26,7 @@ async function enableRetrievalForAssistant(assistantId: string): Promise<boolean
       headers: {
         'Content-Type': 'application/json',
         'Authorization': `Bearer ${process.env.OPENAI_API_KEY}`,
-        'OpenAI-Beta': 'assistants=v1'
+        'OpenAI-Beta': 'assistants=v2'
       },
       body: JSON.stringify({
         tools: [{ type: "retrieval" }]
