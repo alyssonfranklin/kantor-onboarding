@@ -41,17 +41,13 @@ export async function POST(req: Request) {
       );
     }
     
-    // Upload files and attach them to the assistant
-    const fileIds = [];
-    const fileErrors = [];
+    // Upload files and attach them to the assistant using fetch directly
+    const fileIds: string[] = [];
+    const fileErrors: any[] = [];
     
     for (const file of files) {
       try {
         // Upload the file
-        const fileForm = new FormData();
-        fileForm.append('purpose', 'assistants');
-        fileForm.append('file', file);
-        
         const uploadedFile = await openai.files.create({
           file: file,
           purpose: 'assistants',
@@ -60,12 +56,23 @@ export async function POST(req: Request) {
         console.log(`File uploaded: ${uploadedFile.id}`);
         fileIds.push(uploadedFile.id);
         
-        // Attach the file to the assistant
-        const attachedFile = await openai.beta.assistants.files.create(
-          assistantId,
-          { file_id: uploadedFile.id }
-        );
+        // Attach the file to the assistant - using fetch directly to avoid SDK compatibility issues
+        const response = await fetch(`https://api.openai.com/v1/assistants/${assistantId}/files`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${process.env.OPENAI_API_KEY}`,
+            'OpenAI-Beta': 'assistants=v2'
+          },
+          body: JSON.stringify({ file_id: uploadedFile.id })
+        });
         
+        if (!response.ok) {
+          const errorText = await response.text();
+          throw new Error(`Failed to attach file: ${errorText}`);
+        }
+        
+        const attachedFile = await response.json();
         console.log(`File attached: ${attachedFile.id}`);
       } catch (error) {
         console.error(`Error processing file ${file.name}:`, error);
@@ -76,8 +83,20 @@ export async function POST(req: Request) {
       }
     }
     
-    // Check files attached to the assistant
-    const assistantFiles = await openai.beta.assistants.files.list(assistantId);
+    // Check files attached to the assistant - using fetch directly
+    const filesResponse = await fetch(`https://api.openai.com/v1/assistants/${assistantId}/files`, {
+      method: 'GET',
+      headers: {
+        'Authorization': `Bearer ${process.env.OPENAI_API_KEY}`,
+        'OpenAI-Beta': 'assistants=v2'
+      }
+    });
+    
+    let assistantFiles = [];
+    if (filesResponse.ok) {
+      const filesData = await filesResponse.json();
+      assistantFiles = filesData.data || [];
+    }
     
     return NextResponse.json({
       success: fileIds.length > 0,
@@ -85,7 +104,7 @@ export async function POST(req: Request) {
         ? `${fileIds.length} files uploaded and attached successfully` 
         : 'No files were successfully processed',
       fileIds,
-      assistantFiles: assistantFiles.data,
+      assistantFiles,
       errors: fileErrors.length > 0 ? fileErrors : undefined
     });
   } catch (error) {
