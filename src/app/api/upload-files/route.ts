@@ -1,12 +1,16 @@
-// @ts-nocheck 
 // src/app/api/upload-files/route.ts
 import { NextResponse } from 'next/server';
 
-export async function POST(req) {
+interface FileError {
+  fileName: string;
+  error: string;
+}
+
+export async function POST(req: Request) {
   try {
     const formData = await req.formData();
-    const assistantId = formData.get('assistantId');
-    const files = formData.getAll('files');
+    const assistantId = formData.get('assistantId') as string;
+    const files = formData.getAll('files') as File[];
     
     if (!assistantId) {
       return NextResponse.json(
@@ -31,8 +35,8 @@ export async function POST(req) {
     }
 
     // Skip the OpenAI SDK entirely and use direct API calls
-    const fileIds = [];
-    const fileErrors = [];
+    const fileIds: string[] = [];
+    const fileErrors: FileError[] = [];
     
     for (const file of files) {
       try {
@@ -51,23 +55,24 @@ export async function POST(req) {
         });
 
         if (!uploadResponse.ok) {
-          const errorData = await uploadResponse.json();
+          const errorData = await uploadResponse.json() as { error?: { message?: string } };
           throw new Error(errorData.error?.message || 'Failed to upload file');
         }
         
-        const uploadData = await uploadResponse.json();
+        const uploadData = await uploadResponse.json() as { id: string };
         fileIds.push(uploadData.id);
       } catch (error) {
         console.error('Error uploading file:', file.name, error);
+        const errorMessage = error instanceof Error ? error.message : 'Unknown error';
         fileErrors.push({
           fileName: file.name,
-          error: error.message || 'Unknown error'
+          error: errorMessage
         });
       }
     }
     
     // Now try to associate files with the assistant
-    const attachmentResults = [];
+    const attachmentResults: unknown[] = [];
     
     for (const fileId of fileIds) {
       try {
@@ -83,7 +88,7 @@ export async function POST(req) {
         });
         
         if (!attachResponse.ok) {
-          const errorData = await attachResponse.json();
+          const errorData = await attachResponse.json() as { error?: { message?: string } };
           throw new Error(errorData.error?.message || 'Failed to attach file to assistant');
         }
         
@@ -106,8 +111,9 @@ export async function POST(req) {
     });
   } catch (error) {
     console.error('Error processing files:', error);
+    const errorMessage = error instanceof Error ? error.message : 'Failed to process files';
     return NextResponse.json(
-      { error: error.message || 'Failed to process files' },
+      { error: errorMessage },
       { status: 500 }
     );
   }
