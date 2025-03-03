@@ -21,6 +21,10 @@ interface AssistantFile {
   assistant_id: string;
 }
 
+interface AssistantTool {
+  type: string;
+}
+
 export async function POST(req: Request) {
   try {
     const formData = await req.formData();
@@ -86,7 +90,7 @@ export async function POST(req: Request) {
       console.log(`Assistant found: ${assistant.name || assistantId}`);
       
       // Check if retrieval is enabled
-      const hasRetrieval = assistant.tools?.some((tool: any) => tool.type === 'retrieval') || false;
+      const hasRetrieval = assistant.tools?.some((tool: AssistantTool) => tool.type === 'retrieval') || false;
       if (!hasRetrieval) {
         console.warn('WARNING: This assistant does not have retrieval enabled. Files will not be searchable!');
         // Continue anyway but warn the user
