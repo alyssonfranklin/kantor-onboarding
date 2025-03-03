@@ -44,8 +44,8 @@ export async function POST(req: Request) {
     // First check if the assistant exists and has file_search enabled
     try {
       console.log(`Verifying assistant ID: ${assistantId}`);
-      // Using fetch directly to ensure v2 header is used
-      const assistantResponse = await fetch(`https://api.openai.com/v1/assistants/${assistantId}`, {
+      // Using v2 endpoint path
+      const assistantResponse = await fetch(`https://api.openai.com/v2/assistants/${assistantId}`, {
         method: 'GET',
         headers: {
           'Authorization': `Bearer ${process.env.OPENAI_API_KEY}`,
@@ -66,7 +66,7 @@ export async function POST(req: Request) {
       if (!hasFileSearch) {
         // If file_search is not enabled, we need to enable it
         console.log("Enabling file_search for the assistant...");
-        const updateResponse = await fetch(`https://api.openai.com/v1/assistants/${assistantId}`, {
+        const updateResponse = await fetch(`https://api.openai.com/v2/assistants/${assistantId}`, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
@@ -110,7 +110,7 @@ export async function POST(req: Request) {
         fileFormData.append('purpose', 'assistants');
         fileFormData.append('file', file);
         
-        // Upload file directly using fetch
+        // Upload file directly using fetch - file API still uses v1
         const uploadResponse = await fetch('https://api.openai.com/v1/files', {
           method: 'POST',
           headers: {
@@ -131,10 +131,10 @@ export async function POST(req: Request) {
         console.log('Waiting for file to be processed...');
         await new Promise(resolve => setTimeout(resolve, 2000));
         
-        // Attach the file to the assistant
+        // Attach the file to the assistant using v2 endpoint
         console.log(`Attaching file ${uploadedFile.id} to assistant ${assistantId}...`);
         
-        const attachUrl = `https://api.openai.com/v1/assistants/${assistantId}/files`;
+        const attachUrl = `https://api.openai.com/v2/assistants/${assistantId}/files`;
         console.log(`POST request to: ${attachUrl}`);
         
         const attachResponse = await fetch(attachUrl, {
@@ -171,9 +171,9 @@ export async function POST(req: Request) {
       }
     }
     
-    // Check files attached to the assistant
+    // Check files attached to the assistant using v2 endpoint
     console.log(`Checking files currently attached to assistant ${assistantId}...`);
-    const filesResponse = await fetch(`https://api.openai.com/v1/assistants/${assistantId}/files`, {
+    const filesResponse = await fetch(`https://api.openai.com/v2/assistants/${assistantId}/files`, {
       method: 'GET',
       headers: {
         'Authorization': `Bearer ${process.env.OPENAI_API_KEY}`,
