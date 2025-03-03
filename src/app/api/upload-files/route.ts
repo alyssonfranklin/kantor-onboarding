@@ -34,7 +34,7 @@ async function enableRetrievalForAssistant(assistantId: string): Promise<boolean
       headers: {
         'Content-Type': 'application/json',
         'Authorization': `Bearer ${process.env.OPENAI_API_KEY}`,
-        'OpenAI-Beta': 'assistants=v2'
+        'OpenAI-Beta': 'assistants=v1'
       },
       body: JSON.stringify({
         tools: [{ type: "retrieval" }]
@@ -47,8 +47,15 @@ async function enableRetrievalForAssistant(assistantId: string): Promise<boolean
       console.log('Successfully enabled retrieval for assistant');
       return true;
     } else {
-      const error = await response.json();
-      console.error('Failed to enable retrieval:', error);
+      const errorText = await response.text();
+      let errorInfo = 'Unknown error';
+      try {
+        const error = JSON.parse(errorText);
+        errorInfo = error.error?.message || JSON.stringify(error);
+      } catch {
+        errorInfo = errorText;
+      }
+      console.error('Failed to enable retrieval:', errorInfo);
       return false;
     }
   } catch (error) {
@@ -108,7 +115,7 @@ export async function POST(req: Request) {
         method: 'GET',
         headers: {
           'Authorization': `Bearer ${process.env.OPENAI_API_KEY}`,
-          'OpenAI-Beta': 'assistants=v2'
+          'OpenAI-Beta': 'assistants=v1'
         }
       });
 
@@ -161,8 +168,23 @@ export async function POST(req: Request) {
         retrievalEnabled = await enableRetrievalForAssistant(assistantId);
         hasRetrieval = retrievalEnabled;
         console.log(`Retrieval now enabled: ${retrievalEnabled ? 'YES' : 'NO'}`);
+        
+        if (!retrievalEnabled) {
+          return NextResponse.json(
+            { error: 'Failed to enable retrieval capability for this assistant. Files cannot be indexed for search.' },
+            { status: 400 }
+          );
+        }
+        
+        // Wait a bit for retrieval to be enabled
+        console.log('Waiting for retrieval capability to be fully enabled...');
+        await new Promise(resolve => setTimeout(resolve, 2000));
       } else if (!hasRetrieval) {
         console.warn('WARNING: This assistant does not have retrieval enabled. Files will not be added to vector store!');
+        return NextResponse.json(
+          { error: 'This assistant does not have retrieval enabled. Please check the "Enable retrieval" option to add files to the vector store.' },
+          { status: 400 }
+        );
       }
     } catch (error) {
       console.error('Error validating assistant:', error);
@@ -184,8 +206,11 @@ export async function POST(req: Request) {
         
         // Convert file to FormData for direct API upload
         const fileFormData = new FormData();
-        fileFormData.append('purpose', 'assistants');  // This is critical for assistant usage
+        // Important: set purpose to 'assistants' to enable vector indexing
+        fileFormData.append('purpose', 'assistants');
         fileFormData.append('file', file);
+        
+        console.log('Uploading file with purpose: assistants');
         
         // Upload directly to OpenAI API
         const uploadResponse = await fetch('https://api.openai.com/v1/files', {
@@ -208,14 +233,15 @@ export async function POST(req: Request) {
         console.log(`File uploaded successfully. ID: ${uploadData.id}`);
         
         // Immediately attach the file to the assistant to ensure proper association
-        console.log(`Attaching file ${uploadData.id} to assistant ${assistantId}`);
+        console.log(`Attaching file ${uploadData.id} to assistant ${assistantId} for vector indexing...`);
         
+        // Important: This is what adds the file to the vector store
         const attachResponse = await fetch(`https://api.openai.com/v1/assistants/${assistantId}/files`, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
             'Authorization': `Bearer ${process.env.OPENAI_API_KEY}`,
-            'OpenAI-Beta': 'assistants=v2'
+            'OpenAI-Beta': 'assistants=v1'
           },
           body: JSON.stringify({ file_id: uploadData.id })
         });
@@ -239,7 +265,10 @@ export async function POST(req: Request) {
         
         const attachmentData = await attachResponse.json();
         attachmentResults.push(attachmentData);
-        console.log(`File ${uploadData.id} successfully attached to assistant ${assistantId}`);
+        console.log(`File ${uploadData.id} successfully attached to assistant ${assistantId} and indexed for retrieval`);
+        
+        // Wait a bit to allow for processing
+        await new Promise(resolve => setTimeout(resolve, 1000));
         
         // Verify the file status
         const fileStatusResponse = await fetch(`https://api.openai.com/v1/files/${uploadData.id}`, {
@@ -273,7 +302,7 @@ export async function POST(req: Request) {
         method: 'GET',
         headers: {
           'Authorization': `Bearer ${process.env.OPENAI_API_KEY}`,
-          'OpenAI-Beta': 'assistants=v2'
+          'OpenAI-Beta': 'assistants=v1'
         }
       });
       

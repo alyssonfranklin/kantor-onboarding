@@ -243,7 +243,7 @@ const UploadAssessment = () => {
               className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
             />
             <label htmlFor="enableRetrieval" className="ml-2 block text-white">
-              Enable retrieval if not already enabled (required for file search)
+              Enable retrieval if not already enabled (REQUIRED for file search and vector indexing)
             </label>
           </div>
           
