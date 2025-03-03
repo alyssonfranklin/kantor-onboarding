@@ -1,12 +1,10 @@
-// src/components/UploadAssessment.tsx
-
 "use client";
 
 import React, { useState, useEffect } from 'react';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import { Loader2, Upload, X } from 'lucide-react';
+import { Loader2, Upload, X, Info } from 'lucide-react';
 import { PromptTokenizer } from '@/lib/tokenizer';
 
 const COST_PER_1K_TOKENS = 0.0037;
@@ -17,12 +15,14 @@ const tokenizer = new PromptTokenizer();
 
 const UploadAssessment = () => {
   const [assistantId, setAssistantId] = useState('');
+  const [enableRetrieval, setEnableRetrieval] = useState(true);
   const [files, setFiles] = useState<File[]>([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState(false);
   const [tokenCount, setTokenCount] = useState(0);
   const [fileContents, setFileContents] = useState<string[]>([]);
+  const [responseDetails, setResponseDetails] = useState<any>(null);
 
   // Calculate tokens whenever file contents change
   useEffect(() => {
@@ -127,10 +127,12 @@ const UploadAssessment = () => {
     setIsSubmitting(true);
     setError('');
     setSuccess(false);
+    setResponseDetails(null);
     
     try {
       const formData = new FormData();
       formData.append('assistantId', assistantId);
+      formData.append('enableRetrieval', enableRetrieval.toString());
       
       files.forEach(file => {
         formData.append('files', file);
@@ -141,18 +143,22 @@ const UploadAssessment = () => {
         body: formData,
       });
       
+      const responseData = await response.json();
+      
       if (!response.ok) {
-        const responseData = await response.json();
         throw new Error(responseData.error || 'Failed to upload files');
       }
       
-      await response.json(); // Get data but not using it directly
-      
       setSuccess(true);
-      setFiles([]);
-      setFileContents([]);
-      setTokenCount(0);
-    } catch (error: unknown) {
+      setResponseDetails(responseData);
+      
+      // Only clear files on success
+      if (responseData.success) {
+        setFiles([]);
+        setFileContents([]);
+        setTokenCount(0);
+      }
+    } catch (error) {
       const err = error as Error;
       console.error('Upload error:', err);
       setError(err.message || 'An error occurred during upload');
@@ -195,6 +201,20 @@ const UploadAssessment = () => {
               required
               placeholder="Enter OpenAI Assistant ID"
             />
+          </div>
+          
+          <div className="flex items-center mb-4">
+            <input
+              type="checkbox"
+              id="enableRetrieval"
+              name="enableRetrieval"
+              checked={enableRetrieval}
+              onChange={(e) => setEnableRetrieval(e.target.checked)}
+              className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+            />
+            <label htmlFor="enableRetrieval" className="ml-2 block text-white">
+              Enable retrieval if not already enabled (required for file search)
+            </label>
           </div>
           
           <div>
@@ -252,6 +272,30 @@ const UploadAssessment = () => {
                 Files successfully uploaded and added to the assistant.
               </AlertDescription>
             </Alert>
+          )}
+          
+          {responseDetails && (
+            <div className="mt-4 bg-gray-700 p-4 rounded-md">
+              <div className="flex items-center mb-2">
+                <Info className="h-5 w-5 text-blue-400 mr-2" />
+                <h3 className="text-white font-medium">Upload Details:</h3>
+              </div>
+              <div className="text-white text-sm space-y-2">
+                <p>Retrieval enabled: {responseDetails.hasRetrieval ? 'Yes' : 'No'}</p>
+                {responseDetails.retrievalEnabled && <p>Retrieval was successfully enabled for this assistant</p>}
+                <p>Files uploaded: {responseDetails.fileIds?.length || 0}</p>
+                {responseDetails.fileIds && (
+                  <div>
+                    <p>File IDs:</p>
+                    <ul className="list-disc list-inside">
+                      {responseDetails.fileIds.map((id: string, idx: number) => (
+                        <li key={idx} className="break-all">{id}</li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+              </div>
+            </div>
           )}
           
           <Button 
