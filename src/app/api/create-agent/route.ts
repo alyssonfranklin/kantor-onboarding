@@ -23,7 +23,7 @@ export async function POST(req: Request) {
       name: `${name} Agent`,
       instructions: `You are the AI assistant for ${name}. Help users with their queries and provide information about ${name}.`,
       model: "gpt-3.5-turbo",
-      tools: [{ type: "file_search" }] // Use "file_search" instead of "retrieval"
+      tools: [{ type: "retrieval" }] // Use "file_search" instead of "retrieval"
     });
 
     return NextResponse.json({ 
