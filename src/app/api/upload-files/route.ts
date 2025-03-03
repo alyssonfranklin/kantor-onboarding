@@ -6,14 +6,6 @@ interface FileError {
   error: string;
 }
 
-interface AssistantFile {
-  id: string;
-  object: string;
-  created_at: number;
-  assistant_id: string;
-  file_id?: string;
-}
-
 export async function POST(req: Request) {
   try {
     const formData = await req.formData();
