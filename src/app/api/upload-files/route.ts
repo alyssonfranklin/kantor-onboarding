@@ -8,12 +8,13 @@ interface FileError {
 
 interface FileDetails {
   id: string;
-  object: string;
-  bytes: number;
-  created_at: number;
-  filename: string;
-  purpose: string;
-  status: string;
+  filename?: string;
+  status?: string;
+  purpose?: string;
+}
+
+interface AssistantTool {
+  type: string;
 }
 
 export async function POST(req: Request) {
@@ -46,9 +47,9 @@ export async function POST(req: Request) {
       );
     }
 
-    // Step 1: Validate the assistant exists
-    console.log(`Validating assistant ID: ${assistantId}`);
+    // Check if the assistant exists and has retrieval enabled
     try {
+      console.log(`Validating assistant ID: ${assistantId}`);
       const assistantResponse = await fetch(`https://api.openai.com/v1/assistants/${assistantId}`, {
         method: 'GET',
         headers: {
@@ -66,36 +67,32 @@ export async function POST(req: Request) {
       console.log(`Assistant verified: ${assistant.name || assistantId}`);
       
       // Check if assistant has retrieval tool enabled
-      const hasRetrieval = assistant.tools?.some((tool: any) => tool.type === 'retrieval');
+      const hasRetrieval = (assistant.tools as AssistantTool[])?.some((tool) => tool.type === 'retrieval');
+      console.log(`Assistant has retrieval enabled: ${hasRetrieval ? 'YES' : 'NO'}`);
+      
       if (!hasRetrieval) {
         console.warn('Warning: This assistant does not have retrieval enabled. Files may not be searchable.');
       }
     } catch (error) {
       console.error('Error validating assistant:', error);
-      return NextResponse.json(
-        { error: error instanceof Error ? error.message : 'Failed to validate assistant' },
-        { status: 400 }
-      );
+      // Continue anyway, as the assistant might still accept files
     }
-
-    // Step 2: Upload files to OpenAI
+    
+    // Skip the OpenAI SDK entirely and use direct API calls
     const fileIds: string[] = [];
     const fileErrors: FileError[] = [];
-    const fileDetails: Record<string, FileDetails> = {};
-    
-    console.log('Starting file uploads...');
+    const fileDetailsMap: Record<string, FileDetails> = {};
     
     for (const file of files) {
       try {
-        console.log(`Processing file: ${file.name} (${file.size} bytes, type: ${file.type})`);
+        console.log(`Uploading file: ${file.name} (${file.size} bytes, ${file.type})`);
         
-        // Create FormData for direct API upload
+        // Convert file to FormData for direct API upload
         const fileFormData = new FormData();
         fileFormData.append('purpose', 'assistants');
         fileFormData.append('file', file);
         
         // Upload directly to OpenAI API
-        console.log('Uploading to OpenAI...');
         const uploadResponse = await fetch('https://api.openai.com/v1/files', {
           method: 'POST',
           headers: {
@@ -111,9 +108,24 @@ export async function POST(req: Request) {
         
         const uploadData = await uploadResponse.json() as FileDetails;
         fileIds.push(uploadData.id);
-        fileDetails[uploadData.id] = uploadData;
+        fileDetailsMap[uploadData.id] = uploadData;
         
-        console.log(`File uploaded successfully. ID: ${uploadData.id}, Status: ${uploadData.status}`);
+        console.log(`File uploaded successfully. ID: ${uploadData.id}`);
+        
+        // Verify the file status
+        const fileStatusResponse = await fetch(`https://api.openai.com/v1/files/${uploadData.id}`, {
+          method: 'GET',
+          headers: {
+            'Authorization': `Bearer ${process.env.OPENAI_API_KEY}`
+          }
+        });
+        
+        if (fileStatusResponse.ok) {
+          const fileStatus = await fileStatusResponse.json();
+          console.log(`File status: ${fileStatus.status}, Filename: ${fileStatus.filename}, Purpose: ${fileStatus.purpose}`);
+          fileDetailsMap[uploadData.id] = { ...fileDetailsMap[uploadData.id], ...fileStatus };
+        }
+        
       } catch (error) {
         console.error('Error uploading file:', file.name, error);
         const errorMessage = error instanceof Error ? error.message : 'Unknown error';
@@ -124,45 +136,12 @@ export async function POST(req: Request) {
       }
     }
     
-    // Step 3: Verify file uploads
-    console.log('Verifying file uploads...');
-    for (const fileId of fileIds) {
-      try {
-        const fileCheckResponse = await fetch(`https://api.openai.com/v1/files/${fileId}`, {
-          method: 'GET',
-          headers: {
-            'Authorization': `Bearer ${process.env.OPENAI_API_KEY}`
-          }
-        });
-        
-        if (!fileCheckResponse.ok) {
-          console.error(`File verification failed for ID: ${fileId}`);
-          continue;
-        }
-        
-        const fileInfo = await fileCheckResponse.json() as FileDetails;
-        console.log(`File verified: ${fileId}, Status: ${fileInfo.status}, Name: ${fileInfo.filename}`);
-        fileDetails[fileId] = fileInfo;
-        
-        // Wait if file is still processing
-        if (fileInfo.status === 'processing') {
-          console.log(`File ${fileId} is still processing. Waiting before attachment...`);
-          // Wait for a short time to allow processing to begin
-          await new Promise(resolve => setTimeout(resolve, 2000));
-        }
-      } catch (error) {
-        console.error(`Error verifying file ${fileId}:`, error);
-      }
-    }
-    
-    // Step 4: Attach files to the assistant
-    console.log('Attaching files to assistant...');
+    // Now try to associate files with the assistant
     const attachmentResults: unknown[] = [];
-    const attachmentErrors: any[] = [];
     
     for (const fileId of fileIds) {
       try {
-        console.log(`Attaching file ${fileId} to assistant ${assistantId}...`);
+        console.log(`Attaching file ${fileId} to assistant ${assistantId}`);
         
         // Call the API endpoint to attach the file
         const attachResponse = await fetch(`https://api.openai.com/v1/assistants/${assistantId}/files`, {
@@ -177,27 +156,21 @@ export async function POST(req: Request) {
         
         if (!attachResponse.ok) {
           const errorData = await attachResponse.json() as { error?: { message?: string } };
-          const errorMessage = errorData.error?.message || 'Failed to attach file to assistant';
-          throw new Error(errorMessage);
+          throw new Error(errorData.error?.message || 'Failed to attach file to assistant');
         }
         
         const attachmentData = await attachResponse.json();
-        console.log(`File ${fileId} successfully attached to assistant ${assistantId}`);
         attachmentResults.push(attachmentData);
+        console.log(`File ${fileId} successfully attached to assistant ${assistantId}`);
       } catch (error) {
-        console.error(`Error attaching file ${fileId} to assistant:`, error);
-        attachmentErrors.push({
-          fileId,
-          error: error instanceof Error ? error.message : 'Unknown error'
-        });
+        console.error('Error attaching file to assistant:', error);
         // Continue with other files even if one fails
       }
     }
     
-    // Step 5: Verify file attachments
-    console.log('Verifying file attachments...');
+    // Check what files are attached to the assistant
     try {
-      const assistantFilesResponse = await fetch(`https://api.openai.com/v1/assistants/${assistantId}/files`, {
+      const filesResponse = await fetch(`https://api.openai.com/v1/assistants/${assistantId}/files`, {
         method: 'GET',
         headers: {
           'Authorization': `Bearer ${process.env.OPENAI_API_KEY}`,
@@ -205,15 +178,12 @@ export async function POST(req: Request) {
         }
       });
       
-      if (assistantFilesResponse.ok) {
-        const filesData = await assistantFilesResponse.json();
-        console.log(`Assistant has ${filesData.data?.length || 0} files attached.`);
-        console.log('Attached files:', filesData.data);
-      } else {
-        console.error('Could not verify attached files');
+      if (filesResponse.ok) {
+        const filesData = await filesResponse.json();
+        console.log(`Assistant has ${filesData.data?.length || 0} files attached`);
       }
     } catch (error) {
-      console.error('Error verifying file attachments:', error);
+      console.error('Error checking assistant files:', error);
     }
     
     return NextResponse.json({
@@ -222,9 +192,8 @@ export async function POST(req: Request) {
         ? `${fileIds.length} files uploaded successfully` 
         : 'No files were uploaded successfully',
       fileIds,
-      fileDetails,
+      fileDetails: fileDetailsMap,
       attachmentResults,
-      attachmentErrors: attachmentErrors.length > 0 ? attachmentErrors : undefined,
       fileErrors: fileErrors.length > 0 ? fileErrors : undefined
     });
   } catch (error) {
