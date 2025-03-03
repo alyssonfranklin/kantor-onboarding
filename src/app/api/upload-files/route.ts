@@ -117,8 +117,8 @@ export async function POST(req: Request) {
             errorMessage = errorData.error.message;
             console.error('API Error details:', errorData.error);
           }
-        } catch (e) {
-          // If parsing fails, use the raw text
+        } catch {
+          // If parsing fails, use the raw text (removed unused 'e' variable)
           console.error('Raw error response:', errorText);
         }
 
