@@ -34,7 +34,8 @@ async function enableRetrievalForAssistant(assistantId: string): Promise<boolean
     });
     
     if (response.ok) {
-      const data = await response.json();
+      // Fixed: removed unused data variable
+      await response.json();
       console.log('Successfully enabled retrieval for assistant');
       return true;
     } else {

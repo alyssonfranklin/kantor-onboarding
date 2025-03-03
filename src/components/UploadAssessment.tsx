@@ -1,3 +1,4 @@
+// src/components/UploadAssessment.tsx
 "use client";
 
 import React, { useState, useEffect } from 'react';
@@ -13,6 +14,26 @@ const MAX_FILES = 10;
 
 const tokenizer = new PromptTokenizer();
 
+// Define a proper interface for the response details
+interface ResponseDetails {
+  hasRetrieval: boolean;
+  retrievalEnabled?: boolean;
+  fileIds?: string[];
+  fileDetails?: Record<string, {
+    id: string;
+    filename?: string;
+    status?: string;
+    purpose?: string;
+  }>;
+  assistantFiles?: unknown[];
+  success?: boolean;
+  message?: string;
+  fileErrors?: Array<{
+    fileName: string;
+    error: string;
+  }>;
+}
+
 const UploadAssessment = () => {
   const [assistantId, setAssistantId] = useState('');
   const [enableRetrieval, setEnableRetrieval] = useState(true);
@@ -22,7 +43,7 @@ const UploadAssessment = () => {
   const [success, setSuccess] = useState(false);
   const [tokenCount, setTokenCount] = useState(0);
   const [fileContents, setFileContents] = useState<string[]>([]);
-  const [responseDetails, setResponseDetails] = useState<any>(null);
+  const [responseDetails, setResponseDetails] = useState<ResponseDetails | null>(null);
 
   // Calculate tokens whenever file contents change
   useEffect(() => {
