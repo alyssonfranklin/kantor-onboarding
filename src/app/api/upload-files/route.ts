@@ -80,12 +80,29 @@ export async function POST(req: Request) {
         console.log('Waiting for file to be processed...');
         await new Promise(resolve => setTimeout(resolve, 5000));
         
-        // Try direct API path to file instead of assistants API
-        console.log(`Trying direct file upload approach for file ${uploadedFile.id}`);
-        
-        // Create a thread and use the file_id in a message
-        console.log(`Creating thread with file attachment...`);
+        // First create an empty thread
+        console.log(`Creating thread...`);
         const threadResponse = await fetch('https://api.openai.com/v1/threads', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${process.env.OPENAI_API_KEY}`,
+            'OpenAI-Beta': 'assistants=v2'
+          }
+        });
+        
+        if (!threadResponse.ok) {
+          console.error(`Thread creation failed: ${await threadResponse.text()}`);
+          throw new Error('Failed to create thread');
+        }
+        
+        const threadData = await threadResponse.json();
+        const threadId = threadData.id;
+        console.log(`Thread created with ID: ${threadId}`);
+        
+        // Add message with file attachment
+        console.log(`Adding message with file attachment to thread ${threadId}...`);
+        const messageResponse = await fetch(`https://api.openai.com/v1/threads/${threadId}/messages`, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
@@ -93,27 +110,23 @@ export async function POST(req: Request) {
             'OpenAI-Beta': 'assistants=v2'
           },
           body: JSON.stringify({
-            messages: [
-              {
-                role: "user",
-                content: "Here is a file that should be searchable",
-                file_ids: [uploadedFile.id]
-              }
-            ]
+            role: "user",
+            content: "Here is a file that should be searchable",
+            file_ids: [uploadedFile.id]
           })
         });
         
-        if (!threadResponse.ok) {
-          console.error(`Thread creation failed: ${await threadResponse.text()}`);
-          throw new Error('Failed to create thread with file attachment');
+        if (!messageResponse.ok) {
+          console.error(`Message creation failed: ${await messageResponse.text()}`);
+          throw new Error('Failed to add message with file attachment');
         }
         
-        const threadData = await threadResponse.json();
-        console.log(`Thread created with ID: ${threadData.id}`);
+        const messageData = await messageResponse.json();
+        console.log(`Message added with ID: ${messageData.id}`);
         
         // Run the assistant on the thread to process the file
-        console.log(`Running assistant ${assistantId} on thread ${threadData.id}...`);
-        const runResponse = await fetch(`https://api.openai.com/v1/threads/${threadData.id}/runs`, {
+        console.log(`Running assistant ${assistantId} on thread ${threadId}...`);
+        const runResponse = await fetch(`https://api.openai.com/v1/threads/${threadId}/runs`, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
