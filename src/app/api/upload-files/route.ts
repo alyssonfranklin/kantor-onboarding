@@ -31,12 +31,12 @@ async function enableRetrievalForAssistant(assistantId: string): Promise<boolean
     console.log(`Attempting to enable retrieval for assistant ${assistantId}`);
     
     // Get current assistant configuration first
-    const getResponse = await fetch(`https://api.openai.com/v1/assistants/${assistantId}`, {
+    const getResponse = await fetch(`https://api.openai.com/v2/assistants/${assistantId}`, {
       method: 'GET',
       headers: {
         'Content-Type': 'application/json',
         'Authorization': `Bearer ${process.env.OPENAI_API_KEY}`,
-        'OpenAI-Beta': 'assistants=v2'
+        'OpenAI-Beta': 'assistants=v2'  // Using v2 of the API
       }
     });
     
@@ -64,16 +64,20 @@ async function enableRetrievalForAssistant(assistantId: string): Promise<boolean
     const updatedTools = [...currentTools, { type: "retrieval" }];
     console.log('Updating assistant with tools:', JSON.stringify(updatedTools));
     
-    // Update the assistant
-    const response = await fetch(`https://api.openai.com/v1/assistants/${assistantId}`, {
+    // Update the assistant, preserving all other properties
+    const response = await fetch(`https://api.openai.com/v2/assistants/${assistantId}`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
         'Authorization': `Bearer ${process.env.OPENAI_API_KEY}`,
-        'OpenAI-Beta': 'assistants=v2'
+        'OpenAI-Beta': 'assistants=v2'  // Using v2 of the API
       },
       body: JSON.stringify({
-        tools: updatedTools
+        tools: updatedTools,
+        model: assistantData.model,  // Preserve existing model
+        name: assistantData.name,    // Preserve existing name
+        description: assistantData.description, // Preserve existing description
+        instructions: assistantData.instructions  // Preserve existing instructions
       })
     });
     
@@ -147,11 +151,11 @@ export async function POST(req: Request) {
       }
 
       console.log(`Making API request to validate assistant: ${assistantId}`);
-      const assistantResponse = await fetch(`https://api.openai.com/v1/assistants/${assistantId}`, {
+      const assistantResponse = await fetch(`https://api.openai.com/v2/assistants/${assistantId}`, {
         method: 'GET',
         headers: {
           'Authorization': `Bearer ${process.env.OPENAI_API_KEY}`,
-          'OpenAI-Beta': 'assistants=v2'
+          'OpenAI-Beta': 'assistants=v2'  // Using v2 of the API
         }
       });
 
@@ -169,7 +173,7 @@ export async function POST(req: Request) {
             console.error('API Error details:', errorData.error);
           }
         } catch {
-          // If parsing fails, use the raw text (removed unused 'e' variable)
+          // If parsing fails, use the raw text
           console.error('Raw error response:', errorText);
         }
 
@@ -248,7 +252,7 @@ export async function POST(req: Request) {
         
         console.log('Uploading file with purpose: assistants');
         
-        // Upload directly to OpenAI API
+        // Upload directly to OpenAI API - Files endpoint remains at v1
         const uploadResponse = await fetch('https://api.openai.com/v1/files', {
           method: 'POST',
           headers: {
@@ -272,12 +276,12 @@ export async function POST(req: Request) {
         console.log(`Attaching file ${uploadData.id} to assistant ${assistantId} for vector indexing...`);
         
         // Important: This is what adds the file to the vector store
-        const attachResponse = await fetch(`https://api.openai.com/v1/assistants/${assistantId}/files`, {
+        const attachResponse = await fetch(`https://api.openai.com/v2/assistants/${assistantId}/files`, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
             'Authorization': `Bearer ${process.env.OPENAI_API_KEY}`,
-            'OpenAI-Beta': 'assistants=v2'
+            'OpenAI-Beta': 'assistants=v2'  // Using v2 of the API
           },
           body: JSON.stringify({ file_id: uploadData.id })
         });
@@ -306,7 +310,7 @@ export async function POST(req: Request) {
         // Wait a bit to allow for processing
         await new Promise(resolve => setTimeout(resolve, 1000));
         
-        // Verify the file status
+        // Verify the file status - Files API still uses v1
         const fileStatusResponse = await fetch(`https://api.openai.com/v1/files/${uploadData.id}`, {
           method: 'GET',
           headers: {
@@ -334,11 +338,11 @@ export async function POST(req: Request) {
     let assistantFiles: AssistantFile[] = [];
     try {
       console.log(`Checking files attached to assistant ${assistantId}...`);
-      const filesResponse = await fetch(`https://api.openai.com/v1/assistants/${assistantId}/files`, {
+      const filesResponse = await fetch(`https://api.openai.com/v2/assistants/${assistantId}/files`, {
         method: 'GET',
         headers: {
           'Authorization': `Bearer ${process.env.OPENAI_API_KEY}`,
-          'OpenAI-Beta': 'assistants=v2'
+          'OpenAI-Beta': 'assistants=v2'  // Using v2 of the API
         }
       });
       
