@@ -11,6 +11,21 @@ interface FileError {
   error: string;
 }
 
+interface AttachmentResponse {
+  id: string;
+  object: string;
+  created_at: number;
+  assistant_id: string;
+  file_id: string;
+}
+
+interface AssistantFile {
+  id: string;
+  object: string;
+  created_at: number;
+  assistant_id: string;
+}
+
 export async function POST(req: Request) {
   try {
     const formData = await req.formData();
@@ -52,7 +67,7 @@ export async function POST(req: Request) {
     // Upload files and attach them to the assistant using fetch directly
     const fileIds: string[] = [];
     const fileErrors: FileError[] = [];
-    const attachmentResponses: any[] = [];
+    const attachmentResponses: AttachmentResponse[] = [];
     
     for (const file of files) {
       try {
@@ -95,7 +110,7 @@ export async function POST(req: Request) {
         }
         
         try {
-          const attachedFile = JSON.parse(responseText);
+          const attachedFile = JSON.parse(responseText) as AttachmentResponse;
           console.log(`File successfully attached: ${JSON.stringify(attachedFile)}`);
           attachmentResponses.push(attachedFile);
         } catch (e) {
@@ -122,7 +137,7 @@ export async function POST(req: Request) {
     
     console.log(`Files check response status: ${filesResponse.status}`);
     
-    let assistantFiles = [];
+    let assistantFiles: AssistantFile[] = [];
     if (filesResponse.ok) {
       const filesResponseText = await filesResponse.text();
       console.log(`Files response body: ${filesResponseText}`);
@@ -139,7 +154,7 @@ export async function POST(req: Request) {
     }
     
     // Compare uploaded files with attached files
-    const attachedFileIds = assistantFiles.map((file: any) => file.id);
+    const attachedFileIds = assistantFiles.map((file: AssistantFile) => file.id);
     const missingFiles = fileIds.filter(id => !attachedFileIds.includes(id));
     
     if (missingFiles.length > 0) {
