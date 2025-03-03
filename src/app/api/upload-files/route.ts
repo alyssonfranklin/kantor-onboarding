@@ -31,7 +31,7 @@ async function enableRetrievalForAssistant(assistantId: string): Promise<boolean
     console.log(`Attempting to enable retrieval for assistant ${assistantId}`);
     
     // Get current assistant configuration first
-    const getResponse = await fetch(`https://api.openai.com/v2/assistants/${assistantId}`, {
+    const getResponse = await fetch(`https://api.openai.com/v1/assistants/${assistantId}`, {
       method: 'GET',
       headers: {
         'Content-Type': 'application/json',
@@ -65,7 +65,7 @@ async function enableRetrievalForAssistant(assistantId: string): Promise<boolean
     console.log('Updating assistant with tools:', JSON.stringify(updatedTools));
     
     // Update the assistant, preserving all other properties
-    const response = await fetch(`https://api.openai.com/v2/assistants/${assistantId}`, {
+    const response = await fetch(`https://api.openai.com/v1/assistants/${assistantId}`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -151,7 +151,7 @@ export async function POST(req: Request) {
       }
 
       console.log(`Making API request to validate assistant: ${assistantId}`);
-      const assistantResponse = await fetch(`https://api.openai.com/v2/assistants/${assistantId}`, {
+      const assistantResponse = await fetch(`https://api.openai.com/v1/assistants/${assistantId}`, {
         method: 'GET',
         headers: {
           'Authorization': `Bearer ${process.env.OPENAI_API_KEY}`,
@@ -276,7 +276,7 @@ export async function POST(req: Request) {
         console.log(`Attaching file ${uploadData.id} to assistant ${assistantId} for vector indexing...`);
         
         // Important: This is what adds the file to the vector store
-        const attachResponse = await fetch(`https://api.openai.com/v2/assistants/${assistantId}/files`, {
+        const attachResponse = await fetch(`https://api.openai.com/v1/assistants/${assistantId}/files`, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
@@ -338,7 +338,7 @@ export async function POST(req: Request) {
     let assistantFiles: AssistantFile[] = [];
     try {
       console.log(`Checking files attached to assistant ${assistantId}...`);
-      const filesResponse = await fetch(`https://api.openai.com/v2/assistants/${assistantId}/files`, {
+      const filesResponse = await fetch(`https://api.openai.com/v1/assistants/${assistantId}/files`, {
         method: 'GET',
         headers: {
           'Authorization': `Bearer ${process.env.OPENAI_API_KEY}`,
