@@ -6,6 +6,11 @@ const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY,
 });
 
+interface FileError {
+  fileName: string;
+  error: string;
+}
+
 export async function POST(req: Request) {
   try {
     const formData = await req.formData();
@@ -43,7 +48,7 @@ export async function POST(req: Request) {
     
     // Upload files and attach them to the assistant using fetch directly
     const fileIds: string[] = [];
-    const fileErrors: any[] = [];
+    const fileErrors: FileError[] = [];
     
     for (const file of files) {
       try {
