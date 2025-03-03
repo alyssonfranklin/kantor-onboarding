@@ -29,9 +29,7 @@ export async function GET(req: Request) {
       name: assistant.name,
       model: assistant.model,
       toolTypes,
-      tools,
-      // Include the full assistant data for inspection
-      assistantData: assistant
+      tools
     });
   } catch (error) {
     console.error('Error checking assistant:', error);
