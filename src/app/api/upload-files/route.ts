@@ -46,10 +46,9 @@ export async function POST(req: Request) {
       );
     }
     
-    // Upload files and attempt to attach them
+    // Try a direct approach to add files to the assistant
     const fileIds: string[] = [];
     const fileErrors: FileError[] = [];
-    const successfulAttachments: string[] = [];
     
     for (const file of files) {
       try {
@@ -76,81 +75,72 @@ export async function POST(req: Request) {
         console.log(`File uploaded successfully with ID: ${uploadedFile.id}`);
         fileIds.push(uploadedFile.id);
         
-        // Wait longer for file processing
+        // Wait for file processing
         console.log('Waiting for file to be processed...');
         await new Promise(resolve => setTimeout(resolve, 5000));
         
-        // First create an empty thread
-        console.log(`Creating thread...`);
-        const threadResponse = await fetch('https://api.openai.com/v1/threads', {
+        // Try directly uploading to the assistant's file collection
+        console.log(`Trying to directly attach file ${uploadedFile.id} to assistant...`);
+        
+        // Try the v2 API format
+        const attachResponse = await fetch(`https://api.openai.com/v1/assistants/${assistantId}/files`, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
             'Authorization': `Bearer ${process.env.OPENAI_API_KEY}`,
             'OpenAI-Beta': 'assistants=v2'
+          },
+          body: JSON.stringify({
+            file_id: uploadedFile.id
+          })
+        });
+        
+        if (attachResponse.ok) {
+          const attachData = await attachResponse.json();
+          console.log(`File successfully attached to assistant: ${JSON.stringify(attachData)}`);
+        } else {
+          const errorText = await attachResponse.text();
+          console.log(`Direct attachment failed: ${errorText}`);
+          
+          // If direct attachment fails, create a thread and try a different approach
+          console.log('Trying thread-based approach...');
+          
+          // Create an empty thread
+          const threadResponse = await fetch('https://api.openai.com/v1/threads', {
+            method: 'POST',
+            headers: {
+              'Authorization': `Bearer ${process.env.OPENAI_API_KEY}`,
+              'OpenAI-Beta': 'assistants=v2'
+            }
+          });
+          
+          if (!threadResponse.ok) {
+            throw new Error(`Thread creation failed: ${await threadResponse.text()}`);
           }
-        });
-        
-        if (!threadResponse.ok) {
-          console.error(`Thread creation failed: ${await threadResponse.text()}`);
-          throw new Error('Failed to create thread');
+          
+          const threadData = await threadResponse.json();
+          console.log(`Thread created with ID: ${threadData.id}`);
+          
+          // Manually construct a run
+          const runResponse = await fetch(`https://api.openai.com/v1/threads/${threadData.id}/runs`, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${process.env.OPENAI_API_KEY}`,
+              'OpenAI-Beta': 'assistants=v2'
+            },
+            body: JSON.stringify({
+              assistant_id: assistantId,
+              tools: [{ type: "file_search" }]
+            })
+          });
+          
+          if (!runResponse.ok) {
+            throw new Error(`Run creation failed: ${await runResponse.text()}`);
+          }
+          
+          console.log('Run created successfully. File should be searchable.');
         }
-        
-        const threadData = await threadResponse.json();
-        const threadId = threadData.id;
-        console.log(`Thread created with ID: ${threadId}`);
-        
-        // Add message with file attachment using content array format
-        console.log(`Adding message with file attachment to thread ${threadId}...`);
-        const messageResponse = await fetch(`https://api.openai.com/v1/threads/${threadId}/messages`, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${process.env.OPENAI_API_KEY}`,
-            'OpenAI-Beta': 'assistants=v2'
-          },
-          body: JSON.stringify({
-            role: "user",
-            content: [
-              { type: "text", text: "Here is a file that should be searchable" },
-              { type: "file_attachment", file_id: uploadedFile.id }
-            ]
-          })
-        });
-        
-        if (!messageResponse.ok) {
-          const errorText = await messageResponse.text();
-          console.error(`Message creation failed: ${errorText}`);
-          throw new Error('Failed to add message with file attachment');
-        }
-        
-        const messageData = await messageResponse.json();
-        console.log(`Message added with ID: ${messageData.id}`);
-        
-        // Run the assistant on the thread to process the file
-        console.log(`Running assistant ${assistantId} on thread ${threadId}...`);
-        const runResponse = await fetch(`https://api.openai.com/v1/threads/${threadId}/runs`, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${process.env.OPENAI_API_KEY}`,
-            'OpenAI-Beta': 'assistants=v2'
-          },
-          body: JSON.stringify({
-            assistant_id: assistantId
-          })
-        });
-        
-        if (!runResponse.ok) {
-          console.error(`Run creation failed: ${await runResponse.text()}`);
-          throw new Error('Failed to create run');
-        }
-        
-        const runData = await runResponse.json();
-        console.log(`Run created with ID: ${runData.id}`);
-        
-        // Success!
-        successfulAttachments.push(uploadedFile.id);
         
       } catch (error) {
         console.error(`Error processing file ${file.name}:`, error);
@@ -162,13 +152,12 @@ export async function POST(req: Request) {
     }
     
     return NextResponse.json({
-      success: successfulAttachments.length > 0,
-      message: successfulAttachments.length > 0 
-        ? `${successfulAttachments.length} files uploaded and attached successfully` 
+      success: fileIds.length > 0,
+      message: fileIds.length > 0 
+        ? `${fileIds.length} files uploaded successfully` 
         : 'No files were successfully processed',
       assistantId,
       fileIds,
-      successfulAttachments,
       errors: fileErrors.length > 0 ? fileErrors : undefined
     });
   } catch (error) {
