@@ -51,7 +51,7 @@ export async function POST(req: Request) {
       );
     }
 
-    // Check if the assistant exists - use standard v1 endpoint with no special headers
+    // Check if the assistant exists - use v1 endpoint but with v2 beta header
     try {
       console.log(`Validating assistant ID: ${assistantId}`);
       if (!assistantId.startsWith('asst_')) {
@@ -66,7 +66,8 @@ export async function POST(req: Request) {
       const assistantResponse = await fetch(`https://api.openai.com/v1/assistants/${assistantId}`, {
         method: 'GET',
         headers: {
-          'Authorization': `Bearer ${process.env.OPENAI_API_KEY}`
+          'Authorization': `Bearer ${process.env.OPENAI_API_KEY}`,
+          'OpenAI-Beta': 'assistants=v2'  // Required header for accessing assistants
         }
       });
 
@@ -83,6 +84,14 @@ export async function POST(req: Request) {
 
       const assistant = await assistantResponse.json();
       console.log(`Assistant found: ${assistant.name || assistantId}`);
+      
+      // Check if retrieval is enabled
+      const hasRetrieval = assistant.tools?.some((tool: any) => tool.type === 'retrieval') || false;
+      if (!hasRetrieval) {
+        console.warn('WARNING: This assistant does not have retrieval enabled. Files will not be searchable!');
+        // Continue anyway but warn the user
+      }
+      
     } catch (error) {
       console.error('Error validating assistant:', error);
       return NextResponse.json(
@@ -126,14 +135,15 @@ export async function POST(req: Request) {
         
         console.log(`File uploaded successfully. ID: ${uploadData.id}`);
         
-        // Attach file to assistant - simple v1 approach with no beta headers
+        // Attach file to assistant - v1 endpoint but with v2 beta header
         console.log(`Attaching file ${uploadData.id} to assistant ${assistantId}...`);
         
         const attachResponse = await fetch(`https://api.openai.com/v1/assistants/${assistantId}/files`, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
-            'Authorization': `Bearer ${process.env.OPENAI_API_KEY}`
+            'Authorization': `Bearer ${process.env.OPENAI_API_KEY}`,
+            'OpenAI-Beta': 'assistants=v2'  // Required header for accessing assistants
           },
           body: JSON.stringify({ file_id: uploadData.id })
         });
@@ -165,7 +175,8 @@ export async function POST(req: Request) {
       const filesResponse = await fetch(`https://api.openai.com/v1/assistants/${assistantId}/files`, {
         method: 'GET',
         headers: {
-          'Authorization': `Bearer ${process.env.OPENAI_API_KEY}`
+          'Authorization': `Bearer ${process.env.OPENAI_API_KEY}`,
+          'OpenAI-Beta': 'assistants=v2'  // Required header for accessing assistants
         }
       });
       
