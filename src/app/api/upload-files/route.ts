@@ -100,7 +100,7 @@ export async function POST(req: Request) {
         const threadId = threadData.id;
         console.log(`Thread created with ID: ${threadId}`);
         
-        // Add message with file attachment
+        // Add message with file attachment using content array format
         console.log(`Adding message with file attachment to thread ${threadId}...`);
         const messageResponse = await fetch(`https://api.openai.com/v1/threads/${threadId}/messages`, {
           method: 'POST',
@@ -111,13 +111,16 @@ export async function POST(req: Request) {
           },
           body: JSON.stringify({
             role: "user",
-            content: "Here is a file that should be searchable",
-            file_ids: [uploadedFile.id]
+            content: [
+              { type: "text", text: "Here is a file that should be searchable" },
+              { type: "file_attachment", file_id: uploadedFile.id }
+            ]
           })
         });
         
         if (!messageResponse.ok) {
-          console.error(`Message creation failed: ${await messageResponse.text()}`);
+          const errorText = await messageResponse.text();
+          console.error(`Message creation failed: ${errorText}`);
           throw new Error('Failed to add message with file attachment');
         }
         
