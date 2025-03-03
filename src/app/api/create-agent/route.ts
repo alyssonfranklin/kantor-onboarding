@@ -6,26 +6,34 @@ const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY,
 });
 
+// Custom type to extend the OpenAI tool types
+type ExtendedToolType = "function" | "code_interpreter" | "file_search" | "retrieval";
+
+// Define the correct tool interface
+interface AssistantTool {
+  type: ExtendedToolType;
+}
+
 export async function POST(req: Request) {
   try {
     const { name } = await req.json();
-
+    
     if (!name) {
       return NextResponse.json(
         { error: 'Company name is required' },
         { status: 400 }
       );
     }
-
+    
     // Create a new assistant with the company name
-    // Enable File Search, disable Code Interpreter, and use gpt-3.5-turbo
+    // Using proper typing with our extended tool types
     const assistant = await openai.beta.assistants.create({
       name: `${name} Agent`,
       instructions: `You are the AI assistant for ${name}. Help users with their queries and provide information about ${name}.`,
       model: "gpt-3.5-turbo",
-      tools: [{ type: "file_search" as any }] // Use "file_search" instead of "retrieval"
+      tools: [{ type: "file_search" }] // Keep file_search for now
     });
-
+    
     return NextResponse.json({ 
       success: true, 
       assistantId: assistant.id,
