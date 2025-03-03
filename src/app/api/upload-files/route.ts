@@ -26,7 +26,7 @@ async function enableRetrievalForAssistant(assistantId: string): Promise<boolean
       headers: {
         'Content-Type': 'application/json',
         'Authorization': `Bearer ${process.env.OPENAI_API_KEY}`,
-        'OpenAI-Beta': 'assistants=v2'
+        'OpenAI-Beta': 'assistants=v1'
       },
       body: JSON.stringify({
         tools: [{ type: "retrieval" }]
@@ -100,7 +100,7 @@ export async function POST(req: Request) {
         method: 'GET',
         headers: {
           'Authorization': `Bearer ${process.env.OPENAI_API_KEY}`,
-          'OpenAI-Beta': 'assistants=v2'
+          'OpenAI-Beta': 'assistants=v1'
         }
       });
 
@@ -164,10 +164,11 @@ export async function POST(req: Request) {
       );
     }
     
-    // Skip the OpenAI SDK entirely and use direct API calls
+    // Upload files and attach them to the assistant
     const fileIds: string[] = [];
     const fileErrors: FileError[] = [];
     const fileDetailsMap: Record<string, FileDetails> = {};
+    const attachmentResults: unknown[] = [];
     
     for (const file of files) {
       try {
@@ -175,7 +176,7 @@ export async function POST(req: Request) {
         
         // Convert file to FormData for direct API upload
         const fileFormData = new FormData();
-        fileFormData.append('purpose', 'assistants');
+        fileFormData.append('purpose', 'assistants');  // This is critical for assistant usage
         fileFormData.append('file', file);
         
         // Upload directly to OpenAI API
@@ -198,6 +199,40 @@ export async function POST(req: Request) {
         
         console.log(`File uploaded successfully. ID: ${uploadData.id}`);
         
+        // Immediately attach the file to the assistant to ensure proper association
+        console.log(`Attaching file ${uploadData.id} to assistant ${assistantId}`);
+        
+        const attachResponse = await fetch(`https://api.openai.com/v1/assistants/${assistantId}/files`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${process.env.OPENAI_API_KEY}`,
+            'OpenAI-Beta': 'assistants=v1'
+          },
+          body: JSON.stringify({ file_id: uploadData.id })
+        });
+        
+        if (!attachResponse.ok) {
+          const errorText = await attachResponse.text();
+          let errorMessage = `Failed to attach file to assistant (Status: ${attachResponse.status})`;
+          
+          try {
+            const errorData = JSON.parse(errorText) as { error?: { message?: string } };
+            if (errorData.error?.message) {
+              errorMessage = errorData.error.message;
+            }
+          } catch {
+            console.error('Raw attachment error:', errorText);
+          }
+          
+          console.error(`Error attaching file ${uploadData.id} to assistant:`, errorMessage);
+          throw new Error(errorMessage);
+        }
+        
+        const attachmentData = await attachResponse.json();
+        attachmentResults.push(attachmentData);
+        console.log(`File ${uploadData.id} successfully attached to assistant ${assistantId}`);
+        
         // Verify the file status
         const fileStatusResponse = await fetch(`https://api.openai.com/v1/files/${uploadData.id}`, {
           method: 'GET',
@@ -213,7 +248,7 @@ export async function POST(req: Request) {
         }
         
       } catch (error) {
-        console.error('Error uploading file:', file.name, error);
+        console.error('Error processing file:', file.name, error);
         const errorMessage = error instanceof Error ? error.message : 'Unknown error';
         fileErrors.push({
           fileName: file.name,
@@ -222,49 +257,15 @@ export async function POST(req: Request) {
       }
     }
     
-    // Now try to associate files with the assistant
-    const attachmentResults: unknown[] = [];
-    
-    for (const fileId of fileIds) {
-      try {
-        console.log(`Attaching file ${fileId} to assistant ${assistantId}`);
-        
-        // Call the API endpoint to attach the file
-        const attachResponse = await fetch(`https://api.openai.com/v1/assistants/${assistantId}/files`, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${process.env.OPENAI_API_KEY}`,
-            'OpenAI-Beta': 'assistants=v2'
-          },
-          body: JSON.stringify({ file_id: fileId })
-        });
-        
-        if (!attachResponse.ok) {
-          const errorData = await attachResponse.json() as { error?: { message?: string } };
-          throw new Error(errorData.error?.message || 'Failed to attach file to assistant');
-        }
-        
-        const attachmentData = await attachResponse.json();
-        attachmentResults.push(attachmentData);
-        console.log(`File ${fileId} successfully attached to assistant ${assistantId}`);
-      } catch (error) {
-        console.error('Error attaching file to assistant:', error);
-        // Continue with other files even if one fails
-      }
-    }
-    
-    // Wait a bit to allow processing to start
-    await new Promise(resolve => setTimeout(resolve, 2000));
-    
-    // Check what files are attached to the assistant
+    // Check what files are attached to the assistant and verify retrieval is working
     let assistantFiles = [];
     try {
+      console.log(`Checking files attached to assistant ${assistantId}...`);
       const filesResponse = await fetch(`https://api.openai.com/v1/assistants/${assistantId}/files`, {
         method: 'GET',
         headers: {
           'Authorization': `Bearer ${process.env.OPENAI_API_KEY}`,
-          'OpenAI-Beta': 'assistants=v2'
+          'OpenAI-Beta': 'assistants=v1'
         }
       });
       
@@ -273,13 +274,36 @@ export async function POST(req: Request) {
         assistantFiles = filesData.data || [];
         console.log(`Assistant has ${assistantFiles.length} files attached`);
         console.log('Attached files:', JSON.stringify(assistantFiles));
+        
+        // Verify the newly uploaded files are in the list
+        const newFileIds = fileIds.filter(id => 
+          !fileErrors.some(error => error.fileName === fileDetailsMap[id]?.filename)
+        );
+        const missingFiles = newFileIds.filter(id => 
+          !assistantFiles.some((file: any) => file.id === id)
+        );
+        
+        if (missingFiles.length > 0) {
+          console.warn(`Warning: Some files were not properly attached to the assistant: ${missingFiles.join(', ')}`);
+        } else if (newFileIds.length > 0) {
+          console.log(`Success: All ${newFileIds.length} new files were properly attached to the assistant`);
+        }
+      } else {
+        console.error(`Failed to get assistant files. Status: ${filesResponse.status}`);
       }
     } catch (error) {
       console.error('Error checking assistant files:', error);
     }
     
+    // Verify the retrieval capability one more time
+    if (hasRetrieval) {
+      console.log(`Assistant ${assistantId} has retrieval capability. Files should be searchable.`);
+    } else {
+      console.error(`Assistant ${assistantId} does NOT have retrieval capability! Files won't be searchable.`);
+    }
+    
     return NextResponse.json({
-      success: fileIds.length > 0,
+      success: fileIds.length > 0 && fileErrors.length === 0,
       message: fileIds.length > 0 
         ? `${fileIds.length} files uploaded successfully` 
         : 'No files were uploaded successfully',
