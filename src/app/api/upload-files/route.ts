@@ -36,7 +36,7 @@ async function enableRetrievalForAssistant(assistantId: string): Promise<boolean
       headers: {
         'Content-Type': 'application/json',
         'Authorization': `Bearer ${process.env.OPENAI_API_KEY}`,
-        'OpenAI-Beta': 'assistants=v1'
+        'OpenAI-Beta': 'assistants=v2'
       }
     });
     
@@ -53,7 +53,7 @@ async function enableRetrievalForAssistant(assistantId: string): Promise<boolean
     // Get current tools if any
     const currentTools = assistantData.tools || [];
     // Check if retrieval is already enabled
-    const hasRetrieval = currentTools.some((tool: any) => tool.type === 'retrieval');
+    const hasRetrieval = currentTools.some((tool: AssistantTool) => tool.type === 'retrieval');
     
     if (hasRetrieval) {
       console.log('Retrieval is already enabled for this assistant');
@@ -70,7 +70,7 @@ async function enableRetrievalForAssistant(assistantId: string): Promise<boolean
       headers: {
         'Content-Type': 'application/json',
         'Authorization': `Bearer ${process.env.OPENAI_API_KEY}`,
-        'OpenAI-Beta': 'assistants=v1'
+        'OpenAI-Beta': 'assistants=v2'
       },
       body: JSON.stringify({
         tools: updatedTools
@@ -151,7 +151,7 @@ export async function POST(req: Request) {
         method: 'GET',
         headers: {
           'Authorization': `Bearer ${process.env.OPENAI_API_KEY}`,
-          'OpenAI-Beta': 'assistants=v1'
+          'OpenAI-Beta': 'assistants=v2'
         }
       });
 
@@ -277,7 +277,7 @@ export async function POST(req: Request) {
           headers: {
             'Content-Type': 'application/json',
             'Authorization': `Bearer ${process.env.OPENAI_API_KEY}`,
-            'OpenAI-Beta': 'assistants=v1'
+            'OpenAI-Beta': 'assistants=v2'
           },
           body: JSON.stringify({ file_id: uploadData.id })
         });
@@ -338,7 +338,7 @@ export async function POST(req: Request) {
         method: 'GET',
         headers: {
           'Authorization': `Bearer ${process.env.OPENAI_API_KEY}`,
-          'OpenAI-Beta': 'assistants=v1'
+          'OpenAI-Beta': 'assistants=v2'
         }
       });
       
