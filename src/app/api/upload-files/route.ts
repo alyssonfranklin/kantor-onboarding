@@ -86,6 +86,16 @@ export async function POST(req: Request) {
     
     try {
       console.log(`Validating assistant ID: ${assistantId}`);
+      // Validate the assistant ID format first
+      if (!assistantId.startsWith('asst_')) {
+        console.error('Invalid assistant ID format');
+        return NextResponse.json(
+          { error: 'Invalid assistant ID format. Assistant IDs should start with "asst_"' },
+          { status: 400 }
+        );
+      }
+
+      console.log(`Making API request to validate assistant: ${assistantId}`);
       const assistantResponse = await fetch(`https://api.openai.com/v1/assistants/${assistantId}`, {
         method: 'GET',
         headers: {
@@ -94,9 +104,38 @@ export async function POST(req: Request) {
         }
       });
 
+      console.log(`Assistant validation response status: ${assistantResponse.status}`);
+
       if (!assistantResponse.ok) {
-        const errorData = await assistantResponse.json() as { error?: { message?: string } };
-        throw new Error(errorData.error?.message || `Assistant not found: ${assistantId}`);
+        const errorText = await assistantResponse.text();
+        let errorMessage = `Assistant validation failed with status ${assistantResponse.status}`;
+        
+        try {
+          // Try to parse as JSON to get detailed error
+          const errorData = JSON.parse(errorText) as { error?: { message?: string, type?: string } };
+          if (errorData.error?.message) {
+            errorMessage = errorData.error.message;
+            console.error('API Error details:', errorData.error);
+          }
+        } catch (e) {
+          // If parsing fails, use the raw text
+          console.error('Raw error response:', errorText);
+        }
+
+        // Handle specific error cases
+        if (assistantResponse.status === 404) {
+          return NextResponse.json(
+            { error: `Assistant not found: ${assistantId}. Please verify your assistant ID is correct.` },
+            { status: 404 }
+          );
+        } else if (assistantResponse.status === 401) {
+          return NextResponse.json(
+            { error: 'API key is invalid or doesn\'t have permission to access this assistant.' },
+            { status: 401 }
+          );
+        }
+        
+        throw new Error(errorMessage);
       }
 
       const assistant = await assistantResponse.json();
@@ -120,7 +159,7 @@ export async function POST(req: Request) {
     } catch (error) {
       console.error('Error validating assistant:', error);
       return NextResponse.json(
-        { error: 'Failed to validate assistant. Please check the assistant ID and try again.' },
+        { error: error instanceof Error ? error.message : 'Failed to validate assistant. Please check the assistant ID and try again.' },
         { status: 400 }
       );
     }

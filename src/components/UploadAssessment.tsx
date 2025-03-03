@@ -140,6 +140,12 @@ const UploadAssessment = () => {
       return;
     }
     
+    // Validate assistant ID format
+    if (!assistantId.startsWith('asst_')) {
+      setError('Invalid assistant ID format. Assistant IDs should start with "asst_"');
+      return;
+    }
+    
     if (files.length === 0) {
       setError('Please select at least one file to upload');
       return;
@@ -159,6 +165,8 @@ const UploadAssessment = () => {
         formData.append('files', file);
       });
       
+      console.log(`Uploading ${files.length} files to assistant: ${assistantId}`);
+      
       const response = await fetch('/api/upload-files', {
         method: 'POST',
         body: formData,
@@ -167,6 +175,7 @@ const UploadAssessment = () => {
       const responseData = await response.json();
       
       if (!response.ok) {
+        console.error('Error response:', responseData);
         throw new Error(responseData.error || 'Failed to upload files');
       }
       
