@@ -1,6 +1,7 @@
 // src/app/api/upload-files/route.ts
 import { NextResponse } from 'next/server';
 
+// Create interfaces at the top of the file
 interface FileError {
   fileName: string;
   error: string;
@@ -15,6 +16,13 @@ interface FileDetails {
 
 interface AssistantTool {
   type: string;
+}
+
+interface AssistantFile {
+  id: string;
+  object: string;
+  created_at: number;
+  assistant_id: string;
 }
 
 // Function to enable retrieval for an assistant
@@ -258,7 +266,7 @@ export async function POST(req: Request) {
     }
     
     // Check what files are attached to the assistant and verify retrieval is working
-    let assistantFiles = [];
+    let assistantFiles: AssistantFile[] = [];
     try {
       console.log(`Checking files attached to assistant ${assistantId}...`);
       const filesResponse = await fetch(`https://api.openai.com/v1/assistants/${assistantId}/files`, {
@@ -279,14 +287,6 @@ export async function POST(req: Request) {
         const newFileIds = fileIds.filter(id => 
           !fileErrors.some(error => error.fileName === fileDetailsMap[id]?.filename)
         );
-        
-        // Create an interface for assistant file
-        interface AssistantFile {
-          id: string;
-          object: string;
-          created_at: number;
-          assistant_id: string;
-        }
         
         const missingFiles = newFileIds.filter(id => 
           !assistantFiles.some((file: AssistantFile) => file.id === id)
