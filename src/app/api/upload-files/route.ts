@@ -100,7 +100,7 @@ export async function POST(req: Request) {
         method: 'GET',
         headers: {
           'Authorization': `Bearer ${process.env.OPENAI_API_KEY}`,
-          'OpenAI-Beta': 'assistants=v1'
+          'OpenAI-Beta': 'assistants=v2'
         }
       });
 
@@ -235,7 +235,7 @@ export async function POST(req: Request) {
           headers: {
             'Content-Type': 'application/json',
             'Authorization': `Bearer ${process.env.OPENAI_API_KEY}`,
-            'OpenAI-Beta': 'assistants=v1'
+            'OpenAI-Beta': 'assistants=v2'
           },
           body: JSON.stringify({ file_id: fileId })
         });
@@ -264,7 +264,7 @@ export async function POST(req: Request) {
         method: 'GET',
         headers: {
           'Authorization': `Bearer ${process.env.OPENAI_API_KEY}`,
-          'OpenAI-Beta': 'assistants=v1'
+          'OpenAI-Beta': 'assistants=v2'
         }
       });
       
