@@ -25,37 +25,73 @@ interface AssistantFile {
   assistant_id: string;
 }
 
-// Function to enable retrieval for an assistant
+// Function to enable retrieval for an assistant with improved debugging
 async function enableRetrievalForAssistant(assistantId: string): Promise<boolean> {
   try {
     console.log(`Attempting to enable retrieval for assistant ${assistantId}`);
+    
+    // Get current assistant configuration first
+    const getResponse = await fetch(`https://api.openai.com/v1/assistants/${assistantId}`, {
+      method: 'GET',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${process.env.OPENAI_API_KEY}`,
+        'OpenAI-Beta': 'assistants=v1'
+      }
+    });
+    
+    if (!getResponse.ok) {
+      console.error(`Could not get current assistant state. Status: ${getResponse.status}`);
+      const errorText = await getResponse.text();
+      console.error('Raw response:', errorText);
+      return false;
+    }
+    
+    const assistantData = await getResponse.json();
+    console.log('Current assistant config:', JSON.stringify(assistantData));
+    
+    // Get current tools if any
+    const currentTools = assistantData.tools || [];
+    // Check if retrieval is already enabled
+    const hasRetrieval = currentTools.some((tool: any) => tool.type === 'retrieval');
+    
+    if (hasRetrieval) {
+      console.log('Retrieval is already enabled for this assistant');
+      return true;
+    }
+    
+    // Add retrieval to tools, preserving existing tools
+    const updatedTools = [...currentTools, { type: "retrieval" }];
+    console.log('Updating assistant with tools:', JSON.stringify(updatedTools));
+    
+    // Update the assistant
     const response = await fetch(`https://api.openai.com/v1/assistants/${assistantId}`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
         'Authorization': `Bearer ${process.env.OPENAI_API_KEY}`,
-        'OpenAI-Beta': 'assistants=v2'
+        'OpenAI-Beta': 'assistants=v1'
       },
       body: JSON.stringify({
-        tools: [{ type: "retrieval" }]
+        tools: updatedTools
       })
     });
     
     if (response.ok) {
-      // Fixed: removed unused data variable
-      await response.json();
-      console.log('Successfully enabled retrieval for assistant');
+      const responseData = await response.json();
+      console.log('Successfully enabled retrieval for assistant', responseData);
       return true;
     } else {
       const errorText = await response.text();
-      let errorInfo = 'Unknown error';
+      console.error(`Failed to enable retrieval. Status: ${response.status}`);
+      console.error('Raw response from OpenAI when enabling retrieval:', errorText);
       try {
         const error = JSON.parse(errorText);
-        errorInfo = error.error?.message || JSON.stringify(error);
+        console.error('Parsed error details:', error);
       } catch {
-        errorInfo = errorText;
+        // Not JSON
+        console.error('Response is not valid JSON');
       }
-      console.error('Failed to enable retrieval:', errorInfo);
       return false;
     }
   } catch (error) {
@@ -115,7 +151,7 @@ export async function POST(req: Request) {
         method: 'GET',
         headers: {
           'Authorization': `Bearer ${process.env.OPENAI_API_KEY}`,
-          'OpenAI-Beta': 'assistants=v2'
+          'OpenAI-Beta': 'assistants=v1'
         }
       });
 
@@ -241,7 +277,7 @@ export async function POST(req: Request) {
           headers: {
             'Content-Type': 'application/json',
             'Authorization': `Bearer ${process.env.OPENAI_API_KEY}`,
-            'OpenAI-Beta': 'assistants=v2'
+            'OpenAI-Beta': 'assistants=v1'
           },
           body: JSON.stringify({ file_id: uploadData.id })
         });
@@ -302,7 +338,7 @@ export async function POST(req: Request) {
         method: 'GET',
         headers: {
           'Authorization': `Bearer ${process.env.OPENAI_API_KEY}`,
-          'OpenAI-Beta': 'assistants=v2'
+          'OpenAI-Beta': 'assistants=v1'
         }
       });
       
