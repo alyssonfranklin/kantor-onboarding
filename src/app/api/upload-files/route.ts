@@ -1,10 +1,5 @@
 // src/app/api/upload-files/route.ts
 import { NextResponse } from 'next/server';
-import { OpenAI } from 'openai';
-
-const openai = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY,
-});
 
 interface FileError {
   fileName: string;
@@ -24,6 +19,11 @@ interface AssistantFile {
   object: string;
   created_at: number;
   assistant_id: string;
+  file_id?: string;
+}
+
+interface AssistantTool {
+  type: string;
 }
 
 export async function POST(req: Request) {
@@ -60,7 +60,7 @@ export async function POST(req: Request) {
       const assistant = await assistantResponse.json();
       console.log(`Assistant found: ${assistant.name} (ID: ${assistant.id})`);
       
-      const hasFileSearch = assistant.tools?.some((tool: any) => tool.type === 'file_search');
+      const hasFileSearch = assistant.tools?.some((tool: AssistantTool) => tool.type === 'file_search');
       console.log(`Has file_search: ${hasFileSearch ? 'YES' : 'NO'}`);
       
       if (!hasFileSearch) {
