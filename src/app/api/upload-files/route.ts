@@ -279,8 +279,17 @@ export async function POST(req: Request) {
         const newFileIds = fileIds.filter(id => 
           !fileErrors.some(error => error.fileName === fileDetailsMap[id]?.filename)
         );
+        
+        // Create an interface for assistant file
+        interface AssistantFile {
+          id: string;
+          object: string;
+          created_at: number;
+          assistant_id: string;
+        }
+        
         const missingFiles = newFileIds.filter(id => 
-          !assistantFiles.some((file: any) => file.id === id)
+          !assistantFiles.some((file: AssistantFile) => file.id === id)
         );
         
         if (missingFiles.length > 0) {
