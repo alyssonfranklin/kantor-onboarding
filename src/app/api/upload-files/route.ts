@@ -6,26 +6,6 @@ interface FileError {
   error: string;
 }
 
-interface AttachmentResponse {
-  id: string;
-  object: string;
-  created_at: number;
-  assistant_id: string;
-  file_id: string;
-}
-
-interface AssistantFile {
-  id: string;
-  object: string;
-  created_at: number;
-  assistant_id: string;
-  file_id?: string;
-}
-
-interface AssistantTool {
-  type: string;
-}
-
 export async function POST(req: Request) {
   try {
     const formData = await req.formData();
@@ -41,78 +21,64 @@ export async function POST(req: Request) {
       );
     }
 
-    // First check if the assistant exists and has file_search enabled
+    // Test direct API access with different versions/headers
     try {
-      console.log(`Verifying assistant ID: ${assistantId}`);
-      // Keep v1 endpoint path but use v2 header
-      const assistantResponse = await fetch(`https://api.openai.com/v1/assistants/${assistantId}`, {
+      console.log("STEP 1: Testing various API configurations to find what works");
+      
+      // Try v1 without beta header
+      const test1 = await fetch(`https://api.openai.com/v1/assistants/${assistantId}`, {
+        method: 'GET',
+        headers: {
+          'Authorization': `Bearer ${process.env.OPENAI_API_KEY}`
+        }
+      });
+      console.log(`Test 1 (v1, no beta header): Status ${test1.status}`);
+      if (test1.ok) {
+        console.log("CONFIGURATION 1 WORKS: v1 endpoint without beta header");
+      }
+      
+      // Try v1 with v1 beta header
+      const test2 = await fetch(`https://api.openai.com/v1/assistants/${assistantId}`, {
+        method: 'GET',
+        headers: {
+          'Authorization': `Bearer ${process.env.OPENAI_API_KEY}`,
+          'OpenAI-Beta': 'assistants=v1'
+        }
+      });
+      console.log(`Test 2 (v1, v1 beta header): Status ${test2.status}`);
+      if (test2.ok) {
+        console.log("CONFIGURATION 2 WORKS: v1 endpoint with v1 beta header");
+      }
+      
+      // Try v1 with v2 beta header
+      const test3 = await fetch(`https://api.openai.com/v1/assistants/${assistantId}`, {
         method: 'GET',
         headers: {
           'Authorization': `Bearer ${process.env.OPENAI_API_KEY}`,
           'OpenAI-Beta': 'assistants=v2'
         }
       });
-      
-      if (!assistantResponse.ok) {
-        const responseText = await assistantResponse.text();
-        console.log(`Assistant verification failed. Status: ${assistantResponse.status}, Response: ${responseText}`);
-        throw new Error(`Failed to get assistant: ${responseText}`);
+      console.log(`Test 3 (v1, v2 beta header): Status ${test3.status}`);
+      if (test3.ok) {
+        console.log("CONFIGURATION 3 WORKS: v1 endpoint with v2 beta header");
       }
-      
-      const assistant = await assistantResponse.json();
-      console.log(`Assistant found: ${assistant.name} (ID: ${assistant.id})`);
-      
-      const hasFileSearch = assistant.tools?.some((tool: AssistantTool) => tool.type === 'file_search');
-      console.log(`Has file_search: ${hasFileSearch ? 'YES' : 'NO'}`);
-      
-      if (!hasFileSearch) {
-        // If file_search is not enabled, we need to enable it
-        console.log("Enabling file_search for the assistant...");
-        const updateResponse = await fetch(`https://api.openai.com/v1/assistants/${assistantId}`, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${process.env.OPENAI_API_KEY}`,
-            'OpenAI-Beta': 'assistants=v2'
-          },
-          body: JSON.stringify({
-            tools: [...(assistant.tools || []), { type: "file_search" }],
-            model: assistant.model,
-            name: assistant.name,
-            instructions: assistant.instructions
-          })
-        });
-        
-        if (!updateResponse.ok) {
-          throw new Error(`Failed to enable file_search: ${await updateResponse.text()}`);
-        }
-        
-        console.log("File search successfully enabled");
-      }
-    } catch (error) {
-      console.error('Error verifying assistant:', error);
-      return NextResponse.json(
-        { error: error instanceof Error ? error.message : 'Failed to verify assistant.' },
-        { status: 400 }
-      );
+    } catch (e) {
+      console.error("Error during API testing:", e);
     }
     
-    // Upload files and attach them to the assistant using fetch directly
+    // Upload files and attach them to the assistant using the approach that works
     const fileIds: string[] = [];
     const fileErrors: FileError[] = [];
-    const attachmentResponses: AttachmentResponse[] = [];
     
     for (const file of files) {
       try {
-        // Upload the file - important: must be purpose='assistants'
+        // Upload the file - this part works with v1 endpoint
         console.log(`Uploading file: ${file.name} (${file.size} bytes, ${file.type})`);
         
-        // Create a form data object for the file upload
         const fileFormData = new FormData();
         fileFormData.append('purpose', 'assistants');
         fileFormData.append('file', file);
         
-        // Upload file directly using fetch
         const uploadResponse = await fetch('https://api.openai.com/v1/files', {
           method: 'POST',
           headers: {
@@ -129,41 +95,76 @@ export async function POST(req: Request) {
         console.log(`File uploaded successfully with ID: ${uploadedFile.id}`);
         fileIds.push(uploadedFile.id);
         
-        // IMPORTANT: Wait a moment for the file to be processed
+        // Wait for file processing
         console.log('Waiting for file to be processed...');
-        await new Promise(resolve => setTimeout(resolve, 2000));
+        await new Promise(resolve => setTimeout(resolve, 3000));
         
-        // Attach the file to the assistant
-        console.log(`Attaching file ${uploadedFile.id} to assistant ${assistantId}...`);
+        // Try attaching file WITHOUT any beta header
+        console.log(`ATTEMPT 1: Attaching file ${uploadedFile.id} to assistant ${assistantId} WITHOUT beta header`);
         
-        const attachUrl = `https://api.openai.com/v1/assistants/${assistantId}/files`;
-        console.log(`POST request to: ${attachUrl}`);
-        
-        const attachResponse = await fetch(attachUrl, {
+        const attachResponse1 = await fetch(`https://api.openai.com/v1/assistants/${assistantId}/files`, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
-            'Authorization': `Bearer ${process.env.OPENAI_API_KEY}`,
-            'OpenAI-Beta': 'assistants=v2'
+            'Authorization': `Bearer ${process.env.OPENAI_API_KEY}`
           },
           body: JSON.stringify({ file_id: uploadedFile.id })
         });
         
-        console.log(`Attachment response status: ${attachResponse.status}`);
-        const attachResponseText = await attachResponse.text();
-        console.log(`Attachment response body: ${attachResponseText}`);
+        console.log(`Attachment response 1 status: ${attachResponse1.status}`);
+        const attachResponseText1 = await attachResponse1.text();
+        console.log(`Attachment response 1 body: ${attachResponseText1}`);
         
-        if (!attachResponse.ok) {
-          throw new Error(`Failed to attach file: ${attachResponseText}`);
+        if (attachResponse1.ok) {
+          console.log("ATTACHMENT METHOD 1 WORKED: No beta header");
+          continue; // Skip to next file since this worked
         }
         
-        try {
-          const attachedFile = JSON.parse(attachResponseText) as AttachmentResponse;
-          console.log(`File successfully attached: ${JSON.stringify(attachedFile)}`);
-          attachmentResponses.push(attachedFile);
-        } catch (e) {
-          console.error('Error parsing attachment response:', e);
+        // If first attempt failed, try with v1 beta header
+        console.log(`ATTEMPT 2: Attaching file ${uploadedFile.id} to assistant ${assistantId} with v1 beta header`);
+        
+        const attachResponse2 = await fetch(`https://api.openai.com/v1/assistants/${assistantId}/files`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${process.env.OPENAI_API_KEY}`,
+            'OpenAI-Beta': 'assistants=v1'
+          },
+          body: JSON.stringify({ file_id: uploadedFile.id })
+        });
+        
+        console.log(`Attachment response 2 status: ${attachResponse2.status}`);
+        const attachResponseText2 = await attachResponse2.text();
+        console.log(`Attachment response 2 body: ${attachResponseText2}`);
+        
+        if (attachResponse2.ok) {
+          console.log("ATTACHMENT METHOD 2 WORKED: v1 beta header");
+          continue; // Skip to next file since this worked
         }
+        
+        // Last attempt with v2.0.0-beta as suggested by https://beta.openai.com/docs/api-reference/assistants
+        console.log(`ATTEMPT 3: Attaching file ${uploadedFile.id} to assistant ${assistantId} with v2.0.0-beta header`);
+        
+        const attachResponse3 = await fetch(`https://api.openai.com/v1/assistants/${assistantId}/files`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${process.env.OPENAI_API_KEY}`,
+            'OpenAI-Beta': 'assistants=v2.0.0-beta'
+          },
+          body: JSON.stringify({ file_id: uploadedFile.id })
+        });
+        
+        console.log(`Attachment response 3 status: ${attachResponse3.status}`);
+        const attachResponseText3 = await attachResponse3.text();
+        console.log(`Attachment response 3 body: ${attachResponseText3}`);
+        
+        if (attachResponse3.ok) {
+          console.log("ATTACHMENT METHOD 3 WORKED: v2.0.0-beta header");
+        } else {
+          throw new Error(`Failed to attach file after 3 attempts`);
+        }
+        
       } catch (error) {
         console.error(`Error processing file ${file.name}:`, error);
         fileErrors.push({
@@ -173,54 +174,13 @@ export async function POST(req: Request) {
       }
     }
     
-    // Check files attached to the assistant
-    console.log(`Checking files currently attached to assistant ${assistantId}...`);
-    const filesResponse = await fetch(`https://api.openai.com/v1/assistants/${assistantId}/files`, {
-      method: 'GET',
-      headers: {
-        'Authorization': `Bearer ${process.env.OPENAI_API_KEY}`,
-        'OpenAI-Beta': 'assistants=v2'
-      }
-    });
-    
-    console.log(`Files check response status: ${filesResponse.status}`);
-    
-    let assistantFiles: AssistantFile[] = [];
-    if (filesResponse.ok) {
-      const filesResponseText = await filesResponse.text();
-      console.log(`Files response body: ${filesResponseText}`);
-      
-      try {
-        const filesData = JSON.parse(filesResponseText);
-        assistantFiles = filesData.data || [];
-        console.log(`Assistant has ${assistantFiles.length} files attached`);
-      } catch (e) {
-        console.error('Error parsing files response:', e);
-      }
-    } else {
-      console.error(`Failed to get assistant files: ${await filesResponse.text()}`);
-    }
-    
-    // Compare uploaded files with attached files
-    const attachedFileIds = assistantFiles.map((file: AssistantFile) => file.file_id || file.id);
-    const missingFiles = fileIds.filter(id => !attachedFileIds.includes(id));
-    
-    if (missingFiles.length > 0) {
-      console.warn(`Some files were not properly attached: ${missingFiles.join(', ')}`);
-    } else {
-      console.log('All files were successfully attached');
-    }
-    
     return NextResponse.json({
       success: fileIds.length > 0 && fileErrors.length === 0,
       message: fileIds.length > 0 
-        ? `${fileIds.length} files uploaded and attached successfully` 
+        ? `${fileIds.length} files uploaded successfully` 
         : 'No files were successfully processed',
       assistantId,
       fileIds,
-      attachmentResponses,
-      assistantFiles,
-      missingFiles: missingFiles.length > 0 ? missingFiles : undefined,
       errors: fileErrors.length > 0 ? fileErrors : undefined
     });
   } catch (error) {
