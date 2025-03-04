@@ -38,6 +38,15 @@ export default function LandingPage() {
                 Go to Form
               </div>
             </Link>
+
+            <Link href="/create-assistant-with-files" 
+              className="bg-gray-700 hover:bg-gray-600 text-white rounded-lg p-8 flex flex-col items-center justify-center transition-colors">
+              <h2 className="text-xl font-semibold mb-4">Upload Assessment Files v2</h2>
+              <p className="text-gray-300">Add files to an assistant&apos;s vector database for file search.</p>
+              <div className="mt-6 bg-[#E62E05] text-white font-bold py-2 px-4 rounded">
+                Go to Form
+              </div>
+            </Link>
           </div>
         </div>
       </main>
