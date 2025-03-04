@@ -7,13 +7,26 @@ import { Button } from '@/components/ui/button';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Loader2, Upload, X, Info } from 'lucide-react';
 
+// Define interface for the assistant response
+interface AssistantData {
+  id: string;
+  name: string;
+  model: string;
+  instructions?: string;
+  tools?: { type: string }[];
+}
+
+interface AssistantTool {
+  type: string;
+}
+
 const CreateAssistantWithFiles = () => {
   const [assistantName, setAssistantName] = useState('');
   const [files, setFiles] = useState<File[]>([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState(false);
-  const [createdAssistant, setCreatedAssistant] = useState<any>(null);
+  const [createdAssistant, setCreatedAssistant] = useState<AssistantData | null>(null);
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const selectedFiles = Array.from(e.target.files || []);
@@ -168,7 +181,7 @@ const CreateAssistantWithFiles = () => {
                     <p><span className="font-semibold">ID:</span> {createdAssistant.id}</p>
                     <p><span className="font-semibold">Name:</span> {createdAssistant.name}</p>
                     <p><span className="font-semibold">Model:</span> {createdAssistant.model}</p>
-                    <p><span className="font-semibold">Tools:</span> {createdAssistant.tools?.map((t: any) => t.type).join(', ')}</p>
+                    <p><span className="font-semibold">Tools:</span> {createdAssistant.tools?.map((t: AssistantTool) => t.type).join(', ')}</p>
                   </div>
                 </div>
               </div>
