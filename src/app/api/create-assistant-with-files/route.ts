@@ -193,11 +193,24 @@ export async function POST(req: Request) {
           // Use SDK to attach file to assistant - more secure than direct API call
           try {
             console.log(`Attaching file ${uploadedFile.id} to assistant ${assistantId}...`);
-            const attachedFile = await openai.beta.assistants.files.create(
-              assistantId,
-              { file_id: uploadedFile.id }
-            );
+            // For OpenAI SDK v4.85.1
+            // The API structure for assistants has changed in v4.x, we need to call the API directly
+            const response = await fetch(`https://api.openai.com/v1/assistants/${assistantId}/files`, {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${process.env.OPENAI_API_KEY}`,
+                'OpenAI-Beta': 'assistants=v1'
+              },
+              body: JSON.stringify({ file_id: uploadedFile.id })
+            });
             
+            if (!response.ok) {
+              const error = await response.json();
+              throw new Error(`API error: ${error.error?.message || response.statusText}`);
+            }
+            
+            const attachedFile = await response.json();
             console.log(`File successfully attached: ${JSON.stringify(attachedFile)}`);
             successfulAttachments.push(uploadedFile.id);
           } catch (attachError) {
@@ -225,10 +238,23 @@ export async function POST(req: Request) {
     try {
       console.log(`Checking files attached to assistant ${assistantId}...`);
       
-      // Use SDK to list files - more secure than direct API call
+      // For OpenAI SDK v4.85.1, we need to call the API directly to list files attached to an assistant
       try {
-        const files = await openai.beta.assistants.files.list(assistantId);
-        assistantFiles = files.data || [];
+        const response = await fetch(`https://api.openai.com/v1/assistants/${assistantId}/files`, {
+          method: 'GET',
+          headers: {
+            'Authorization': `Bearer ${process.env.OPENAI_API_KEY}`,
+            'OpenAI-Beta': 'assistants=v1'
+          }
+        });
+        
+        if (!response.ok) {
+          const error = await response.json();
+          throw new Error(`API error: ${error.error?.message || response.statusText}`);
+        }
+        
+        const filesResponse = await response.json();
+        assistantFiles = filesResponse.data || [];
         console.log(`Assistant has ${assistantFiles.length} files attached`);
       } catch (listError) {
         console.error(`Error listing files: ${listError}`);
