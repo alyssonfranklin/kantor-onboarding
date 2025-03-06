@@ -135,42 +135,20 @@ export async function POST(req: Request) {
         
         console.log('Continuing after file processing wait...');
         
-        // Attach file to the assistant using direct API call (SDK types are incorrect)
+        // Attach file to the assistant using OpenAI SDK
         console.log(`Attaching file ${uploadedFile.id} to assistant ${assistantId}...`);
         
         try {
-          let attachedFile;
+          // Use the SDK's createAssistantFile method
+          const attachedFile = await openai.beta.assistants.files.create(
+            assistantId,
+            { file_id: uploadedFile.id }
+          );
           
-          try {
-            // Use the assistants=v2 beta header as required by the API
-            const attachResponse = await fetch(`https://api.openai.com/v2/assistants/${assistantId}/files`, {
-              method: 'POST',
-              headers: {
-                'Content-Type': 'application/json',
-                'Authorization': `Bearer ${process.env.OPENAI_API_KEY}`,
-                'OpenAI-Beta': 'assistants=v2'
-              },
-              body: JSON.stringify({ 
-                file_id: uploadedFile.id 
-              })
-            });
-            
-            if (!attachResponse.ok) {
-              const errorText = await attachResponse.text();
-              console.log(`Attachment failed: ${errorText}`);
-              throw new Error(`Failed to attach file: ${errorText}`);
-            }
-            
-            attachedFile = await attachResponse.json();
-            
-            console.log(`File successfully attached using direct API: ${JSON.stringify(attachedFile)}`);
-            successfulAttachments.push(uploadedFile.id);
-          } catch (attachError) {
-            console.error(`Error attaching file with direct API:`, attachError);
-            throw new Error(`API failed to attach file: ${attachError instanceof Error ? attachError.message : 'Unknown error'}`);
-          }
+          console.log(`File successfully attached using SDK: ${JSON.stringify(attachedFile)}`);
+          successfulAttachments.push(uploadedFile.id);
         } catch (attachError) {
-          console.error(`Error attaching file: ${attachError}`);
+          console.error(`Error attaching file with SDK:`, attachError);
           throw new Error(`Failed to attach file: ${attachError instanceof Error ? attachError.message : 'Unknown error'}`);
         }
         
@@ -189,23 +167,12 @@ export async function POST(req: Request) {
       console.log(`Checking files attached to assistant ${assistantId}...`);
       
       try {
-        const listResponse = await fetch(`https://api.openai.com/v2/assistants/${assistantId}/files`, {
-          method: 'GET',
-          headers: {
-            'Authorization': `Bearer ${process.env.OPENAI_API_KEY}`,
-            'OpenAI-Beta': 'assistants=v2'
-          }
-        });
-        
-        if (listResponse.ok) {
-          const listData = await listResponse.json();
-          assistantFiles = listData.data || [];
-          console.log(`Assistant has ${assistantFiles.length} files attached (via direct API)`);
-        } else {
-          console.log(`Failed to list files: ${await listResponse.text()}`);
-        }
+        // Use the SDK to list files
+        const listData = await openai.beta.assistants.files.list(assistantId);
+        assistantFiles = listData.data || [];
+        console.log(`Assistant has ${assistantFiles.length} files attached (via SDK)`);
       } catch (listError) {
-        console.error(`Error listing files with direct API: ${listError}`);
+        console.error(`Error listing files with SDK: ${listError}`);
       }
     } catch (err) {
       console.error(`Error in file listing process: ${err}`);
