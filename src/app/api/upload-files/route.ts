@@ -142,15 +142,17 @@ export async function POST(req: Request) {
           let attachedFile;
           
           try {
-            // Using direct API call to attach the file
-            const attachResponse = await fetch(`https://api.openai.com/v1/assistants/${assistantId}/files`, {
+            // Try the correct v2 endpoint from the migration guide
+            const attachResponse = await fetch(`https://api.openai.com/v1/assistant_files`, {
               method: 'POST',
               headers: {
                 'Content-Type': 'application/json',
-                'Authorization': `Bearer ${process.env.OPENAI_API_KEY}`,
-                'OpenAI-Beta': 'assistants=v2'
+                'Authorization': `Bearer ${process.env.OPENAI_API_KEY}`
               },
-              body: JSON.stringify({ file_id: uploadedFile.id })
+              body: JSON.stringify({ 
+                assistant_id: assistantId,
+                file_id: uploadedFile.id 
+              })
             });
             
             if (!attachResponse.ok) {
@@ -187,11 +189,10 @@ export async function POST(req: Request) {
       console.log(`Checking files attached to assistant ${assistantId}...`);
       
       try {
-        const listResponse = await fetch(`https://api.openai.com/v1/assistants/${assistantId}/files`, {
+        const listResponse = await fetch(`https://api.openai.com/v1/assistant_files?assistant_id=${assistantId}`, {
           method: 'GET',
           headers: {
-            'Authorization': `Bearer ${process.env.OPENAI_API_KEY}`,
-            'OpenAI-Beta': 'assistants=v2'
+            'Authorization': `Bearer ${process.env.OPENAI_API_KEY}`
           }
         });
         
