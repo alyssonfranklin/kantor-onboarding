@@ -1,11 +1,15 @@
 // src/components/CreateAssistantWithFiles.tsx
 "use client";
 
-import React, { useState, useCallback, useMemo } from 'react';
+import React, { useState, useCallback, useMemo, useEffect } from 'react';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Loader2, Upload, X, Info } from 'lucide-react';
+import { PromptTokenizer } from '@/lib/tokenizer';
+
+const COST_PER_1K_TOKENS = 0.0037;
+const tokenizer = new PromptTokenizer();
 
 // Define interface for the assistant response
 interface AssistantData {
@@ -40,6 +44,56 @@ const CreateAssistantWithFiles = () => {
   const [error, setError] = useState('');
   const [success, setSuccess] = useState(false);
   const [createdAssistant, setCreatedAssistant] = useState<AssistantData | null>(null);
+  const [tokenCount, setTokenCount] = useState(0);
+  const [fileContents, setFileContents] = useState<string[]>([]);
+
+  // Calculate tokens whenever file contents change
+  useEffect(() => {
+    const calculateTokens = () => {
+      try {
+        const combinedContent = fileContents.join(' ');
+        const count = tokenizer.estimatePromptTokens(combinedContent);
+        setTokenCount(count);
+      } catch (error) {
+        console.error('Error calculating tokens:', error);
+      }
+    };
+
+    calculateTokens();
+  }, [fileContents]);
+
+  // Read file contents when files change
+  useEffect(() => {
+    const readFileContents = async () => {
+      const contents: string[] = [];
+      
+      for (const file of files) {
+        // Only process text-based files for token estimation
+        if (['text/plain', 'text/markdown', 'text/csv', 'application/json'].includes(file.type)) {
+          try {
+            const text = await file.text();
+            contents.push(text);
+          } catch (error) {
+            console.error(`Error reading file ${file.name}:`, error);
+          }
+        } else {
+          // For non-text files, we'll just estimate based on file size
+          // This is a rough approximation
+          const estimatedTokens = Math.ceil(file.size * 0.25 / 1024); // ~0.25 tokens per byte
+          contents.push(`[Non-text file: ~${estimatedTokens} tokens]`);
+        }
+      }
+      
+      setFileContents(contents);
+    };
+
+    if (files.length > 0) {
+      readFileContents();
+    } else {
+      setFileContents([]);
+      setTokenCount(0);
+    }
+  }, [files]);
 
   // Memoize file validation function
   const validateFile = useCallback((file: File): string | null => {
@@ -247,6 +301,23 @@ const CreateAssistantWithFiles = () => {
           </div>
           
           {fileList}
+
+          {files.length > 0 && (
+            <div className="mt-2 p-3 bg-gray-700 rounded-md">
+              <div className="flex items-center justify-between text-white">
+                <div className="flex items-center">
+                  <Info className="h-4 w-4 text-blue-400 mr-2" />
+                  <span>Estimated Tokens:</span>
+                </div>
+                <div>
+                  <span className="font-bold">{tokenCount.toLocaleString()}</span>
+                  <span className="text-sm text-gray-400 ml-2">
+                    (Est. Cost: ${((tokenCount / 1000) * COST_PER_1K_TOKENS).toFixed(4)})
+                  </span>
+                </div>
+              </div>
+            </div>
+          )}
           
           {error && (
             <Alert variant="destructive">
