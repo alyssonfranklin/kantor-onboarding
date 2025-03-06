@@ -117,7 +117,8 @@ export async function POST(req: Request) {
           });
           console.log(`File attachment request body: ${attachRequestBody}`);
           
-          const attachResponse = await fetch(`https://api.openai.com/v1/assistants/${assistantId}/files`, {
+          // In v2, the endpoint for attaching files has changed path
+          const attachResponse = await fetch(`https://api.openai.com/v1/assistants/${assistantId}/file_attachments`, {
             method: 'POST',
             headers: {
               'Content-Type': 'application/json',
@@ -155,7 +156,8 @@ export async function POST(req: Request) {
     let assistantFiles = [];
     try {
       console.log(`Checking files attached to assistant ${assistantId}...`);
-      const listResponse = await fetch(`https://api.openai.com/v1/assistants/${assistantId}/files`, {
+      // In v2, the files endpoint is now file_attachments
+      const listResponse = await fetch(`https://api.openai.com/v1/assistants/${assistantId}/file_attachments`, {
         method: 'GET',
         headers: {
           'Authorization': `Bearer ${process.env.OPENAI_API_KEY}`,
