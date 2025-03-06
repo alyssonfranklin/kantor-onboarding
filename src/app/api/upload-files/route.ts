@@ -142,15 +142,15 @@ export async function POST(req: Request) {
           let attachedFile;
           
           try {
-            // Try the correct v2 endpoint from the migration guide
-            const attachResponse = await fetch(`https://api.openai.com/v1/assistant_files`, {
+            // Add OpenAI versioning header to make sure it knows we're using v1
+            const attachResponse = await fetch(`https://api.openai.com/v1/assistants/${assistantId}/files`, {
               method: 'POST',
               headers: {
                 'Content-Type': 'application/json',
-                'Authorization': `Bearer ${process.env.OPENAI_API_KEY}`
+                'Authorization': `Bearer ${process.env.OPENAI_API_KEY}`,
+                'OpenAI-Version': '2023-05-15'
               },
               body: JSON.stringify({ 
-                assistant_id: assistantId,
                 file_id: uploadedFile.id 
               })
             });
@@ -189,10 +189,11 @@ export async function POST(req: Request) {
       console.log(`Checking files attached to assistant ${assistantId}...`);
       
       try {
-        const listResponse = await fetch(`https://api.openai.com/v1/assistant_files?assistant_id=${assistantId}`, {
+        const listResponse = await fetch(`https://api.openai.com/v1/assistants/${assistantId}/files`, {
           method: 'GET',
           headers: {
-            'Authorization': `Bearer ${process.env.OPENAI_API_KEY}`
+            'Authorization': `Bearer ${process.env.OPENAI_API_KEY}`,
+            'OpenAI-Version': '2023-05-15'
           }
         });
         
