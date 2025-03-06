@@ -115,7 +115,7 @@ export class PromptTokenizer {
         
         // Handle objects with iterative approach instead of recursion
         if (typeof promptObject === 'object' && promptObject !== null) {
-            const stack = Object.entries(promptObject).map(([_, value]) => value);
+            const stack = Object.values(promptObject);
             
             while (stack.length > 0) {
                 const current = stack.pop();
