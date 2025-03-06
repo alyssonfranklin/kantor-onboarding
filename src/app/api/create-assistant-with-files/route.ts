@@ -103,14 +103,27 @@ export async function POST(req: Request) {
             await new Promise(resolve => setTimeout(resolve, 3000));
           }
           
-          // Attach file to the assistant using SDK
+          // Attach file to the assistant using direct API call
           console.log(`Attaching file ${uploadedFile.id} to assistant ${assistantId}...`);
           
-          // Use the SDK's createAssistantFile method
-          const attachedFile = await openai.beta.assistants.files.create(
-            assistantId,
-            { file_id: uploadedFile.id }
-          );
+          const attachResponse = await fetch(`https://api.openai.com/v1/assistants/${assistantId}/files`, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${process.env.OPENAI_API_KEY}`
+            },
+            body: JSON.stringify({ 
+              file_id: uploadedFile.id 
+            })
+          });
+          
+          if (!attachResponse.ok) {
+            const errorText = await attachResponse.text();
+            console.log(`Attachment failed: ${errorText}`);
+            throw new Error(`Failed to attach file: ${errorText}`);
+          }
+          
+          const attachedFile = await attachResponse.json();
           
           console.log(`File successfully attached using SDK: ${JSON.stringify(attachedFile)}`);
           successfulAttachments.push(uploadedFile.id);
@@ -127,18 +140,28 @@ export async function POST(req: Request) {
       }
     }
     
-    // Step 3: Verify files attached to assistant using SDK
+    // Step 3: Verify files attached to assistant
     let assistantFiles = [];
     try {
       console.log(`Checking files attached to assistant ${assistantId}...`);
       
       try {
-        // Use the SDK to list files
-        const listData = await openai.beta.assistants.files.list(assistantId);
-        assistantFiles = listData.data || [];
-        console.log(`Assistant has ${assistantFiles.length} files attached (via SDK)`);
+        const listResponse = await fetch(`https://api.openai.com/v1/assistants/${assistantId}/files`, {
+          method: 'GET',
+          headers: {
+            'Authorization': `Bearer ${process.env.OPENAI_API_KEY}`
+          }
+        });
+        
+        if (listResponse.ok) {
+          const listData = await listResponse.json();
+          assistantFiles = listData.data || [];
+          console.log(`Assistant has ${assistantFiles.length} files attached`);
+        } else {
+          console.log(`Failed to list files: ${await listResponse.text()}`);
+        }
       } catch (listError) {
-        console.error(`Error listing files with SDK: ${listError}`);
+        console.error(`Error listing files: ${listError}`);
       }
     } catch (err) {
       console.error(`Error in file listing process: ${err}`);
