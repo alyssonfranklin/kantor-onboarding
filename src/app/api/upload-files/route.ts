@@ -143,7 +143,8 @@ export async function POST(req: Request) {
             method: 'POST',
             headers: {
               'Content-Type': 'application/json',
-              'Authorization': `Bearer ${process.env.OPENAI_API_KEY}`
+              'Authorization': `Bearer ${process.env.OPENAI_API_KEY}`,
+              'OpenAI-Beta': 'assistants=v2'
             },
             body: JSON.stringify({ 
               file_id: uploadedFile.id 
@@ -183,7 +184,8 @@ export async function POST(req: Request) {
         const listResponse = await fetch(`https://api.openai.com/v1/assistants/${assistantId}/files`, {
           method: 'GET',
           headers: {
-            'Authorization': `Bearer ${process.env.OPENAI_API_KEY}`
+            'Authorization': `Bearer ${process.env.OPENAI_API_KEY}`,
+            'OpenAI-Beta': 'assistants=v2'
           }
         });
         
