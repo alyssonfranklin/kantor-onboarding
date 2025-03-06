@@ -1,6 +1,9 @@
 // src/app/api/create-assistant-with-files/route.ts
 import { NextResponse } from 'next/server';
 import OpenAI from 'openai';
+import fs from 'fs';
+import path from 'path';
+import os from 'os';
 
 interface FileError {
   fileName: string;
@@ -55,21 +58,36 @@ export async function POST(req: Request) {
     
     for (const file of files) {
       try {
-        // Upload the file using OpenAI SDK
+        // Upload the file using OpenAI SDK via filesystem
         console.log(`Uploading file: ${file.name} (${file.size} bytes, ${file.type})`);
         
-        // Convert browser File to a format the SDK can use
+        // First write the file to disk (temporary file)
+        const tempDir = os.tmpdir();
+        const tempFilePath = path.join(tempDir, file.name);
+        
+        // Convert browser File to buffer and write to temp file
         const arrayBuffer = await file.arrayBuffer();
         const buffer = Buffer.from(arrayBuffer);
+        fs.writeFileSync(tempFilePath, buffer);
         
-        // Create a file object using SDK
+        console.log(`Temporary file created at: ${tempFilePath}`);
+        
+        // Now use the file path with OpenAI SDK
         const uploadedFile = await openai.files.create({
-          file: buffer,
+          file: fs.createReadStream(tempFilePath),
           purpose: 'assistants'
         });
         
         console.log(`File uploaded successfully with ID: ${uploadedFile.id}`);
         fileIds.push(uploadedFile.id);
+        
+        // Clean up temporary file
+        try {
+          fs.unlinkSync(tempFilePath);
+          console.log(`Temporary file deleted: ${tempFilePath}`);
+        } catch (cleanupError) {
+          console.error(`Error cleaning up temporary file: ${cleanupError}`);
+        }
         
         // Wait for file processing
         console.log('Waiting for file to be processed...');
