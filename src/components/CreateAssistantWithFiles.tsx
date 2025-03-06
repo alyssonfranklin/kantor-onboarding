@@ -312,10 +312,9 @@ const CreateAssistantWithFiles = () => {
 
   return (
     <div className="max-w-4xl mx-auto">
-      <h1 className="text-2xl font-bold mb-6 text-white">Create Assistant with Files</h1>
       <Card className="bg-gray-800">
         <CardHeader className="space-y-1">
-          <CardTitle className="text-white">Upload Files</CardTitle>
+          <CardTitle className="text-white">Create Assistant with Files</CardTitle>
           <div className="flex flex-wrap gap-4">
             <div className="text-white text-sm font-medium bg-gray-700 px-3 py-1 rounded-md inline-block">
               Total tokens: {tokenCount.toLocaleString()}
