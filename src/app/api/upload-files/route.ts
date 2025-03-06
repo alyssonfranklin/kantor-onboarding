@@ -1,5 +1,6 @@
 // src/app/api/upload-files/route.ts
 import { NextResponse } from 'next/server';
+import OpenAI from 'openai';
 
 interface FileError {
   fileName: string;
@@ -8,6 +9,11 @@ interface FileError {
 
 export async function POST(req: Request) {
   try {
+    // Initialize OpenAI client with SDK
+    const openai = new OpenAI({
+      apiKey: process.env.OPENAI_API_KEY,
+    });
+
     const formData = await req.formData();
     const assistantId = formData.get('assistantId') as string;
     const files = formData.getAll('files') as File[];
@@ -21,57 +27,40 @@ export async function POST(req: Request) {
       );
     }
 
-    // Verify assistant exists
+    // Verify assistant exists using SDK
     try {
       console.log(`Verifying assistant ID: ${assistantId}`);
-      const assistantResponse = await fetch(`https://api.openai.com/v1/assistants/${assistantId}`, {
-        method: 'GET',
-        headers: {
-          'Authorization': `Bearer ${process.env.OPENAI_API_KEY}`,
-          'OpenAI-Beta': 'assistants=v2'
-        }
-      });
       
-      if (!assistantResponse.ok) {
-        throw new Error(`Failed to get assistant: ${await assistantResponse.text()}`);
-      }
-      
-      const assistant = await assistantResponse.json();
-      console.log(`Assistant found: ${assistant.name} (ID: ${assistant.id})`);
-      console.log(`Assistant details: model=${assistant.model}, tools=${JSON.stringify(assistant.tools || [])}`);
-      
-      // Check if file_search is enabled
-      const hasFileSearch = assistant.tools?.some((tool: { type: string }) => tool.type === 'file_search');
-      if (!hasFileSearch) {
-        console.log('Warning: This assistant does not have file_search enabled. Files might not be searchable.');
+      try {
+        // Using OpenAI SDK to retrieve assistant (SDK handles API versioning properly)
+        const assistant = await openai.beta.assistants.retrieve(assistantId);
         
-        // Attempt to enable file_search if not already enabled
-        console.log('Attempting to enable file_search tool...');
-        try {
-          const updateResponse = await fetch(`https://api.openai.com/v1/assistants/${assistantId}`, {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-              'Authorization': `Bearer ${process.env.OPENAI_API_KEY}`,
-              'OpenAI-Beta': 'assistants=v2'
-            },
-            body: JSON.stringify({
+        console.log(`Assistant found: ${assistant.name} (ID: ${assistant.id})`);
+        console.log(`Assistant details: model=${assistant.model}, tools=${JSON.stringify(assistant.tools || [])}`);
+        
+        // Check if file_search is enabled
+        const hasFileSearch = assistant.tools?.some((tool: { type: string }) => tool.type === 'file_search');
+        if (!hasFileSearch) {
+          console.log('Warning: This assistant does not have file_search enabled. Files might not be searchable.');
+          
+          // Attempt to enable file_search if not already enabled
+          console.log('Attempting to enable file_search tool...');
+          try {
+            const updatedAssistant = await openai.beta.assistants.update(assistantId, {
               tools: [
                 ...(assistant.tools || []), 
                 { type: "file_search" }
               ]
-            })
-          });
-          
-          if (updateResponse.ok) {
-            const updatedAssistant = await updateResponse.json();
+            });
+            
             console.log(`Assistant updated with file_search tool: ${JSON.stringify(updatedAssistant.tools)}`);
-          } else {
-            console.log(`Failed to update assistant: ${await updateResponse.text()}`);
+          } catch (updateError) {
+            console.error('Error updating assistant:', updateError);
           }
-        } catch (updateError) {
-          console.error('Error updating assistant:', updateError);
         }
+      } catch (sdkError) {
+        console.error('SDK Error retrieving assistant:', sdkError);
+        throw new Error(`Failed to get assistant: ${sdkError instanceof Error ? sdkError.message : 'Unknown error'}`);
       }
     } catch (error) {
       console.error('Error verifying assistant:', error);
@@ -88,158 +77,65 @@ export async function POST(req: Request) {
     
     for (const file of files) {
       try {
-        // Upload the file
+        // Upload the file using OpenAI SDK
         console.log(`Uploading file: ${file.name} (${file.size} bytes, ${file.type})`);
         
-        const fileFormData = new FormData();
-        fileFormData.append('purpose', 'assistants');
-        fileFormData.append('file', file);
+        // Convert browser File to a format the SDK can use
+        const arrayBuffer = await file.arrayBuffer();
+        const buffer = Buffer.from(arrayBuffer);
         
-        const uploadResponse = await fetch('https://api.openai.com/v1/files', {
-          method: 'POST',
-          headers: {
-            'Authorization': `Bearer ${process.env.OPENAI_API_KEY}`
-          },
-          body: fileFormData
-        });
-        
-        if (!uploadResponse.ok) {
-          throw new Error(`Failed to upload file: ${await uploadResponse.text()}`);
+        // Create a file object using SDK
+        let uploadedFile;
+        try {
+          uploadedFile = await openai.files.create({
+            file: buffer,
+            purpose: 'assistants'
+          });
+          console.log(`File uploaded successfully with ID: ${uploadedFile.id}`);
+          fileIds.push(uploadedFile.id);
+        } catch (uploadError) {
+          console.error('Error uploading file with SDK:', uploadError);
+          throw new Error(`Failed to upload file: ${uploadError instanceof Error ? uploadError.message : 'Unknown error'}`);
         }
         
-        const uploadedFile = await uploadResponse.json();
-        console.log(`File uploaded successfully with ID: ${uploadedFile.id}`);
-        fileIds.push(uploadedFile.id);
-        
-        // Wait for file processing - longer wait to ensure file is fully processed
+        // Wait for file processing
         console.log('Waiting for file to be processed...');
         await new Promise(resolve => setTimeout(resolve, 5000));
         
         // Verify file is processed and ready to be attached
         try {
-          const fileStatusResponse = await fetch(`https://api.openai.com/v1/files/${uploadedFile.id}`, {
-            method: 'GET',
-            headers: {
-              'Authorization': `Bearer ${process.env.OPENAI_API_KEY}`
-            }
-          });
+          const fileStatus = await openai.files.retrieve(uploadedFile.id);
+          console.log(`File status: ${fileStatus.status}, purpose: ${fileStatus.purpose}`);
           
-          if (fileStatusResponse.ok) {
-            const fileStatus = await fileStatusResponse.json();
-            console.log(`File status: ${fileStatus.status}, purpose: ${fileStatus.purpose}`);
-            
-            if (fileStatus.status !== 'processed') {
-              console.log(`Waiting additional time for file to complete processing...`);
-              await new Promise(resolve => setTimeout(resolve, 3000));
-            }
-          } else {
-            console.log(`Unable to check file status: ${await fileStatusResponse.text()}`);
+          if (fileStatus.status !== 'processed') {
+            console.log(`Waiting additional time for file to complete processing...`);
+            await new Promise(resolve => setTimeout(resolve, 3000));
           }
         } catch (statusError) {
-          console.error(`Error checking file status: ${statusError}`);
+          console.error(`Error checking file status with SDK: ${statusError}`);
         }
         
         console.log('Continuing after file processing wait...');
         
-        // Attach file to the assistant
+        // Attach file to the assistant using SDK
         console.log(`Attaching file ${uploadedFile.id} to assistant ${assistantId}...`);
         
         try {
-          // Try multiple possible endpoints to cover all API versions
-          let attachedFile = null;
-          let successfulEndpoint = null;
+          let attachedFile;
           
-          // Approach 1: Try the latest documented approach with v2 header
           try {
-            console.log(`Trying approach 1: Standard /files endpoint with v2 header`);
-            const response1 = await fetch(`https://api.openai.com/v1/assistants/${assistantId}/files`, {
-              method: 'POST',
-              headers: {
-                'Content-Type': 'application/json',
-                'Authorization': `Bearer ${process.env.OPENAI_API_KEY}`,
-                'OpenAI-Beta': 'assistants=v2'
-              },
-              body: JSON.stringify({ file_id: uploadedFile.id })
-            });
+            // Using the SDK to attach the file to the assistant
+            attachedFile = await openai.beta.assistants.files.create(
+              assistantId,
+              { file_id: uploadedFile.id }
+            );
             
-            console.log(`Approach 1 status: ${response1.status}`);
-            if (response1.ok) {
-              attachedFile = await response1.json();
-              successfulEndpoint = "Standard /files with v2 header";
-              console.log(`Approach 1 succeeded`);
-            } else {
-              console.log(`Approach 1 failed: ${await response1.text()}`);
-            }
-          } catch (err) {
-            console.error(`Error in approach 1: ${err}`);
+            console.log(`File successfully attached using SDK: ${JSON.stringify(attachedFile)}`);
+            successfulAttachments.push(uploadedFile.id);
+          } catch (attachError) {
+            console.error(`Error attaching file with SDK:`, attachError);
+            throw new Error(`SDK failed to attach file: ${attachError instanceof Error ? attachError.message : 'Unknown error'}`);
           }
-          
-          // If still not successful, try another approach
-          if (!attachedFile) {
-            console.log(`Trying approach 2: Standard endpoint with different parameters`);
-            try {
-              const response2 = await fetch(`https://api.openai.com/v1/assistants/${assistantId}/files`, {
-                method: 'POST',
-                headers: {
-                  'Content-Type': 'application/json',
-                  'Authorization': `Bearer ${process.env.OPENAI_API_KEY}`,
-                  'OpenAI-Beta': 'assistants=v2'
-                },
-                body: JSON.stringify({ 
-                  file_id: uploadedFile.id,
-                  tool_type: "file_search" 
-                })
-              });
-              
-              console.log(`Approach 2 status: ${response2.status}`);
-              if (response2.ok) {
-                attachedFile = await response2.json();
-                successfulEndpoint = "Standard /files with tool_type parameter";
-                console.log(`Approach 2 succeeded`);
-              } else {
-                console.log(`Approach 2 failed: ${await response2.text()}`);
-              }
-            } catch (err) {
-              console.error(`Error in approach 2: ${err}`);
-            }
-          }
-          
-          // If still not successful, try a third approach
-          if (!attachedFile) {
-            console.log(`Trying approach 3: Direct SDK-style API URL`);
-            try {
-              const response3 = await fetch(`https://api.openai.com/v1/assistant_files`, {
-                method: 'POST',
-                headers: {
-                  'Content-Type': 'application/json',
-                  'Authorization': `Bearer ${process.env.OPENAI_API_KEY}`,
-                  'OpenAI-Beta': 'assistants=v2'
-                },
-                body: JSON.stringify({
-                  assistant_id: assistantId,
-                  file_id: uploadedFile.id
-                })
-              });
-              
-              console.log(`Approach 3 status: ${response3.status}`);
-              if (response3.ok) {
-                attachedFile = await response3.json();
-                successfulEndpoint = "Direct SDK-style API URL";
-                console.log(`Approach 3 succeeded`);
-              } else {
-                console.log(`Approach 3 failed: ${await response3.text()}`);
-              }
-            } catch (err) {
-              console.error(`Error in approach 3: ${err}`);
-            }
-          }
-          
-          if (attachedFile) {
-            console.log(`File successfully attached using ${successfulEndpoint}: ${JSON.stringify(attachedFile)}`);
-          } else {
-            throw new Error(`All attachment attempts failed. See logs for details.`);
-          }
-          successfulAttachments.push(uploadedFile.id);
         } catch (attachError) {
           console.error(`Error attaching file: ${attachError}`);
           throw new Error(`Failed to attach file: ${attachError instanceof Error ? attachError.message : 'Unknown error'}`);
@@ -254,66 +150,20 @@ export async function POST(req: Request) {
       }
     }
     
-    // Get list of files attached to the assistant
+    // Get list of files attached to the assistant using SDK
     let assistantFiles = [];
     try {
       console.log(`Checking files attached to assistant ${assistantId}...`);
       
-      // Try both possible endpoints for listing files
-      let listData = null;
-      
-      // Try the standard /files endpoint first
       try {
-        console.log(`Trying standard /files endpoint for listing`);
-        const listResponse = await fetch(`https://api.openai.com/v1/assistants/${assistantId}/files`, {
-          method: 'GET',
-          headers: {
-            'Authorization': `Bearer ${process.env.OPENAI_API_KEY}`,
-            'OpenAI-Beta': 'assistants=v2'
-          }
-        });
-        
-        if (listResponse.ok) {
-          listData = await listResponse.json();
-          console.log(`Successfully listed files with standard endpoint`);
-        } else {
-          console.log(`Standard endpoint failed: ${await listResponse.text()}`);
-        }
-      } catch (error) {
-        console.error(`Error with standard endpoint: ${error}`);
-      }
-      
-      // If the first approach failed, try the direct API style endpoint
-      if (!listData) {
-        try {
-          console.log(`Trying direct API style endpoint for listing`);
-          const listResponse = await fetch(`https://api.openai.com/v1/assistant_files?assistant_id=${assistantId}`, {
-            method: 'GET',
-            headers: {
-              'Authorization': `Bearer ${process.env.OPENAI_API_KEY}`,
-              'OpenAI-Beta': 'assistants=v2'
-            }
-          });
-          
-          if (listResponse.ok) {
-            listData = await listResponse.json();
-            console.log(`Successfully listed files with direct API style endpoint`);
-          } else {
-            console.log(`Direct API style endpoint failed: ${await listResponse.text()}`);
-          }
-        } catch (error) {
-          console.error(`Error with direct API style endpoint: ${error}`);
-        }
-      }
-      
-      if (listData) {
-        assistantFiles = listData.data || [];
-        console.log(`Assistant has ${assistantFiles.length} files attached`);
-      } else {
-        console.log(`All attempts to list files failed`);
+        const fileList = await openai.beta.assistants.files.list(assistantId);
+        assistantFiles = fileList.data || [];
+        console.log(`Assistant has ${assistantFiles.length} files attached (via SDK)`);
+      } catch (listError) {
+        console.error(`Error listing files with SDK: ${listError}`);
       }
     } catch (err) {
-      console.error(`Error listing files: ${err}`);
+      console.error(`Error in file listing process: ${err}`);
     }
     
     return NextResponse.json({
