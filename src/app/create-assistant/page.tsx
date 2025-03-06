@@ -16,11 +16,8 @@ export default function CreateAssistantPage() {
             </svg>
             Back to Home
           </Link>
-          <h1 className="text-2xl font-bold mt-6 text-white">Create Assistant with Files</h1>
         </div>
-        <div className="container mx-auto">
-          <CreateAssistantWithFiles />
-        </div>
+        <CreateAssistantWithFiles />
       </main>
     </PasswordProtection>
   );

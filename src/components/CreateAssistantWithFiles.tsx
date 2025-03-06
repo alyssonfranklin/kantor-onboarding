@@ -257,24 +257,24 @@ const CreateAssistantWithFiles = () => {
             const estimatedCost = ((estimatedTokens / 1000) * COST_PER_1K_TOKENS).toFixed(4);
             
             return (
-              <li key={index} className="bg-gray-700 p-2 rounded-md">
-                <div className="flex items-center justify-between">
+              <li key={index} className="flex items-center justify-between bg-gray-700 p-2 rounded-md">
+                <div className="flex flex-col">
                   <div className="flex items-center text-white overflow-hidden">
                     <span className="truncate max-w-md">{file.name}</span>
                     <span className="ml-2 text-sm text-gray-400">({formatFileSize(file.size)})</span>
                   </div>
-                  <button
-                    type="button"
-                    onClick={() => removeFile(index)}
-                    className="text-red-400 hover:text-red-300"
-                  >
-                    <X className="h-5 w-5" />
-                  </button>
+                  <div className="mt-1 flex items-center text-sm text-gray-300">
+                    <Info className="h-3.5 w-3.5 text-blue-400 mr-1" />
+                    <span>Est. tokens: {estimatedTokens.toLocaleString()} (${estimatedCost})</span>
+                  </div>
                 </div>
-                <div className="mt-1 flex items-center text-sm text-gray-300">
-                  <Info className="h-3.5 w-3.5 text-blue-400 mr-1" />
-                  <span>Est. tokens: {estimatedTokens.toLocaleString()} (${estimatedCost})</span>
-                </div>
+                <button
+                  type="button"
+                  onClick={() => removeFile(index)}
+                  className="text-red-400 hover:text-red-300"
+                >
+                  <X className="h-5 w-5" />
+                </button>
               </li>
             );
           })}
@@ -311,11 +311,12 @@ const CreateAssistantWithFiles = () => {
   }, [success, createdAssistant]);
 
   return (
-    <Card className="max-w-4xl mx-auto bg-gray-900 border border-gray-700">
-      <CardHeader className="space-y-1">
-        <CardTitle className="text-white">Upload Files</CardTitle>
-        {files.length > 0 && (
-          <div className="flex flex-wrap gap-4 mt-2">
+    <div className="max-w-4xl mx-auto">
+      <h1 className="text-2xl font-bold mb-6 text-white">Create Assistant with Files</h1>
+      <Card className="bg-gray-800">
+        <CardHeader className="space-y-1">
+          <CardTitle className="text-white">Upload Files</CardTitle>
+          <div className="flex flex-wrap gap-4">
             <div className="text-white text-sm font-medium bg-gray-700 px-3 py-1 rounded-md inline-block">
               Total tokens: {tokenCount.toLocaleString()}
             </div>
@@ -323,8 +324,7 @@ const CreateAssistantWithFiles = () => {
               Estimated cost: ${((tokenCount / 1000) * COST_PER_1K_TOKENS).toFixed(4)} USD
             </div>
           </div>
-        )}
-      </CardHeader>
+        </CardHeader>
       <CardContent>
         <form onSubmit={handleSubmit} className="space-y-6">
           <div>
@@ -343,7 +343,7 @@ const CreateAssistantWithFiles = () => {
           
           <div>
             <label className="block font-bold text-white mb-2">
-              Upload Files
+              Upload Files (Max 20MB each)
             </label>
             <div className="border-2 border-dashed border-gray-600 rounded-md p-6 text-center cursor-pointer hover:border-gray-400 transition-colors">
               <input
@@ -357,7 +357,8 @@ const CreateAssistantWithFiles = () => {
               <label htmlFor="fileUpload" className="cursor-pointer flex flex-col items-center">
                 <Upload className="h-10 w-10 text-gray-400 mb-2" />
                 <p className="text-white mb-1">Click to browse files</p>
-                <p className="text-sm text-gray-400">Supported formats: PDF, TXT, MD, CSV, DOCX, XLSX, JSON (max 20MB)</p>
+                <p className="text-sm text-gray-400">or drag and drop files here</p>
+                <p className="text-xs text-gray-500 mt-2">Supported formats: PDF, TXT, MD, CSV, DOCX, XLSX, JSON</p>
               </label>
             </div>
           </div>
@@ -400,12 +401,13 @@ const CreateAssistantWithFiles = () => {
                 Creating Assistant...
               </>
             ) : (
-              'Create Assistant with Files'
+              'Create Assistant'
             )}
           </Button>
         </form>
       </CardContent>
-    </Card>
+      </Card>
+    </div>
   );
 };
 
