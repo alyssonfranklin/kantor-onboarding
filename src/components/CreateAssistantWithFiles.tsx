@@ -205,7 +205,7 @@ const CreateAssistantWithFiles = () => {
   }, [success, createdAssistant]);
 
   return (
-    <Card className="max-w-4xl mx-auto bg-gray-800">
+    <Card className="max-w-4xl mx-auto bg-gray-900 border border-gray-700">
       <CardHeader className="space-y-1">
         <CardTitle className="text-white">Create Assistant with Files</CardTitle>
       </CardHeader>
