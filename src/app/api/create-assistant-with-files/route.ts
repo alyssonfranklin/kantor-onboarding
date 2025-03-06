@@ -111,7 +111,6 @@ export async function POST(req: Request) {
         
         try {
           // Try multiple possible endpoints to cover all API versions
-          let attachResponse = null;
           let attachedFile = null;
           let successfulEndpoint = null;
           
@@ -130,7 +129,6 @@ export async function POST(req: Request) {
             
             console.log(`Approach 1 status: ${response1.status}`);
             if (response1.ok) {
-              attachResponse = response1;
               attachedFile = await response1.json();
               successfulEndpoint = "Standard /files with v2 header";
               console.log(`Approach 1 succeeded`);
@@ -160,7 +158,6 @@ export async function POST(req: Request) {
               
               console.log(`Approach 2 status: ${response2.status}`);
               if (response2.ok) {
-                attachResponse = response2;
                 attachedFile = await response2.json();
                 successfulEndpoint = "Standard /files with tool_type parameter";
                 console.log(`Approach 2 succeeded`);
@@ -191,7 +188,6 @@ export async function POST(req: Request) {
               
               console.log(`Approach 3 status: ${response3.status}`);
               if (response3.ok) {
-                attachResponse = response3;
                 attachedFile = await response3.json();
                 successfulEndpoint = "Direct SDK-style API URL";
                 console.log(`Approach 3 succeeded`);
