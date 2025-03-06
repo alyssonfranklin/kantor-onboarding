@@ -1,7 +1,7 @@
 // src/components/CreateAssistantWithFiles.tsx
 "use client";
 
-import React, { useState } from 'react';
+import React, { useState, useCallback, useMemo } from 'react';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Alert, AlertDescription } from '@/components/ui/alert';
@@ -20,6 +20,19 @@ interface AssistantTool {
   type: string;
 }
 
+// Maximum file size in bytes (20MB)
+const MAX_FILE_SIZE = 20 * 1024 * 1024;
+// Valid file types
+const VALID_FILE_TYPES = [
+  'application/pdf', 
+  'text/plain', 
+  'text/markdown',
+  'text/csv',
+  'application/vnd.openxmlformats-officedocument.wordprocessingml.document', // docx
+  'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet', // xlsx
+  'application/json'
+];
+
 const CreateAssistantWithFiles = () => {
   const [assistantName, setAssistantName] = useState('');
   const [files, setFiles] = useState<File[]>([]);
@@ -28,21 +41,52 @@ const CreateAssistantWithFiles = () => {
   const [success, setSuccess] = useState(false);
   const [createdAssistant, setCreatedAssistant] = useState<AssistantData | null>(null);
 
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  // Memoize file validation function
+  const validateFile = useCallback((file: File): string | null => {
+    // Check file size
+    if (file.size > MAX_FILE_SIZE) {
+      return `File "${file.name}" exceeds maximum size of 20MB`;
+    }
+    
+    // Check file type
+    if (!VALID_FILE_TYPES.includes(file.type)) {
+      return `File "${file.name}" has unsupported format. Supported formats: PDF, text, markdown, CSV, DOCX, XLSX, JSON`;
+    }
+    
+    return null;
+  }, []);
+
+  const handleFileChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
     const selectedFiles = Array.from(e.target.files || []);
+    
+    // Validate files before adding
+    const invalidFiles = selectedFiles
+      .map(file => validateFile(file))
+      .filter(error => error !== null);
+    
+    if (invalidFiles.length > 0) {
+      setError(invalidFiles.join('. '));
+      // Reset file input
+      if (e.target) {
+        e.target.value = '';
+      }
+      return;
+    }
+    
+    setError('');
     setFiles(prevFiles => [...prevFiles, ...selectedFiles]);
     
     // Reset file input
     if (e.target) {
       e.target.value = '';
     }
-  };
+  }, [validateFile]);
 
-  const removeFile = (index: number) => {
+  const removeFile = useCallback((index: number) => {
     setFiles(prevFiles => prevFiles.filter((_, i) => i !== index));
-  };
+  }, []);
 
-  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
+  const handleSubmit = useCallback(async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     
     if (!files.length) {
@@ -59,14 +103,22 @@ const CreateAssistantWithFiles = () => {
       const formData = new FormData();
       formData.append('assistantName', assistantName);
       
+      // Batch files into formData
       files.forEach(file => {
         formData.append('files', file);
       });
       
+      // Use AbortController for timeout handling
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 60000); // 60 second timeout
+      
       const response = await fetch('/api/create-assistant-with-files', {
         method: 'POST',
         body: formData,
+        signal: controller.signal,
       });
+      
+      clearTimeout(timeoutId);
       
       const responseData = await response.json();
       
@@ -88,13 +140,69 @@ const CreateAssistantWithFiles = () => {
     } finally {
       setIsSubmitting(false);
     }
-  };
+  }, [assistantName, files]);
 
-  const formatFileSize = (bytes: number): string => {
+  // Memoize formatter to prevent recreation on each render
+  const formatFileSize = useCallback((bytes: number): string => {
     if (bytes < 1024) return bytes + ' bytes';
     if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + ' KB';
     return (bytes / (1024 * 1024)).toFixed(1) + ' MB';
-  };
+  }, []);
+
+  // Memoize the file list to prevent unnecessary re-renders
+  const fileList = useMemo(() => {
+    if (files.length === 0) return null;
+    
+    return (
+      <div className="mt-4">
+        <h3 className="text-white font-medium mb-2">Selected Files:</h3>
+        <ul className="space-y-2">
+          {files.map((file, index) => (
+            <li key={index} className="flex items-center justify-between bg-gray-700 p-2 rounded-md">
+              <div className="flex items-center text-white overflow-hidden">
+                <span className="truncate max-w-md">{file.name}</span>
+                <span className="ml-2 text-sm text-gray-400">({formatFileSize(file.size)})</span>
+              </div>
+              <button
+                type="button"
+                onClick={() => removeFile(index)}
+                className="text-red-400 hover:text-red-300"
+              >
+                <X className="h-5 w-5" />
+              </button>
+            </li>
+          ))}
+        </ul>
+      </div>
+    );
+  }, [files, formatFileSize, removeFile]);
+
+  // Memoize the assistant details component
+  const assistantDetails = useMemo(() => {
+    if (!success || !createdAssistant) return null;
+    
+    return (
+      <Alert>
+        <div className="space-y-2">
+          <AlertDescription>
+            Assistant successfully created with files attached!
+          </AlertDescription>
+          <div className="bg-gray-700 p-3 rounded-md mt-2">
+            <div className="flex items-center mb-2">
+              <Info className="h-5 w-5 text-blue-400 mr-2" />
+              <h3 className="text-white font-medium">Assistant Details:</h3>
+            </div>
+            <div className="text-white text-sm space-y-1">
+              <p><span className="font-semibold">ID:</span> {createdAssistant.id}</p>
+              <p><span className="font-semibold">Name:</span> {createdAssistant.name}</p>
+              <p><span className="font-semibold">Model:</span> {createdAssistant.model}</p>
+              <p><span className="font-semibold">Tools:</span> {createdAssistant.tools?.map((t: AssistantTool) => t.type).join(', ')}</p>
+            </div>
+          </div>
+        </div>
+      </Alert>
+    );
+  }, [success, createdAssistant]);
 
   return (
     <Card className="max-w-4xl mx-auto bg-gray-800">
@@ -128,37 +236,17 @@ const CreateAssistantWithFiles = () => {
                 onChange={handleFileChange}
                 className="hidden"
                 multiple
+                accept=".pdf,.txt,.md,.csv,.docx,.xlsx,.json,application/pdf,text/plain,text/markdown,text/csv,application/vnd.openxmlformats-officedocument.wordprocessingml.document,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/json"
               />
               <label htmlFor="fileUpload" className="cursor-pointer flex flex-col items-center">
                 <Upload className="h-10 w-10 text-gray-400 mb-2" />
                 <p className="text-white mb-1">Click to browse files</p>
-                <p className="text-sm text-gray-400">or drag and drop files here</p>
+                <p className="text-sm text-gray-400">Supported formats: PDF, TXT, MD, CSV, DOCX, XLSX, JSON (max 20MB)</p>
               </label>
             </div>
           </div>
           
-          {files.length > 0 && (
-            <div className="mt-4">
-              <h3 className="text-white font-medium mb-2">Selected Files:</h3>
-              <ul className="space-y-2">
-                {files.map((file, index) => (
-                  <li key={index} className="flex items-center justify-between bg-gray-700 p-2 rounded-md">
-                    <div className="flex items-center text-white overflow-hidden">
-                      <span className="truncate max-w-md">{file.name}</span>
-                      <span className="ml-2 text-sm text-gray-400">({formatFileSize(file.size)})</span>
-                    </div>
-                    <button
-                      type="button"
-                      onClick={() => removeFile(index)}
-                      className="text-red-400 hover:text-red-300"
-                    >
-                      <X className="h-5 w-5" />
-                    </button>
-                  </li>
-                ))}
-              </ul>
-            </div>
-          )}
+          {fileList}
           
           {error && (
             <Alert variant="destructive">
@@ -166,27 +254,7 @@ const CreateAssistantWithFiles = () => {
             </Alert>
           )}
           
-          {success && createdAssistant && (
-            <Alert>
-              <div className="space-y-2">
-                <AlertDescription>
-                  Assistant successfully created with files attached!
-                </AlertDescription>
-                <div className="bg-gray-700 p-3 rounded-md mt-2">
-                  <div className="flex items-center mb-2">
-                    <Info className="h-5 w-5 text-blue-400 mr-2" />
-                    <h3 className="text-white font-medium">Assistant Details:</h3>
-                  </div>
-                  <div className="text-white text-sm space-y-1">
-                    <p><span className="font-semibold">ID:</span> {createdAssistant.id}</p>
-                    <p><span className="font-semibold">Name:</span> {createdAssistant.name}</p>
-                    <p><span className="font-semibold">Model:</span> {createdAssistant.model}</p>
-                    <p><span className="font-semibold">Tools:</span> {createdAssistant.tools?.map((t: AssistantTool) => t.type).join(', ')}</p>
-                  </div>
-                </div>
-              </div>
-            </Alert>
-          )}
+          {assistantDetails}
           
           <Button 
             type="submit" 
