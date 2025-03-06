@@ -143,7 +143,7 @@ export async function POST(req: Request) {
           
           try {
             // Use the assistants=v2 beta header as required by the API
-            const attachResponse = await fetch(`https://api.openai.com/v1/assistants/${assistantId}/files`, {
+            const attachResponse = await fetch(`https://api.openai.com/v2/assistants/${assistantId}/files`, {
               method: 'POST',
               headers: {
                 'Content-Type': 'application/json',
@@ -189,7 +189,7 @@ export async function POST(req: Request) {
       console.log(`Checking files attached to assistant ${assistantId}...`);
       
       try {
-        const listResponse = await fetch(`https://api.openai.com/v1/assistants/${assistantId}/files`, {
+        const listResponse = await fetch(`https://api.openai.com/v2/assistants/${assistantId}/files`, {
           method: 'GET',
           headers: {
             'Authorization': `Bearer ${process.env.OPENAI_API_KEY}`,
