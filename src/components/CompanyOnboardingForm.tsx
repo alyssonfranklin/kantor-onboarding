@@ -1,7 +1,7 @@
 // src/components/CompanyOnboardingForm.tsx
 "use client";
 
-import React, { useState, useEffect, useMemo, useCallback, useRef } from 'react';
+import React, { useState, useCallback } from 'react';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Alert, AlertDescription } from '@/components/ui/alert';
@@ -9,6 +9,8 @@ import { Loader2 } from 'lucide-react';
 import { PromptTokenizer } from '@/lib/tokenizer';
 
 const COST_PER_1K_TOKENS = 0.0037;
+const tokenizer = new PromptTokenizer();
+const debounceTime = 500; // ms
 
 interface FormData {
   standardPrompt: string;
@@ -29,7 +31,14 @@ interface TokenCounts {
   [key: string]: FieldTokens;
 }
 
-const tokenizer = new PromptTokenizer();
+// Debounce function to limit the frequency of function calls
+function debounce<F extends (...args: unknown[]) => void>(fn: F, delay: number) {
+  let timeoutId: ReturnType<typeof setTimeout> | null = null;
+  return function(this: unknown, ...args: Parameters<F>) {
+    if (timeoutId) clearTimeout(timeoutId);
+    timeoutId = setTimeout(() => fn.apply(this, args), delay);
+  };
+}
 
 const CompanyOnboardingForm = () => {
   const [formData, setFormData] = useState<FormData>({
@@ -49,106 +58,75 @@ const CompanyOnboardingForm = () => {
   const [tokenCount, setTokenCount] = useState(0);
   const [fieldTokens, setFieldTokens] = useState<TokenCounts>({});
   
-  // Create a memoized input component
-  const MemoizedInput = useMemo(() => React.memo(
-    function CustomInput({ 
-      id,
-      value,
-      onChange,
-      placeholder,
-      className,
-      required
-    }: {
-      id: string;
-      value: string;
-      onChange: (value: string) => void;
-      placeholder?: string;
-      className: string;
-      required?: boolean;
-    }) {
-      // Create a ref for the input
-      const inputRef = useRef<HTMLInputElement>(null);
-      
-      // Handle changes and maintain focus
-      const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-        onChange(e.target.value);
-        
-        // Schedule focus retention after state update
-        requestAnimationFrame(() => {
-          if (inputRef.current) {
-            inputRef.current.focus();
-          }
-        });
-      };
-      
-      return (
-        <input
-          ref={inputRef}
-          type="text"
-          id={id}
-          value={value}
-          onChange={handleChange}
-          className={className}
-          placeholder={placeholder}
-          required={required}
-        />
-      );
-    }
-  ), []);
+  // We don't need a timerRef anymore since we're using debounce
 
-  // Use memoized callback to prevent recreating the function on each render
-  const handleChange = useCallback((e: React.ChangeEvent<HTMLTextAreaElement>) => {
+  // Calculate tokens for all fields and update state
+  const calculateAllTokens = useCallback(() => {
+    // Calculate tokens for each field
+    const newFieldTokens: TokenCounts = {};
+    let totalInstructions = '';
+    
+    // Add headers and content to total instructions
+    totalInstructions += `[PROPÓSITO DO AGENTE]\n${formData.standardPrompt}\n\n`;
+    totalInstructions += `[MISSAO DO CLIENTE]\n${formData.mission}\n\n`;
+    totalInstructions += `[VISAO DO CLIENTE]\n${formData.vision}\n\n`;
+    totalInstructions += `[VALORES FUNDAMENTAIS DO CLIENTE]\n${formData.values}\n\n`;
+    totalInstructions += `[HISTORIA DO CLIENTE]\n${formData.history}\n\n`;
+    totalInstructions += `[O QUE VENDE O CLIENTE]\n${formData.products}\n\n`;
+    totalInstructions += `[BRANDING E PROMESSAS DE MARCA]\n${formData.branding}`;
+    
+    // Calculate tokens for each field individually
+    Object.entries(formData).forEach(([field, value]) => {
+      try {
+        const count = tokenizer.estimatePromptTokens(value);
+        const cost = ((count / 1000) * COST_PER_1K_TOKENS).toFixed(4);
+        newFieldTokens[field] = { count, cost };
+      } catch (error) {
+        console.error(`Error calculating tokens for ${field}:`, error);
+        newFieldTokens[field] = { count: 0, cost: '0.0000' };
+      }
+    });
+    
+    // Calculate total tokens
+    try {
+      const totalCount = tokenizer.estimatePromptTokens(totalInstructions);
+      setTokenCount(totalCount);
+    } catch (error) {
+      console.error('Error calculating total tokens:', error);
+      setTokenCount(0);
+    }
+    
+    setFieldTokens(newFieldTokens);
+  }, [formData]);
+  
+  // Debounced token calculation - inline function to satisfy the ESLint rule
+  const debouncedCalculateTokens = useCallback(
+    // Using the debounce utility with an inline function
+    debounce(function debouncedFn() {
+      calculateAllTokens();
+    }, debounceTime),
+    [calculateAllTokens]
+  );
+
+  // Input change handler
+  const handleInputChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
+    setAssistantId(e.target.value);
+  }, []);
+
+  // Textarea change handler
+  const handleTextareaChange = useCallback((e: React.ChangeEvent<HTMLTextAreaElement>) => {
     const { name, value } = e.target;
+    
     setFormData(prev => ({
       ...prev,
       [name]: value
     }));
-  }, []);
+    
+    // Debounce token calculation to avoid performance issues
+    debouncedCalculateTokens();
+  }, [debouncedCalculateTokens]);
 
-  const formatInstructions = useMemo(() => (data: FormData): string => {
-    return `
-[PROPÓSITO DO AGENTE]
-${data.standardPrompt}
-
-[MISSAO DO CLIENTE]
-${data.mission}
-
-[VISAO DO CLIENTE]
-${data.vision}
-
-[VALORES FUNDAMENTAIS DO CLIENTE]
-${data.values}
-
-[HISTORIA DO CLIENTE]
-${data.history}
-
-[O QUE VENDE O CLIENTE]
-${data.products}
-
-[BRANDING E PROMESSAS DE MARCA]
-${data.branding}
-    `.trim();
-  }, []);
-
-  const calculateFieldTokens = (text: string): FieldTokens => {
-    const count = tokenizer.estimatePromptTokens(text);
-    const cost = ((count / 1000) * COST_PER_1K_TOKENS).toFixed(4);
-    return { count, cost };
-  };
-
-  useEffect(() => {
-    const newFieldTokens: TokenCounts = {};
-    Object.entries(formData).forEach(([field, value]) => {
-      newFieldTokens[field] = calculateFieldTokens(value);
-    });
-    setFieldTokens(newFieldTokens);
-
-    const instructions = formatInstructions(formData);
-    const count = tokenizer.estimatePromptTokens(instructions);
-    setTokenCount(count);
-  }, [formData, formatInstructions]);
-
-  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
+  const handleSubmit = useCallback(async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setIsSubmitting(true);
     setError('');
@@ -161,7 +139,15 @@ ${data.branding}
     }
 
     try {
-      const instructions = formatInstructions(formData);
+      // Format instructions
+      let instructions = '';
+      instructions += `[PROPÓSITO DO AGENTE]\n${formData.standardPrompt}\n\n`;
+      instructions += `[MISSAO DO CLIENTE]\n${formData.mission}\n\n`;
+      instructions += `[VISAO DO CLIENTE]\n${formData.vision}\n\n`;
+      instructions += `[VALORES FUNDAMENTAIS DO CLIENTE]\n${formData.values}\n\n`;
+      instructions += `[HISTORIA DO CLIENTE]\n${formData.history}\n\n`;
+      instructions += `[O QUE VENDE O CLIENTE]\n${formData.products}\n\n`;
+      instructions += `[BRANDING E PROMESSAS DE MARCA]\n${formData.branding}`;
       
       const response = await fetch('/api/update-assistant', {
         method: 'POST',
@@ -187,73 +173,24 @@ ${data.branding}
     } finally {
       setIsSubmitting(false);
     }
-  };
+  }, [assistantId, formData]);
 
-  // Create a custom textarea component that maintains focus
-  const MemoizedTextarea = useMemo(() => React.memo(
-    function CustomTextarea({ 
-      id,
-      name,
-      value,
-      onChange,
-      className,
-      required
-    }: {
-      id: string;
-      name: string;
-      value: string;
-      onChange: (e: React.ChangeEvent<HTMLTextAreaElement>) => void;
-      className: string;
-      required?: boolean;
-    }) {
-      // Create a ref for the textarea
-      const textareaRef = useRef<HTMLTextAreaElement>(null);
-      
-      // Save the current cursor position and focus
-      const handleChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
-        // Call the parent onChange handler
-        onChange(e);
-        
-        // Schedule focus retention after state update
-        requestAnimationFrame(() => {
-          if (textareaRef.current) {
-            textareaRef.current.focus();
-          }
-        });
-      };
-      
-      return (
-        <textarea
-          ref={textareaRef}
-          id={id}
-          name={name}
-          value={value}
-          onChange={handleChange}
-          className={className}
-          required={required}
-        />
-      );
-    }
-  ), []);
-
-  // A component for textarea with token statistics
+  // Simple textarea component with label and token stats
   const TextareaWithStats = useCallback(({ 
     id, 
     name, 
     label, 
-    value, 
-    onChange 
+    value
   }: { 
     id: string; 
     name: string; 
     label: string; 
     value: string; 
-    onChange: (e: React.ChangeEvent<HTMLTextAreaElement>) => void; 
   }) => {    
     return (
       <div>
         <div className="flex justify-between items-center mb-2">
-          <label htmlFor={id} className={labelClasses}>
+          <label htmlFor={id} className="block font-bold text-white mb-2">
             {label}
           </label>
           <div className="flex gap-4">
@@ -265,20 +202,17 @@ ${data.branding}
             </span>
           </div>
         </div>
-        <MemoizedTextarea
+        <textarea
           id={id}
           name={name}
           value={value}
-          onChange={onChange}
-          className={textareaClasses}
+          onChange={handleTextareaChange}
+          className="w-full p-2 border rounded-md min-h-32 mb-4 text-black placeholder:text-gray-400 focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
           required
         />
       </div>
     );
-  }, [fieldTokens, MemoizedTextarea]);
-
-  const textareaClasses = "w-full p-2 border rounded-md min-h-32 mb-4 text-black placeholder:text-gray-400 focus:border-blue-500 focus:ring-1 focus:ring-blue-500";
-  const labelClasses = "block font-bold text-white mb-2";
+  }, [handleTextareaChange, fieldTokens]);
 
   return (
     <Card className="max-w-4xl mx-auto bg-gray-800">
@@ -296,13 +230,14 @@ ${data.branding}
       <CardContent>
         <form onSubmit={handleSubmit} className="space-y-6">
           <div>
-            <label htmlFor="assistantId" className={labelClasses}>
+            <label htmlFor="assistantId" className="block font-bold text-white mb-2">
               Assistant ID
             </label>
-            <MemoizedInput
+            <input
               id="assistantId"
+              type="text"
               value={assistantId}
-              onChange={setAssistantId}
+              onChange={handleInputChange}
               className="w-full p-2 border rounded-md mb-4 text-black placeholder:text-gray-400 focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
               required
               placeholder="Enter OpenAI Assistant ID"
@@ -314,7 +249,6 @@ ${data.branding}
             name="standardPrompt"
             label="Standard Prompt"
             value={formData.standardPrompt}
-            onChange={handleChange}
           />
 
           <TextareaWithStats
@@ -322,7 +256,6 @@ ${data.branding}
             name="mission"
             label="Missão do Cliente"
             value={formData.mission}
-            onChange={handleChange}
           />
 
           <TextareaWithStats
@@ -330,7 +263,6 @@ ${data.branding}
             name="vision"
             label="Visão do Cliente"
             value={formData.vision}
-            onChange={handleChange}
           />
 
           <TextareaWithStats
@@ -338,7 +270,6 @@ ${data.branding}
             name="values"
             label="Valores Fundamentais do Cliente"
             value={formData.values}
-            onChange={handleChange}
           />
 
           <TextareaWithStats
@@ -346,7 +277,6 @@ ${data.branding}
             name="history"
             label="História do Cliente"
             value={formData.history}
-            onChange={handleChange}
           />
 
           <TextareaWithStats
@@ -354,7 +284,6 @@ ${data.branding}
             name="products"
             label="O que Vende o Cliente"
             value={formData.products}
-            onChange={handleChange}
           />
 
           <TextareaWithStats
@@ -362,7 +291,6 @@ ${data.branding}
             name="branding"
             label="Branding e Promessas de Marca"
             value={formData.branding}
-            onChange={handleChange}
           />
 
           {error && (
