@@ -142,12 +142,13 @@ export async function POST(req: Request) {
           let attachedFile;
           
           try {
-            // Use the base endpoint with no version header as suggested in error
+            // Use the assistants=v2 beta header as required by the API
             const attachResponse = await fetch(`https://api.openai.com/v1/assistants/${assistantId}/files`, {
               method: 'POST',
               headers: {
                 'Content-Type': 'application/json',
-                'Authorization': `Bearer ${process.env.OPENAI_API_KEY}`
+                'Authorization': `Bearer ${process.env.OPENAI_API_KEY}`,
+                'OpenAI-Beta': 'assistants=v2'
               },
               body: JSON.stringify({ 
                 file_id: uploadedFile.id 
@@ -191,7 +192,8 @@ export async function POST(req: Request) {
         const listResponse = await fetch(`https://api.openai.com/v1/assistants/${assistantId}/files`, {
           method: 'GET',
           headers: {
-            'Authorization': `Bearer ${process.env.OPENAI_API_KEY}`
+            'Authorization': `Bearer ${process.env.OPENAI_API_KEY}`,
+            'OpenAI-Beta': 'assistants=v2'
           }
         });
         
