@@ -47,6 +47,15 @@ const CreateAssistantWithFiles = () => {
   const [tokenCount, setTokenCount] = useState(0);
   const [fileContents, setFileContents] = useState<string[]>([]);
 
+  // Debounce function to limit the frequency of function calls
+  const debounce = useCallback((fn: () => void, delay: number) => {
+    let timeoutId: ReturnType<typeof setTimeout> | null = null;
+    return () => {
+      if (timeoutId) clearTimeout(timeoutId);
+      timeoutId = setTimeout(() => fn(), delay);
+    };
+  }, []);
+
   // Calculate tokens whenever file contents change
   useEffect(() => {
     const calculateTokens = () => {
@@ -64,36 +73,56 @@ const CreateAssistantWithFiles = () => {
 
   // Read file contents when files change
   useEffect(() => {
+    // Use a more sophisticated approach to estimate tokens in files
     const readFileContents = async () => {
       const contents: string[] = [];
+      let totalEstimatedTokens = 0;
       
       for (const file of files) {
-        // Only process text-based files for token estimation
-        if (['text/plain', 'text/markdown', 'text/csv', 'application/json'].includes(file.type)) {
-          try {
+        try {
+          // Process different file types
+          if (['text/plain', 'text/markdown', 'text/csv', 'application/json'].includes(file.type)) {
+            // For text files, read the actual content
             const text = await file.text();
             contents.push(text);
-          } catch (error) {
-            console.error(`Error reading file ${file.name}:`, error);
+            
+            // Calculate tokens for this specific file
+            const fileTokens = tokenizer.estimatePromptTokens(text);
+            totalEstimatedTokens += fileTokens;
+          } else {
+            // For non-text files (PDF, DOCX, etc), use file size as a proxy
+            // PDF/DOCX typically have ~100 tokens per KB after extraction (rough estimate)
+            const estimatedTokens = Math.ceil(file.size / 1024 * 100);
+            
+            contents.push(`[Non-text file: ~${estimatedTokens} tokens]`);
+            totalEstimatedTokens += estimatedTokens;
           }
-        } else {
-          // For non-text files, we'll just estimate based on file size
-          // This is a rough approximation
-          const estimatedTokens = Math.ceil(file.size * 0.25 / 1024); // ~0.25 tokens per byte
-          contents.push(`[Non-text file: ~${estimatedTokens} tokens]`);
+        } catch (error) {
+          console.error(`Error processing file ${file.name}:`, error);
+          // Still account for file in token count estimation
+          const fallbackEstimate = Math.ceil(file.size / 1024 * 75); // Conservative estimate
+          totalEstimatedTokens += fallbackEstimate;
         }
       }
       
       setFileContents(contents);
+      
+      // Update token count directly here for more accuracy with non-text files
+      setTokenCount(totalEstimatedTokens);
     };
 
-    if (files.length > 0) {
-      readFileContents();
-    } else {
-      setFileContents([]);
-      setTokenCount(0);
-    }
-  }, [files]);
+    // Debounce file content reading to avoid performance issues with large files
+    const debouncedProcess = debounce(() => {
+      if (files.length > 0) {
+        readFileContents();
+      } else {
+        setFileContents([]);
+        setTokenCount(0);
+      }
+    }, 300);
+
+    debouncedProcess();
+  }, [files, debounce]);
 
   // Memoize file validation function
   const validateFile = useCallback((file: File): string | null => {
@@ -203,6 +232,17 @@ const CreateAssistantWithFiles = () => {
     return (bytes / (1024 * 1024)).toFixed(1) + ' MB';
   }, []);
 
+  // Calculate individual file token estimates
+  const getFileTokenEstimate = useCallback((file: File): number => {
+    if (['text/plain', 'text/markdown', 'text/csv', 'application/json'].includes(file.type)) {
+      // Text-based files: roughly 1 token per 4 characters
+      return Math.ceil(file.size * 0.25);
+    } else {
+      // For non-text files, use size-based heuristic
+      return Math.ceil(file.size / 1024 * 100); // ~100 tokens per KB
+    }
+  }, []);
+
   // Memoize the file list to prevent unnecessary re-renders
   const fileList = useMemo(() => {
     if (files.length === 0) return null;
@@ -211,25 +251,37 @@ const CreateAssistantWithFiles = () => {
       <div className="mt-4">
         <h3 className="text-white font-medium mb-2">Selected Files:</h3>
         <ul className="space-y-2">
-          {files.map((file, index) => (
-            <li key={index} className="flex items-center justify-between bg-gray-700 p-2 rounded-md">
-              <div className="flex items-center text-white overflow-hidden">
-                <span className="truncate max-w-md">{file.name}</span>
-                <span className="ml-2 text-sm text-gray-400">({formatFileSize(file.size)})</span>
-              </div>
-              <button
-                type="button"
-                onClick={() => removeFile(index)}
-                className="text-red-400 hover:text-red-300"
-              >
-                <X className="h-5 w-5" />
-              </button>
-            </li>
-          ))}
+          {files.map((file, index) => {
+            // Estimate tokens for this file
+            const estimatedTokens = getFileTokenEstimate(file);
+            const estimatedCost = ((estimatedTokens / 1000) * COST_PER_1K_TOKENS).toFixed(4);
+            
+            return (
+              <li key={index} className="bg-gray-700 p-2 rounded-md">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center text-white overflow-hidden">
+                    <span className="truncate max-w-md">{file.name}</span>
+                    <span className="ml-2 text-sm text-gray-400">({formatFileSize(file.size)})</span>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => removeFile(index)}
+                    className="text-red-400 hover:text-red-300"
+                  >
+                    <X className="h-5 w-5" />
+                  </button>
+                </div>
+                <div className="mt-1 flex items-center text-sm text-gray-300">
+                  <Info className="h-3.5 w-3.5 text-blue-400 mr-1" />
+                  <span>Est. tokens: {estimatedTokens.toLocaleString()} (${estimatedCost})</span>
+                </div>
+              </li>
+            );
+          })}
         </ul>
       </div>
     );
-  }, [files, formatFileSize, removeFile]);
+  }, [files, formatFileSize, removeFile, getFileTokenEstimate]);
 
   // Memoize the assistant details component
   const assistantDetails = useMemo(() => {
@@ -261,7 +313,17 @@ const CreateAssistantWithFiles = () => {
   return (
     <Card className="max-w-4xl mx-auto bg-gray-900 border border-gray-700">
       <CardHeader className="space-y-1">
-        <CardTitle className="text-white">Create Assistant with Files</CardTitle>
+        <CardTitle className="text-white">Upload Files</CardTitle>
+        {files.length > 0 && (
+          <div className="flex flex-wrap gap-4 mt-2">
+            <div className="text-white text-sm font-medium bg-gray-700 px-3 py-1 rounded-md inline-block">
+              Total tokens: {tokenCount.toLocaleString()}
+            </div>
+            <div className="text-white text-sm font-medium bg-gray-700 px-3 py-1 rounded-md inline-block">
+              Estimated cost: ${((tokenCount / 1000) * COST_PER_1K_TOKENS).toFixed(4)} USD
+            </div>
+          </div>
+        )}
       </CardHeader>
       <CardContent>
         <form onSubmit={handleSubmit} className="space-y-6">
