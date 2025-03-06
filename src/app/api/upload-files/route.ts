@@ -28,7 +28,7 @@ export async function POST(req: Request) {
         method: 'GET',
         headers: {
           'Authorization': `Bearer ${process.env.OPENAI_API_KEY}`,
-          'OpenAI-Beta': 'assistants=v1'
+          'OpenAI-Beta': 'assistants=v2'
         }
       });
       
@@ -82,29 +82,62 @@ export async function POST(req: Request) {
         console.log(`File uploaded successfully with ID: ${uploadedFile.id}`);
         fileIds.push(uploadedFile.id);
         
-        // Wait for file processing
+        // Wait for file processing - longer wait to ensure file is fully processed
         console.log('Waiting for file to be processed...');
-        await new Promise(resolve => setTimeout(resolve, 3000));
+        await new Promise(resolve => setTimeout(resolve, 5000));
+        
+        // Verify file is processed and ready to be attached
+        try {
+          const fileStatusResponse = await fetch(`https://api.openai.com/v1/files/${uploadedFile.id}`, {
+            method: 'GET',
+            headers: {
+              'Authorization': `Bearer ${process.env.OPENAI_API_KEY}`
+            }
+          });
+          
+          if (fileStatusResponse.ok) {
+            const fileStatus = await fileStatusResponse.json();
+            console.log(`File status: ${fileStatus.status}, purpose: ${fileStatus.purpose}`);
+            
+            if (fileStatus.status !== 'processed') {
+              console.log(`Waiting additional time for file to complete processing...`);
+              await new Promise(resolve => setTimeout(resolve, 3000));
+            }
+          } else {
+            console.log(`Unable to check file status: ${await fileStatusResponse.text()}`);
+          }
+        } catch (statusError) {
+          console.error(`Error checking file status: ${statusError}`);
+        }
+        
+        console.log('Continuing after file processing wait...');
         
         // Attach file to the assistant
         console.log(`Attaching file ${uploadedFile.id} to assistant ${assistantId}...`);
+        console.log(`Using OpenAI API v2 endpoint for attachment...`);
         
         try {
+          // Log full request details for debugging
+          const attachRequestBody = JSON.stringify({
+            file_id: uploadedFile.id
+          });
+          console.log(`File attachment request body: ${attachRequestBody}`);
+          
           const attachResponse = await fetch(`https://api.openai.com/v1/assistants/${assistantId}/files`, {
             method: 'POST',
             headers: {
               'Content-Type': 'application/json',
               'Authorization': `Bearer ${process.env.OPENAI_API_KEY}`,
-              'OpenAI-Beta': 'assistants=v1'
+              'OpenAI-Beta': 'assistants=v2'
             },
-            body: JSON.stringify({
-              file_id: uploadedFile.id
-            })
+            body: attachRequestBody
           });
+          
+          console.log(`Attachment response status: ${attachResponse.status}`);
           
           if (!attachResponse.ok) {
             const errorText = await attachResponse.text();
-            console.log(`Attachment failed: ${errorText}`);
+            console.log(`Attachment failed with status ${attachResponse.status}: ${errorText}`);
             throw new Error(`Failed to attach file: ${errorText}`);
           }
           
@@ -133,7 +166,7 @@ export async function POST(req: Request) {
         method: 'GET',
         headers: {
           'Authorization': `Bearer ${process.env.OPENAI_API_KEY}`,
-          'OpenAI-Beta': 'assistants=v1'
+          'OpenAI-Beta': 'assistants=v2'
         }
       });
       
