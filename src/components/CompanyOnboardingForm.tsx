@@ -1,7 +1,7 @@
 // src/components/CompanyOnboardingForm.tsx
 "use client";
 
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useCallback, useRef } from 'react';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Alert, AlertDescription } from '@/components/ui/alert';
@@ -48,14 +48,62 @@ const CompanyOnboardingForm = () => {
   const [success, setSuccess] = useState(false);
   const [tokenCount, setTokenCount] = useState(0);
   const [fieldTokens, setFieldTokens] = useState<TokenCounts>({});
+  
+  // Create a memoized input component
+  const MemoizedInput = useMemo(() => React.memo(
+    function CustomInput({ 
+      id,
+      value,
+      onChange,
+      placeholder,
+      className,
+      required
+    }: {
+      id: string;
+      value: string;
+      onChange: (value: string) => void;
+      placeholder?: string;
+      className: string;
+      required?: boolean;
+    }) {
+      // Create a ref for the input
+      const inputRef = useRef<HTMLInputElement>(null);
+      
+      // Handle changes and maintain focus
+      const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        onChange(e.target.value);
+        
+        // Schedule focus retention after state update
+        requestAnimationFrame(() => {
+          if (inputRef.current) {
+            inputRef.current.focus();
+          }
+        });
+      };
+      
+      return (
+        <input
+          ref={inputRef}
+          type="text"
+          id={id}
+          value={value}
+          onChange={handleChange}
+          className={className}
+          placeholder={placeholder}
+          required={required}
+        />
+      );
+    }
+  ), []);
 
-  const handleChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
+  // Use memoized callback to prevent recreating the function on each render
+  const handleChange = useCallback((e: React.ChangeEvent<HTMLTextAreaElement>) => {
     const { name, value } = e.target;
     setFormData(prev => ({
       ...prev,
       [name]: value
     }));
-  };
+  }, []);
 
   const formatInstructions = useMemo(() => (data: FormData): string => {
     return `
@@ -141,7 +189,55 @@ ${data.branding}
     }
   };
 
-  const TextareaWithStats = ({ 
+  // Create a custom textarea component that maintains focus
+  const MemoizedTextarea = useMemo(() => React.memo(
+    function CustomTextarea({ 
+      id,
+      name,
+      value,
+      onChange,
+      className,
+      required
+    }: {
+      id: string;
+      name: string;
+      value: string;
+      onChange: (e: React.ChangeEvent<HTMLTextAreaElement>) => void;
+      className: string;
+      required?: boolean;
+    }) {
+      // Create a ref for the textarea
+      const textareaRef = useRef<HTMLTextAreaElement>(null);
+      
+      // Save the current cursor position and focus
+      const handleChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
+        // Call the parent onChange handler
+        onChange(e);
+        
+        // Schedule focus retention after state update
+        requestAnimationFrame(() => {
+          if (textareaRef.current) {
+            textareaRef.current.focus();
+          }
+        });
+      };
+      
+      return (
+        <textarea
+          ref={textareaRef}
+          id={id}
+          name={name}
+          value={value}
+          onChange={handleChange}
+          className={className}
+          required={required}
+        />
+      );
+    }
+  ), []);
+
+  // A component for textarea with token statistics
+  const TextareaWithStats = useCallback(({ 
     id, 
     name, 
     label, 
@@ -153,31 +249,33 @@ ${data.branding}
     label: string; 
     value: string; 
     onChange: (e: React.ChangeEvent<HTMLTextAreaElement>) => void; 
-  }) => (
-    <div>
-      <div className="flex justify-between items-center mb-2">
-        <label htmlFor={id} className={labelClasses}>
-          {label}
-        </label>
-        <div className="flex gap-4">
-          <span className="text-white text-sm bg-gray-700 px-2 py-1 rounded">
-            Tokens: {fieldTokens[name]?.count.toLocaleString() || 0}
-          </span>
-          <span className="text-white text-sm bg-gray-700 px-2 py-1 rounded">
-            Cost: ${fieldTokens[name]?.cost || "0.0000"}
-          </span>
+  }) => {    
+    return (
+      <div>
+        <div className="flex justify-between items-center mb-2">
+          <label htmlFor={id} className={labelClasses}>
+            {label}
+          </label>
+          <div className="flex gap-4">
+            <span className="text-white text-sm bg-gray-700 px-2 py-1 rounded">
+              Tokens: {fieldTokens[name]?.count.toLocaleString() || 0}
+            </span>
+            <span className="text-white text-sm bg-gray-700 px-2 py-1 rounded">
+              Cost: ${fieldTokens[name]?.cost || "0.0000"}
+            </span>
+          </div>
         </div>
+        <MemoizedTextarea
+          id={id}
+          name={name}
+          value={value}
+          onChange={onChange}
+          className={textareaClasses}
+          required
+        />
       </div>
-      <textarea
-        id={id}
-        name={name}
-        value={value}
-        onChange={onChange}
-        className={textareaClasses}
-        required
-      />
-    </div>
-  );
+    );
+  }, [fieldTokens, MemoizedTextarea]);
 
   const textareaClasses = "w-full p-2 border rounded-md min-h-32 mb-4 text-black placeholder:text-gray-400 focus:border-blue-500 focus:ring-1 focus:ring-blue-500";
   const labelClasses = "block font-bold text-white mb-2";
@@ -201,11 +299,10 @@ ${data.branding}
             <label htmlFor="assistantId" className={labelClasses}>
               Assistant ID
             </label>
-            <input
-              type="text"
+            <MemoizedInput
               id="assistantId"
               value={assistantId}
-              onChange={(e) => setAssistantId(e.target.value)}
+              onChange={setAssistantId}
               className="w-full p-2 border rounded-md mb-4 text-black placeholder:text-gray-400 focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
               required
               placeholder="Enter OpenAI Assistant ID"
