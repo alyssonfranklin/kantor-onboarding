@@ -35,13 +35,17 @@ function generateCustomId() {
 // Google Sheets setup using Workload Identity Federation
 const setupGoogleSheets = async () => {
   try {
-    // Use GoogleAuth for Workload Identity Federation
+    // Create auth client - fix the typing issue
     const auth = new GoogleAuth({
       scopes: ['https://www.googleapis.com/auth/spreadsheets']
     });
 
-    const authClient = await auth.getClient();
-    const sheets = google.sheets({ version: 'v4', auth: authClient });
+    // Get the client directly as the auth parameter
+    const sheets = google.sheets({ 
+      version: 'v4', 
+      auth: auth // Use the GoogleAuth instance directly instead of getting the client
+    });
+    
     return sheets;
   } catch (error) {
     console.error('Error setting up Google Sheets:', error);
