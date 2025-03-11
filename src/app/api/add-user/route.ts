@@ -64,8 +64,11 @@ export async function POST(req: Request) {
       );
     }
 
-    // Get spreadsheet ID from environment variables
-    const spreadsheetId = process.env.GOOGLE_SHEET_ID;
+    // IMPORTANT: Hardcoded spreadsheet ID - directly using the correct value
+    // This overrides any environment variable value
+    const spreadsheetId = '1BSbZyBdsV_x4sAhkrayqxHKrZKEof7Fojm6vbi4IKc4';
+    console.log('Using spreadsheet ID:', spreadsheetId); // Debug logging
+    
     if (!spreadsheetId) {
       return NextResponse.json(
         { error: 'Google Sheet ID not configured' },
