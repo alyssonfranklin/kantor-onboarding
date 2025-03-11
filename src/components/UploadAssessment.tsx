@@ -1,4 +1,4 @@
-// src/components/UploadAssessment.tsx GALO
+// src/components/UploadAssessment.tsx
 "use client";
 
 import React, { useState, useEffect } from 'react';
