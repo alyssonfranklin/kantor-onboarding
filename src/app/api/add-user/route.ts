@@ -1,7 +1,7 @@
 // src/app/api/add-user/route.ts
 import { NextResponse } from 'next/server';
+import { GoogleAuth } from 'google-auth-library';
 import { google } from 'googleapis';
-import { JWT } from 'google-auth-library';
 import crypto from 'crypto';
 
 // Function to generate ID in the specified format
@@ -32,19 +32,16 @@ function generateCustomId() {
   return `${part0}-${parts[1]}-${part2}-${part3}-${part4}`;
 }
 
-// Google Sheets setup
+// Google Sheets setup using Workload Identity Federation
 const setupGoogleSheets = async () => {
   try {
-    // Create JWT client using service account credentials
-    const client = new JWT({
-      email: process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL,
-      key: process.env.GOOGLE_PRIVATE_KEY?.replace(/\\n/g, '\n'),
-      scopes: ['https://www.googleapis.com/auth/spreadsheets'],
+    // Use GoogleAuth for Workload Identity Federation
+    const auth = new GoogleAuth({
+      scopes: ['https://www.googleapis.com/auth/spreadsheets']
     });
 
-    await client.authorize();
-    
-    const sheets = google.sheets({ version: 'v4', auth: client });
+    const authClient = await auth.getClient();
+    const sheets = google.sheets({ version: 'v4', auth: authClient });
     return sheets;
   } catch (error) {
     console.error('Error setting up Google Sheets:', error);
