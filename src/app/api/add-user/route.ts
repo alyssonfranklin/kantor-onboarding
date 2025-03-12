@@ -1,7 +1,5 @@
 // src/app/api/add-user/route.ts
 import { NextResponse } from 'next/server';
-import { GoogleAuth } from 'google-auth-library';
-import { google } from 'googleapis';
 import crypto from 'crypto';
 
 // Function to generate ID in the specified format
@@ -32,27 +30,6 @@ function generateCustomId() {
   return `${part0}-${parts[1]}-${part2}-${part3}-${part4}`;
 }
 
-// Google Sheets setup using Workload Identity Federation
-const setupGoogleSheets = async () => {
-  try {
-    // Create auth client - fix the typing issue
-    const auth = new GoogleAuth({
-      scopes: ['https://www.googleapis.com/auth/spreadsheets']
-    });
-
-    // Get the client directly as the auth parameter
-    const sheets = google.sheets({ 
-      version: 'v4', 
-      auth: auth // Use the GoogleAuth instance directly instead of getting the client
-    });
-    
-    return sheets;
-  } catch (error) {
-    console.error('Error setting up Google Sheets:', error);
-    throw error;
-  }
-};
-
 export async function POST(req: Request) {
   try {
     const { email, name, companyName, password, version, assistantId } = await req.json();
@@ -66,7 +43,6 @@ export async function POST(req: Request) {
     }
 
     // IMPORTANT: Hardcoded spreadsheet ID - directly using the correct value
-    // This overrides any environment variable value
     const spreadsheetId = '1BSbZyBdsV_x4sAhkrayqxHKrZKEof7Fojm6vbi4IKc4';
     console.log('Using spreadsheet ID:', spreadsheetId); // Debug logging
     
@@ -77,8 +53,14 @@ export async function POST(req: Request) {
       );
     }
 
-    // Initialize Google Sheets API
-    const sheets = await setupGoogleSheets();
+    // Get the API key from environment variables
+    const apiKey = process.env.GOOGLE_API_KEY;
+    if (!apiKey) {
+      return NextResponse.json(
+        { error: 'Google API key is not configured' },
+        { status: 500 }
+      );
+    }
 
     // Generate IDs
     const companyId = generateCustomId();
@@ -103,15 +85,22 @@ export async function POST(req: Request) {
       [companyId, companyName, assistantId, 'active', timestamp, timestamp]
     ];
 
-    // Append data to the Companies sheet
-    await sheets.spreadsheets.values.append({
-      spreadsheetId,
-      range: 'Companies!A2:F', // Assuming headers are in row 1
-      valueInputOption: 'USER_ENTERED',
-      requestBody: {
-        values: companyValues,
+    // Append data to the Companies sheet using API key
+    const companiesUrl = `https://sheets.googleapis.com/v4/spreadsheets/${spreadsheetId}/values/Companies!A:F:append?valueInputOption=USER_ENTERED&insertDataOption=INSERT_ROWS&key=${apiKey}`;
+    const companyResponse = await fetch(companiesUrl, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
       },
+      body: JSON.stringify({
+        values: companyValues
+      })
     });
+
+    if (!companyResponse.ok) {
+      const errorText = await companyResponse.text();
+      throw new Error(`Failed to add company: ${errorText}`);
+    }
 
     // Debug the user data structure
     console.log('Adding user:', {
@@ -122,7 +111,7 @@ export async function POST(req: Request) {
       system_role: 'orgadmin',
       last_access: timestamp,
       company_role: 'leader',
-      department: 'Management',
+      department: 'INTERNAL',
       password: password
     });
 
@@ -132,15 +121,22 @@ export async function POST(req: Request) {
       [userId, email, name, companyId, 'orgadmin', timestamp, 'leader', 'INTERNAL', password]
     ];
 
-    // Append data to the Users sheet
-    await sheets.spreadsheets.values.append({
-      spreadsheetId,
-      range: 'Users!A2:H',
-      valueInputOption: 'USER_ENTERED',
-      requestBody: {
-        values: userValues,
+    // Append data to the Users sheet using API key
+    const usersUrl = `https://sheets.googleapis.com/v4/spreadsheets/${spreadsheetId}/values/Users!A:I:append?valueInputOption=USER_ENTERED&insertDataOption=INSERT_ROWS&key=${apiKey}`;
+    const userResponse = await fetch(usersUrl, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
       },
+      body: JSON.stringify({
+        values: userValues
+      })
     });
+
+    if (!userResponse.ok) {
+      const errorText = await userResponse.text();
+      throw new Error(`Failed to add user: ${errorText}`);
+    }
 
     return NextResponse.json({ 
       success: true,
