@@ -35,15 +35,6 @@ function generateCustomId() {
 // Google Sheets setup
 const setupGoogleSheets = async () => {
   try {
-    console.log('Service account email:', process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL);
-    console.log('Private key length:', process.env.GOOGLE_PRIVATE_KEY?.length || 0);
-    
-    // Check if the key starts and ends with the correct markers
-    const keyStarts = process.env.GOOGLE_PRIVATE_KEY?.startsWith('-----BEGIN PRIVATE KEY-----');
-    const keyEnds = process.env.GOOGLE_PRIVATE_KEY?.endsWith('-----END PRIVATE KEY-----\n');
-    console.log('Key starts correctly:', keyStarts);
-    console.log('Key ends correctly:', keyEnds);
-    
     // Create JWT client using service account credentials
     const client = new JWT({
       email: process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL,
@@ -51,9 +42,7 @@ const setupGoogleSheets = async () => {
       scopes: ['https://www.googleapis.com/auth/spreadsheets'],
     });
 
-    console.log('Authorizing client...');
     await client.authorize();
-    console.log('Client authorized successfully');
     
     const sheets = google.sheets({ version: 'v4', auth: client });
     return sheets;
@@ -75,10 +64,8 @@ export async function POST(req: Request) {
       );
     }
 
-    // IMPORTANT: Use the OLD spreadsheet ID that was working
-    const spreadsheetId = '1UfwaFLwXeyWfq2wuhL5e1-xa2pqoHX66sjYatAvVOgk';
-    console.log('Using spreadsheet ID:', spreadsheetId); // Debug logging
-    
+    // Get spreadsheet ID from environment variables
+    const spreadsheetId = process.env.GOOGLE_SHEET_ID;
     if (!spreadsheetId) {
       return NextResponse.json(
         { error: 'Google Sheet ID not configured' },
