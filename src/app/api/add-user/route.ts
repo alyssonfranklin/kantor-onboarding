@@ -87,6 +87,8 @@ export async function POST(req: Request) {
 
     // Append data to the Companies sheet using API key
     const companiesUrl = `https://sheets.googleapis.com/v4/spreadsheets/${spreadsheetId}/values/Companies!A:F:append?valueInputOption=USER_ENTERED&insertDataOption=INSERT_ROWS&key=${apiKey}`;
+    console.log(`Sending request to: ${companiesUrl.replace(apiKey, 'API_KEY_HIDDEN')}`);
+    
     const companyResponse = await fetch(companiesUrl, {
       method: 'POST',
       headers: {
@@ -99,7 +101,17 @@ export async function POST(req: Request) {
 
     if (!companyResponse.ok) {
       const errorText = await companyResponse.text();
-      throw new Error(`Failed to add company: ${errorText}`);
+      console.error("Company Response Error Status:", companyResponse.status);
+      console.error("Company Response Error:", errorText);
+      
+      // Try to check if it's JSON or something else
+      try {
+        const errorJson = JSON.parse(errorText);
+        throw new Error(`Failed to add company: ${JSON.stringify(errorJson)}`);
+      } catch {
+        // If not valid JSON, return the first 200 characters to see what's happening
+        throw new Error(`Failed to add company: Non-JSON response: ${errorText.substring(0, 200)}...`);
+      }
     }
 
     // Debug the user data structure
@@ -123,6 +135,8 @@ export async function POST(req: Request) {
 
     // Append data to the Users sheet using API key
     const usersUrl = `https://sheets.googleapis.com/v4/spreadsheets/${spreadsheetId}/values/Users!A:I:append?valueInputOption=USER_ENTERED&insertDataOption=INSERT_ROWS&key=${apiKey}`;
+    console.log(`Sending request to: ${usersUrl.replace(apiKey, 'API_KEY_HIDDEN')}`);
+    
     const userResponse = await fetch(usersUrl, {
       method: 'POST',
       headers: {
@@ -135,7 +149,15 @@ export async function POST(req: Request) {
 
     if (!userResponse.ok) {
       const errorText = await userResponse.text();
-      throw new Error(`Failed to add user: ${errorText}`);
+      console.error("User Response Error Status:", userResponse.status);
+      console.error("User Response Error:", errorText);
+      
+      try {
+        const errorJson = JSON.parse(errorText);
+        throw new Error(`Failed to add user: ${JSON.stringify(errorJson)}`);
+      } catch {
+        throw new Error(`Failed to add user: Non-JSON response: ${errorText.substring(0, 200)}...`);
+      }
     }
 
     return NextResponse.json({ 
