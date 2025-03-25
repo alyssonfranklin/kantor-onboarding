@@ -56,34 +56,50 @@ export default function AdminDashboardPage() {
             // This would be a real API call to list users
             // In this demo, we're using placeholder data
             setData([
-              { id: 'USER_0001', email: 'admin@voxerion.com', name: 'Admin User', role: 'admin', company_id: 'COMP_0001' },
-              { id: 'USER_0002', email: 'user@example.com', name: 'Regular User', role: 'user', company_id: 'COMP_0001' },
+              { id: 'jwf7e218-6789-ghij-klm3-nopqr678901', email: 'admin@voxerion.com', name: 'Admin User', role: 'admin', company_id: 'kha2w657-6789-ghij-klm3-nopqr678901' },
+              { id: 'xmr9h635-6789-ghij-klm3-nopqr678901', email: 'user@example.com', name: 'Regular User', role: 'user', company_id: 'kha2w657-6789-ghij-klm3-nopqr678901' },
             ]);
             break;
             
           case 'companies':
             // This would be a real API call to list companies
             setData([
-              { company_id: 'COMP_0001', name: 'Voxerion Inc.', status: 'active', created_at: '2023-10-15' },
-              { company_id: 'COMP_0002', name: 'Acme Corp', status: 'active', created_at: '2023-10-20' },
+              { company_id: 'kha2w657-6789-ghij-klm3-nopqr678901', name: 'Voxerion Inc.', status: 'active', created_at: '2023-10-15' },
+              { company_id: 'lvf3p945-6789-ghij-klm3-nopqr678901', name: 'Acme Corp', status: 'active', created_at: '2023-10-20' },
             ]);
             break;
             
           case 'departments':
             // This would be a real API call to list departments
             setData([
-              { company_id: 'COMP_0001', department_name: 'Management', department_desc: 'Company leadership', user_head: 'USER_0001' },
-              { company_id: 'COMP_0001', department_name: 'Engineering', department_desc: 'Software development', user_head: 'USER_0002' },
-              { company_id: 'COMP_0002', department_name: 'Sales', department_desc: 'Sales team', user_head: null },
+              { company_id: 'kha2w657-6789-ghij-klm3-nopqr678901', department_name: 'Management', department_desc: 'Company leadership', user_head: 'jwf7e218-6789-ghij-klm3-nopqr678901' },
+              { company_id: 'kha2w657-6789-ghij-klm3-nopqr678901', department_name: 'Engineering', department_desc: 'Software development', user_head: 'xmr9h635-6789-ghij-klm3-nopqr678901' },
+              { company_id: 'lvf3p945-6789-ghij-klm3-nopqr678901', department_name: 'Sales', department_desc: 'Sales team', user_head: null },
             ]);
             break;
             
           case 'employees':
             // This would be a real API call to list employees
             setData([
-              { employee_id: 'EMP_0001', employee_name: 'John Doe', employee_role: 'Developer', company_id: 'COMP_0001' },
-              { employee_id: 'EMP_0002', employee_name: 'Jane Smith', employee_role: 'Manager', company_id: 'COMP_0001' },
-              { employee_id: 'EMP_0003', employee_name: 'Bob Johnson', employee_role: 'Designer', company_id: 'COMP_0002' },
+              { employee_id: 'pqc5n837-6789-ghij-klm3-nopqr678901', employee_name: 'John Doe', employee_role: 'Developer', company_id: 'kha2w657-6789-ghij-klm3-nopqr678901' },
+              { employee_id: 'tgb4m236-6789-ghij-klm3-nopqr678901', employee_name: 'Jane Smith', employee_role: 'Manager', company_id: 'kha2w657-6789-ghij-klm3-nopqr678901' },
+              { employee_id: 'xzr8v479-6789-ghij-klm3-nopqr678901', employee_name: 'Bob Johnson', employee_role: 'Designer', company_id: 'lvf3p945-6789-ghij-klm3-nopqr678901' },
+            ]);
+            break;
+            
+          case 'tokens':
+            // This would be a real API call to list access tokens
+            setData([
+              { 
+                token: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...', 
+                user_id: 'jwf7e218-6789-ghij-klm3-nopqr678901', 
+                expires_at: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString() 
+              },
+              { 
+                token: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...', 
+                user_id: 'xmr9h635-6789-ghij-klm3-nopqr678901', 
+                expires_at: new Date(Date.now() + 14 * 24 * 60 * 60 * 1000).toISOString() 
+              },
             ]);
             break;
         }
@@ -109,6 +125,8 @@ export default function AdminDashboardPage() {
         return ['Company ID', 'Department Name', 'Description', 'Department Head', 'Actions'];
       case 'employees':
         return ['Employee ID', 'Name', 'Role', 'Company ID', 'Actions'];
+      case 'tokens':
+        return ['Token (truncated)', 'User ID', 'Expires At', 'Actions'];
       default:
         return [];
     }
@@ -175,6 +193,32 @@ export default function AdminDashboardPage() {
             </tr>
           );
           
+        case 'tokens':
+          // Truncate the token for display
+          const truncatedToken = item.token.substring(0, 20) + '...';
+          
+          return (
+            <tr key={index} className="border-b border-gray-700">
+              <td className="p-3">
+                <div className="flex items-center">
+                  <span className="font-mono text-xs">{truncatedToken}</span>
+                  <button 
+                    className="ml-2 text-gray-400 hover:text-white text-xs"
+                    onClick={() => navigator.clipboard.writeText(item.token)}
+                    title="Copy full token"
+                  >
+                    Copy
+                  </button>
+                </div>
+              </td>
+              <td className="p-3">{item.user_id}</td>
+              <td className="p-3">{new Date(item.expires_at).toLocaleString()}</td>
+              <td className="p-3">
+                <Button variant="destructive" size="sm">Revoke</Button>
+              </td>
+            </tr>
+          );
+          
         default:
           return null;
       }
@@ -186,7 +230,7 @@ export default function AdminDashboardPage() {
       <h1 className="text-3xl font-bold mb-8">Data Dashboard</h1>
       
       {/* Tab navigation */}
-      <div className="flex border-b border-gray-700 mb-6">
+      <div className="flex border-b border-gray-700 mb-6 overflow-x-auto">
         <button
           className={`px-4 py-2 font-medium ${activeTab === 'users' ? 'text-red-400 border-b-2 border-red-400' : 'text-gray-400 hover:text-gray-200'}`}
           onClick={() => setActiveTab('users')}
@@ -210,6 +254,12 @@ export default function AdminDashboardPage() {
           onClick={() => setActiveTab('employees')}
         >
           Employees
+        </button>
+        <button
+          className={`px-4 py-2 font-medium ${activeTab === 'tokens' ? 'text-red-400 border-b-2 border-red-400' : 'text-gray-400 hover:text-gray-200'}`}
+          onClick={() => setActiveTab('tokens')}
+        >
+          Access Tokens
         </button>
       </div>
       

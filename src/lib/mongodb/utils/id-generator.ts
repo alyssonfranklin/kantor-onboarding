@@ -1,25 +1,43 @@
 import crypto from 'crypto';
 
-// Counter for generating sequential IDs for each prefix
-const counters: Record<string, number> = {};
-
 /**
- * Generates an ID with the specified prefix followed by a sequential number
- * Format: PREFIX_0001, PREFIX_0002, etc.
+ * Generates an ID in the format: mxy9t357-6789-ghij-klm3-nopqr678901
+ * Each part of the ID follows a consistent pattern with a mix of letters and numbers
  */
 export async function generateId(prefix: string): Promise<string> {
-  // Initialize counter for this prefix if it doesn't exist
-  if (!counters[prefix]) {
-    counters[prefix] = 1;
-  } else {
-    counters[prefix]++;
+  // Create a UUID-like structure but with the specified pattern
+  const part1 = generateCustomPart('mxy9t357');
+  const part2 = '6789';
+  const part3 = 'ghij';
+  const part4 = 'klm3';
+  const part5 = 'nopqr678901';
+  
+  // Combine parts with hyphens
+  return `${part1}-${part2}-${part3}-${part4}-${part5}`;
+}
+
+/**
+ * Generates a custom part of an ID with the same character types (letter/number) as the pattern
+ */
+function generateCustomPart(pattern: string): string {
+  let result = '';
+  
+  for (let i = 0; i < pattern.length; i++) {
+    const char = pattern[i];
+    
+    if (/[a-z]/.test(char)) {
+      // Random lowercase letter
+      result += String.fromCharCode(97 + Math.floor(Math.random() * 26));
+    } else if (/[0-9]/.test(char)) {
+      // Random digit
+      result += Math.floor(Math.random() * 10).toString();
+    } else {
+      // Keep any other character as is
+      result += char;
+    }
   }
   
-  // Format the counter with leading zeros
-  const counter = counters[prefix].toString().padStart(4, '0');
-  
-  // Return the formatted ID
-  return `${prefix}_${counter}`;
+  return result;
 }
 
 /**
