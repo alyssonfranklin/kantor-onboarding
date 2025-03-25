@@ -5,6 +5,64 @@ import { withAuth } from '@/lib/middleware/auth';
 import { generateId } from '@/lib/mongodb/utils/id-generator';
 
 /**
+ * Get all employees (with optional filtering)
+ * GET /api/employees
+ */
+export async function GET(req: NextRequest) {
+  return withAuth(req, async (req, user) => {
+    await dbConnect();
+    
+    try {
+      // Access control - regular users can only see employees from their company
+      let query = {};
+      if (user.role !== 'admin') {
+        query = { company_id: user.company_id };
+      }
+      
+      // Get search params
+      const url = new URL(req.url);
+      const companyId = url.searchParams.get('companyId');
+      const role = url.searchParams.get('role');
+      const limit = parseInt(url.searchParams.get('limit') || '100', 10);
+      const skip = parseInt(url.searchParams.get('skip') || '0', 10);
+      
+      // Add filters if provided
+      if (companyId && (user.role === 'admin' || companyId === user.company_id)) {
+        query = { ...query, company_id: companyId };
+      }
+      
+      if (role) {
+        query = { ...query, employee_role: role };
+      }
+      
+      // Query database with pagination
+      const employees = await Employee.find(query)
+        .limit(limit)
+        .skip(skip)
+        .sort({ createdAt: -1 });
+        
+      const total = await Employee.countDocuments(query);
+      
+      return NextResponse.json({
+        success: true,
+        data: employees,
+        meta: {
+          total,
+          limit,
+          skip
+        }
+      });
+    } catch (error) {
+      console.error('Error getting employees:', error);
+      return NextResponse.json(
+        { success: false, message: 'Failed to get employees' },
+        { status: 500 }
+      );
+    }
+  });
+}
+
+/**
  * Create a new employee
  * POST /api/employees
  */
@@ -38,7 +96,7 @@ export async function POST(req: NextRequest) {
       const employee = await Employee.create({
         employee_id,
         employee_name: body.employee_name,
-        employee_role: body.employee_role || null,
+        employee_role: body.employee_role || 'employee',
         employee_leader: body.employee_leader || null,
         company_id: body.company_id
       });

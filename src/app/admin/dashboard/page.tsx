@@ -4,6 +4,9 @@ import { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
+import EditModal from './components/EditModal';
+import DeleteConfirmation from './components/DeleteConfirmation';
+import { updateEntity, deleteEntity } from './utils/api';
 
 export default function AdminDashboardPage() {
   const [activeTab, setActiveTab] = useState('users');
@@ -11,6 +14,11 @@ export default function AdminDashboardPage() {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
   const [token, setToken] = useState('');
+  
+  // Edit and delete modals state
+  const [editModalOpen, setEditModalOpen] = useState(false);
+  const [deleteModalOpen, setDeleteModalOpen] = useState(false);
+  const [selectedItem, setSelectedItem] = useState<any>(null);
 
   // Simulate login to get a JWT token
   useEffect(() => {
@@ -50,61 +58,88 @@ export default function AdminDashboardPage() {
       
       try {
         let url = '';
+        let response;
+        let result;
         
         switch (activeTab) {
           case 'users':
-            // This would be a real API call to list users
-            // In this demo, we're using placeholder data
-            setData([
-              { id: 'jwf7e218-6789-ghij-klm3-nopqr678901', email: 'admin@voxerion.com', name: 'Admin User', role: 'admin', company_id: 'kha2w657-6789-ghij-klm3-nopqr678901' },
-              { id: 'xmr9h635-6789-ghij-klm3-nopqr678901', email: 'user@example.com', name: 'Regular User', role: 'user', company_id: 'kha2w657-6789-ghij-klm3-nopqr678901' },
-            ]);
+            url = '/api/users';
+            response = await fetch(url, {
+              headers: {
+                'Authorization': `Bearer ${token}`
+              }
+            });
+            result = await response.json();
+            
+            if (response.ok && result.success) {
+              setData(result.data || []);
+            } else {
+              throw new Error(result.message || 'Failed to fetch users');
+            }
             break;
             
           case 'companies':
-            // This would be a real API call to list companies
-            setData([
-              { company_id: 'kha2w657-6789-ghij-klm3-nopqr678901', name: 'Voxerion Inc.', status: 'active', created_at: '2023-10-15' },
-              { company_id: 'lvf3p945-6789-ghij-klm3-nopqr678901', name: 'Acme Corp', status: 'active', created_at: '2023-10-20' },
-            ]);
+            url = '/api/companies';
+            response = await fetch(url, {
+              headers: {
+                'Authorization': `Bearer ${token}`
+              }
+            });
+            result = await response.json();
+            
+            if (response.ok && result.success) {
+              setData(result.data || []);
+            } else {
+              throw new Error(result.message || 'Failed to fetch companies');
+            }
             break;
             
           case 'departments':
-            // This would be a real API call to list departments
-            setData([
-              { company_id: 'kha2w657-6789-ghij-klm3-nopqr678901', department_name: 'Management', department_desc: 'Company leadership', user_head: 'jwf7e218-6789-ghij-klm3-nopqr678901' },
-              { company_id: 'kha2w657-6789-ghij-klm3-nopqr678901', department_name: 'Engineering', department_desc: 'Software development', user_head: 'xmr9h635-6789-ghij-klm3-nopqr678901' },
-              { company_id: 'lvf3p945-6789-ghij-klm3-nopqr678901', department_name: 'Sales', department_desc: 'Sales team', user_head: null },
-            ]);
+            url = '/api/departments';
+            response = await fetch(url, {
+              headers: {
+                'Authorization': `Bearer ${token}`
+              }
+            });
+            result = await response.json();
+            
+            if (response.ok && result.success) {
+              setData(result.data || []);
+            } else {
+              throw new Error(result.message || 'Failed to fetch departments');
+            }
             break;
             
           case 'employees':
-            // This would be a real API call to list employees
-            setData([
-              { employee_id: 'pqc5n837-6789-ghij-klm3-nopqr678901', employee_name: 'John Doe', employee_role: 'Developer', company_id: 'kha2w657-6789-ghij-klm3-nopqr678901' },
-              { employee_id: 'tgb4m236-6789-ghij-klm3-nopqr678901', employee_name: 'Jane Smith', employee_role: 'Manager', company_id: 'kha2w657-6789-ghij-klm3-nopqr678901' },
-              { employee_id: 'xzr8v479-6789-ghij-klm3-nopqr678901', employee_name: 'Bob Johnson', employee_role: 'Designer', company_id: 'lvf3p945-6789-ghij-klm3-nopqr678901' },
-            ]);
+            url = '/api/employees';
+            response = await fetch(url, {
+              headers: {
+                'Authorization': `Bearer ${token}`
+              }
+            });
+            result = await response.json();
+            
+            if (response.ok && result.success) {
+              setData(result.data || []);
+            } else {
+              throw new Error(result.message || 'Failed to fetch employees');
+            }
             break;
             
           case 'tokens':
-            // This would be a real API call to list access tokens
+            // For tokens, we don't have a direct API yet
+            // Future implementation would fetch from a tokens endpoint
             setData([
               { 
                 token: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...', 
-                user_id: 'jwf7e218-6789-ghij-klm3-nopqr678901', 
+                user_id: token ? 'Current token' : 'Unknown', 
                 expires_at: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString() 
-              },
-              { 
-                token: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...', 
-                user_id: 'xmr9h635-6789-ghij-klm3-nopqr678901', 
-                expires_at: new Date(Date.now() + 14 * 24 * 60 * 60 * 1000).toISOString() 
-              },
+              }
             ]);
             break;
         }
       } catch (err) {
-        setError('Failed to fetch data');
+        setError(err instanceof Error ? err.message : 'Failed to fetch data');
         console.error('Error fetching data:', err);
       } finally {
         setIsLoading(false);
@@ -132,6 +167,110 @@ export default function AdminDashboardPage() {
     }
   };
 
+  // Handle edit button click
+  const handleEdit = (item: any) => {
+    setSelectedItem(item);
+    setEditModalOpen(true);
+  };
+  
+  // Handle delete button click
+  const handleDelete = (item: any) => {
+    setSelectedItem(item);
+    setDeleteModalOpen(true);
+  };
+  
+  // Handle save after edit
+  const handleSaveEdit = async (updatedData: any) => {
+    try {
+      // Determine the ID field based on the entity type
+      let id = '';
+      switch (activeTab) {
+        case 'users':
+          id = updatedData.id;
+          break;
+        case 'companies':
+          id = updatedData.company_id;
+          break;
+        case 'departments':
+          id = updatedData.department_name;
+          break;
+        case 'employees':
+          id = updatedData.employee_id;
+          break;
+        case 'tokens':
+          id = updatedData.token;
+          break;
+      }
+      
+      // Call the API to update the entity
+      await updateEntity(activeTab, id, updatedData, token);
+      
+      // Update the local data
+      setData(prevData => 
+        prevData.map(item => {
+          if ((activeTab === 'users' && item.id === id) ||
+              (activeTab === 'companies' && item.company_id === id) ||
+              (activeTab === 'departments' && item.department_name === id) ||
+              (activeTab === 'employees' && item.employee_id === id) ||
+              (activeTab === 'tokens' && item.token === id)) {
+            return { ...item, ...updatedData };
+          }
+          return item;
+        })
+      );
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to update item');
+      throw err; // Re-throw to be caught by the modal
+    }
+  };
+  
+  // Handle confirm delete
+  const handleConfirmDelete = async () => {
+    if (!selectedItem) return;
+    
+    try {
+      // Determine the ID field based on the entity type
+      let id = '';
+      switch (activeTab) {
+        case 'users':
+          id = selectedItem.id;
+          break;
+        case 'companies':
+          id = selectedItem.company_id;
+          break;
+        case 'departments':
+          id = selectedItem.department_name;
+          break;
+        case 'employees':
+          id = selectedItem.employee_id;
+          break;
+        case 'tokens':
+          id = selectedItem.token;
+          break;
+      }
+      
+      // Call the API to delete the entity
+      await deleteEntity(activeTab, id, token);
+      
+      // Update the local data
+      setData(prevData => 
+        prevData.filter(item => {
+          if ((activeTab === 'users' && item.id === id) ||
+              (activeTab === 'companies' && item.company_id === id) ||
+              (activeTab === 'departments' && item.department_name === id) ||
+              (activeTab === 'employees' && item.employee_id === id) ||
+              (activeTab === 'tokens' && item.token === id)) {
+            return false;
+          }
+          return true;
+        })
+      );
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to delete item');
+      throw err; // Re-throw to be caught by the modal
+    }
+  };
+
   // Render table rows based on active tab
   const renderTableRows = () => {
     return data.map((item, index) => {
@@ -145,8 +284,21 @@ export default function AdminDashboardPage() {
               <td className="p-3">{item.role}</td>
               <td className="p-3">{item.company_id}</td>
               <td className="p-3">
-                <Button variant="destructive" size="sm" className="mr-2">Edit</Button>
-                <Button variant="destructive" size="sm">Delete</Button>
+                <Button 
+                  variant="destructive" 
+                  size="sm" 
+                  className="mr-2"
+                  onClick={() => handleEdit(item)}
+                >
+                  Edit
+                </Button>
+                <Button 
+                  variant="destructive" 
+                  size="sm"
+                  onClick={() => handleDelete(item)}
+                >
+                  Delete
+                </Button>
               </td>
             </tr>
           );
@@ -159,8 +311,21 @@ export default function AdminDashboardPage() {
               <td className="p-3">{item.status}</td>
               <td className="p-3">{item.created_at}</td>
               <td className="p-3">
-                <Button variant="destructive" size="sm" className="mr-2">Edit</Button>
-                <Button variant="destructive" size="sm">Delete</Button>
+                <Button 
+                  variant="destructive" 
+                  size="sm" 
+                  className="mr-2"
+                  onClick={() => handleEdit(item)}
+                >
+                  Edit
+                </Button>
+                <Button 
+                  variant="destructive" 
+                  size="sm"
+                  onClick={() => handleDelete(item)}
+                >
+                  Delete
+                </Button>
               </td>
             </tr>
           );
@@ -173,8 +338,21 @@ export default function AdminDashboardPage() {
               <td className="p-3">{item.department_desc}</td>
               <td className="p-3">{item.user_head || 'None'}</td>
               <td className="p-3">
-                <Button variant="destructive" size="sm" className="mr-2">Edit</Button>
-                <Button variant="destructive" size="sm">Delete</Button>
+                <Button 
+                  variant="destructive" 
+                  size="sm" 
+                  className="mr-2"
+                  onClick={() => handleEdit(item)}
+                >
+                  Edit
+                </Button>
+                <Button 
+                  variant="destructive" 
+                  size="sm"
+                  onClick={() => handleDelete(item)}
+                >
+                  Delete
+                </Button>
               </td>
             </tr>
           );
@@ -187,8 +365,21 @@ export default function AdminDashboardPage() {
               <td className="p-3">{item.employee_role || 'N/A'}</td>
               <td className="p-3">{item.company_id}</td>
               <td className="p-3">
-                <Button variant="destructive" size="sm" className="mr-2">Edit</Button>
-                <Button variant="destructive" size="sm">Delete</Button>
+                <Button 
+                  variant="destructive" 
+                  size="sm" 
+                  className="mr-2"
+                  onClick={() => handleEdit(item)}
+                >
+                  Edit
+                </Button>
+                <Button 
+                  variant="destructive" 
+                  size="sm"
+                  onClick={() => handleDelete(item)}
+                >
+                  Delete
+                </Button>
               </td>
             </tr>
           );
@@ -214,7 +405,13 @@ export default function AdminDashboardPage() {
               <td className="p-3">{item.user_id}</td>
               <td className="p-3">{new Date(item.expires_at).toLocaleString()}</td>
               <td className="p-3">
-                <Button variant="destructive" size="sm">Revoke</Button>
+                <Button 
+                  variant="destructive" 
+                  size="sm"
+                  onClick={() => handleDelete(item)}
+                >
+                  Revoke
+                </Button>
               </td>
             </tr>
           );
@@ -303,6 +500,38 @@ export default function AdminDashboardPage() {
           )}
         </CardContent>
       </Card>
+      
+      {/* Edit Modal */}
+      {selectedItem && (
+        <EditModal
+          isOpen={editModalOpen}
+          onClose={() => setEditModalOpen(false)}
+          onSave={handleSaveEdit}
+          item={selectedItem}
+          entityType={activeTab}
+        />
+      )}
+      
+      {/* Delete Confirmation Dialog */}
+      {selectedItem && (
+        <DeleteConfirmation
+          isOpen={deleteModalOpen}
+          onClose={() => setDeleteModalOpen(false)}
+          onConfirm={handleConfirmDelete}
+          entityType={activeTab}
+          itemName={
+            activeTab === 'users' 
+              ? selectedItem.name || selectedItem.email
+              : activeTab === 'companies'
+                ? selectedItem.name
+                : activeTab === 'departments'
+                  ? selectedItem.department_name
+                  : activeTab === 'employees'
+                    ? selectedItem.employee_name
+                    : 'this item'
+          }
+        />
+      )}
     </div>
   );
 }
