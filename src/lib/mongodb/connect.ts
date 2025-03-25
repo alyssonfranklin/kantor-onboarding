@@ -29,6 +29,7 @@ const cached = global.mongoose;
 export async function dbConnect() {
   // Return early with an error if MONGODB_URI is not defined
   if (!MONGODB_URI) {
+    console.error('MongoDB URI is not defined. Please set the MONGODB_URI environment variable.');
     throw new Error('MongoDB URI is not defined. Please set the MONGODB_URI environment variable.');
   }
 
@@ -41,14 +42,22 @@ export async function dbConnect() {
       bufferCommands: false,
     };
 
-    cached.promise = mongoose.connect(MONGODB_URI, opts).then((mongoose) => {
-      return mongoose;
-    });
+    console.log('Connecting to MongoDB...');
+    cached.promise = mongoose.connect(MONGODB_URI, opts)
+      .then((mongoose) => {
+        console.log('Successfully connected to MongoDB');
+        return mongoose;
+      })
+      .catch((error) => {
+        console.error('Error connecting to MongoDB:', error);
+        throw error;
+      });
   }
 
   try {
     cached.conn = await cached.promise;
   } catch (e) {
+    console.error('Failed to connect to MongoDB:', e);
     cached.promise = null;
     throw e;
   }
