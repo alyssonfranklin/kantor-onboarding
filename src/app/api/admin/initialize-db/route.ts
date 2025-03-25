@@ -8,14 +8,46 @@ import { generateCustomId } from '../../../../server/utils/id-generator';
 
 // Define database structure
 type Database = {
-  users: any[];
-  companies: any[];
-  accessTokens: any[];
-  departments: any[];
-  employees: any[];
+  users: Array<{
+    id: string;
+    email: string;
+    name: string;
+    company_id: string;
+    role: string;
+    created_at: string;
+    department: string;
+    company_role: string;
+    password: string;
+  }>;
+  companies: Array<{
+    company_id: string;
+    name: string;
+    assistant_id: string;
+    status: string;
+    created_at: string;
+    updated_at: string;
+  }>;
+  accessTokens: Array<{
+    token: string;
+    user_id: string;
+    expires_at: string;
+  }>;
+  departments: Array<{
+    company_id: string;
+    department_name: string;
+    department_desc: string;
+    user_head: string;
+  }>;
+  employees: Array<{
+    employee_id: string;
+    employee_name: string;
+    employee_role: string;
+    employee_leader: string;
+    company_id: string;
+  }>;
 };
 
-export async function POST(req: Request) {
+export async function POST(_req: Request) {
   try {
     // Define the database file path
     const DB_PATH = process.env.DB_PATH || './data';
@@ -115,13 +147,14 @@ export async function POST(req: Request) {
         adminId
       });
     }
-  } catch (error: any) {
+  } catch (error: Error | unknown) {
+    const err = error as Error;
     console.error('Error initializing database:', error);
     
     return NextResponse.json(
       { 
         success: false, 
-        error: error.message || 'Failed to initialize database' 
+        error: err.message || 'Failed to initialize database' 
       },
       { status: 500 }
     );

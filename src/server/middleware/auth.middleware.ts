@@ -3,15 +3,18 @@ import { verifyToken, isTokenValid } from '../utils/jwt-utils';
 import logger from '../config/logger';
 
 // Extend Express Request type to include user information
+interface UserInfo {
+  id: string;
+  email: string;
+  role: string;
+  company_id: string;
+}
+
 declare global {
+  // eslint-disable-next-line @typescript-eslint/no-namespace
   namespace Express {
     interface Request {
-      user?: {
-        id: string;
-        email: string;
-        role: string;
-        company_id: string;
-      };
+      user?: UserInfo;
     }
   }
 }

@@ -1,58 +1,13 @@
 // src/app/api/verify-password/route.ts
 import { NextResponse } from 'next/server';
-import bcrypt from 'bcryptjs';
-import { Low } from 'lowdb';
-import { JSONFile } from 'lowdb/node';
-import { Database } from '../../../server/types/db.types';
-import path from 'path';
-import fs from 'fs';
+import { connectToDatabase } from '@/lib/mongodb/connect';
+import User from '@/lib/mongodb/models/user.model';
+import { generateToken } from '@/lib/mongodb/utils/jwt-utils';
 
 // Rate limiting implementation
 const RATE_LIMIT_WINDOW = 60 * 1000; // 1 minute in milliseconds
 const MAX_REQUESTS = 5; // 5 attempts per minute
 const ipRequests = new Map<string, { count: number, resetTime: number }>();
-
-// Initialize database
-const DB_PATH = process.env.DB_PATH || './data';
-
-// Ensure the data directory exists
-if (!fs.existsSync(DB_PATH)) {
-  fs.mkdirSync(DB_PATH, { recursive: true });
-  console.log(`Created database directory at ${DB_PATH}`);
-}
-
-// Initialize default data
-const defaultData: Database = {
-  users: [],
-  companies: [],
-  accessTokens: [],
-  departments: [],
-  employees: []
-};
-
-// Create the database adapter
-const adapter = new JSONFile<Database>(path.join(DB_PATH, 'db.json'));
-const db = new Low<Database>(adapter, defaultData);
-
-// Initialize the database
-const initDb = async (): Promise<Low<Database>> => {
-  try {
-    // Read data from JSON file
-    await db.read();
-    
-    // If the file doesn't exist yet or is empty, write default data
-    if (!db.data) {
-      db.data = defaultData;
-      await db.write();
-      console.log('Initialized empty database with default schema');
-    }
-    
-    return db;
-  } catch (error) {
-    console.error('Failed to initialize database:', error);
-    throw error;
-  }
-};
 
 export async function POST(req: Request) {
   try {
@@ -92,13 +47,11 @@ export async function POST(req: Request) {
       );
     }
 
-    // Initialize database and get user by email
-    await initDb();
+    // Connect to MongoDB
+    await connectToDatabase();
     
-    let user = null;
-    if (db.data) {
-      user = db.data.users.find(u => u.email === email);
-    }
+    // Find user by email
+    const user = await User.findOne({ email });
     
     if (!user) {
       // Don't reveal that the email doesn't exist
@@ -108,8 +61,8 @@ export async function POST(req: Request) {
       });
     }
 
-    // Verify the password
-    const isCorrect = await bcrypt.compare(password, user.password);
+    // Verify the password using the model method
+    const isCorrect = await user.comparePassword(password);
 
     // Set CORS headers
     const headers = new Headers();
@@ -118,12 +71,17 @@ export async function POST(req: Request) {
     headers.append('Access-Control-Allow-Headers', 'Content-Type');
 
     if (isCorrect) {
-      // If login successful, return user data (except password)
-      const { password, ...userWithoutPassword } = user;
+      // Generate JWT token
+      const token = await generateToken(user);
+      
+      // Return user data (without password) and token
+      const userObj = user.toObject();
+      const { password: _password, ...userWithoutPassword } = userObj;
       
       return NextResponse.json({ 
         success: true,
-        user: userWithoutPassword
+        user: userWithoutPassword,
+        token
       }, { headers });
     } else {
       return NextResponse.json({ 

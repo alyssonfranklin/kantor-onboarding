@@ -1,49 +1,48 @@
 # Voxerion API
 
-A REST API with JSON storage for the Voxerion application, built with Node.js, Express, and lowdb.
+A REST API with MongoDB storage for the Voxerion application, built with Next.js API routes and Mongoose.
 
 ## Features
 
-- JSON file-based database using lowdb
-- JWT authentication
-- Five data models: users, companies, departments, employees, and accessTokens
+- MongoDB Atlas database with Mongoose
+- JWT authentication with token tracking
+- Five data models: users, companies, departments, employees, and tokens
 - RESTful API endpoints with proper validation
-- CORS enabled for secure access from Google Apps Script
+- Connection pooling for MongoDB with Next.js
 - Error handling and logging
 - Environment variable configuration
 
 ## Tech Stack
 
-- Node.js & TypeScript
-- Express.js
-- lowdb for JSON storage
+- Next.js 15 with API routes
+- TypeScript
+- MongoDB Atlas
+- Mongoose for MongoDB object modeling
 - JWT for authentication
 - bcrypt for password hashing
-- Winston for logging
-- Zod for validation
-- Helmet for security
-- CORS for cross-origin access
+- Custom ID generation
+- TailwindCSS for frontend styling
 
 ## Project Structure
 
-This project includes both a Next.js frontend and the new REST API:
+This project includes both a Next.js frontend and REST API:
 
-- `/src/app` - Next.js frontend 
-- `/src/server` - Express REST API with JSON storage
+- `/src/app` - Next.js pages and app router structure
+- `/src/app/api` - Next.js API routes
 - `/src/components` - Frontend React components
 - `/src/lib` - Shared utility functions
+- `/src/lib/mongodb` - MongoDB connection and models
 
 ## API Endpoints
 
 ### Authentication
 
-- **POST /api/auth/login** - User login
-- **POST /api/auth/logout** - User logout
-- **GET /api/auth/verify** - Verify JWT token
+- **POST /api/verify-password** - User login
+- **POST /api/logout** - User logout (invalidates token)
 
-### Users
+### Users and Companies
 
-- **POST /api/users** - Create a new user
+- **POST /api/add-user** - Create a new user and company
 - **GET /api/users/company/:companyId** - Get all users by company
 - **GET /api/users/:id** - Get user by ID
 - **PUT /api/users/:id** - Update user
@@ -51,7 +50,6 @@ This project includes both a Next.js frontend and the new REST API:
 
 ### Companies
 
-- **POST /api/companies** - Create a new company
 - **GET /api/companies** - Get all companies
 - **GET /api/companies/:id** - Get company by ID
 - **PUT /api/companies/:id** - Update company
@@ -74,12 +72,77 @@ This project includes both a Next.js frontend and the new REST API:
 - **PUT /api/employees/:id** - Update employee
 - **DELETE /api/employees/:id** - Delete employee
 
+## MongoDB Models
+
+### User Model
+
+```typescript
+{
+  id: string;                 // Custom format: USER_xxxx
+  email: string;              // Unique identifier
+  password: string;           // Bcrypt hashed
+  name?: string;              // Optional user name
+  company_id: string;         // Reference to company
+  role: string;               // User role (admin, user)
+  created_at: Date;           // Creation timestamp
+  department?: string;        // Optional department name
+  company_role?: string;      // Role within company
+}
+```
+
+### Company Model
+
+```typescript
+{
+  company_id: string;         // Custom format: COMP_xxxx
+  name: string;               // Company name
+  assistant_id?: string;      // OpenAI assistant ID if applicable
+  status: string;             // Company status (active, inactive)
+  created_at: Date;           // Creation timestamp
+  updated_at: Date;           // Last update timestamp
+}
+```
+
+### Department Model
+
+```typescript
+{
+  company_id: string;         // Reference to company
+  department_name: string;    // Department name (unique within company)
+  department_desc?: string;   // Optional description
+  user_head?: string;         // Optional department head (user ID)
+}
+```
+
+### Employee Model
+
+```typescript
+{
+  employee_id: string;        // Custom format: EMP_xxxx
+  employee_name: string;      // Employee name
+  employee_role?: string;     // Optional role within company
+  employee_leader?: string;   // Optional manager/leader (user ID)
+  company_id: string;         // Reference to company
+}
+```
+
+### Token Model
+
+```typescript
+{
+  token: string;              // JWT token
+  user_id: string;            // Reference to user
+  expires_at: Date;           // Expiration timestamp with TTL index
+}
+```
+
 ## Getting Started
 
 ### Prerequisites
 
-- Node.js (v14 or higher)
+- Node.js (v18 or higher)
 - npm or yarn
+- MongoDB Atlas account
 
 ### Installation
 
@@ -94,100 +157,36 @@ This project includes both a Next.js frontend and the new REST API:
    npm install
    ```
 
-3. Create a `.env` file in the root directory with the following variables:
+3. Create a `.env.local` file in the root directory with the following variables:
    ```
-   # Server Configuration
-   PORT=3001
-   NODE_ENV=development
+   # MongoDB Configuration
+   MONGODB_URI=mongodb+srv://your_username:your_password@your_cluster.mongodb.net/your_database?retryWrites=true&w=majority
 
    # JWT Configuration
    JWT_SECRET=your_secure_jwt_secret_key
    JWT_EXPIRY=7d
 
-   # Database Configuration
-   DB_PATH=./data
-
    # CORS Configuration
    ALLOWED_ORIGINS=http://localhost:3000,https://script.google.com
-
-   # Log Configuration
-   LOG_LEVEL=info
    ```
 
 ### Running the Application
 
-#### Frontend (Next.js)
 ```
 npm run dev
 ```
 
-#### API Server (Express)
+This will start both the Next.js frontend and API endpoints on the same port (default 3000).
+
+### Vercel Deployment
+
+This application is designed to be deployed on Vercel:
+
 ```
-npm run server:dev
+vercel
 ```
 
-#### Production
-```
-npm run build
-npm start         # Run Next.js frontend
-npm run server    # Run Express API
-```
-
-### Database Structure
-
-The JSON database is stored in `./data/db.json` (configurable via environment variables) and follows this structure:
-
-```json
-{
-  "users": [
-    {
-      "id": "user-id",
-      "email": "user@example.com",
-      "name": "User Name",
-      "company_id": "company-id",
-      "role": "user",
-      "created_at": "2023-01-01T00:00:00.000Z",
-      "department": "Department Name",
-      "company_role": "Employee",
-      "password": "hashed-password"
-    }
-  ],
-  "companies": [
-    {
-      "company_id": "company-id",
-      "name": "Company Name",
-      "assistant_id": "assistant-id",
-      "status": "active",
-      "created_at": "2023-01-01T00:00:00.000Z",
-      "updated_at": "2023-01-01T00:00:00.000Z"
-    }
-  ],
-  "accessTokens": [
-    {
-      "token": "jwt-token",
-      "user_id": "user-id",
-      "expires_at": "2023-01-08T00:00:00.000Z"
-    }
-  ],
-  "departments": [
-    {
-      "company_id": "company-id",
-      "department_name": "Department Name",
-      "department_desc": "Department Description",
-      "user_head": "user-id"
-    }
-  ],
-  "employees": [
-    {
-      "employee_id": "employee-id",
-      "employee_name": "Employee Name",
-      "employee_role": "Role",
-      "employee_leader": "leader-user-id",
-      "company_id": "company-id"
-    }
-  ]
-}
-```
+Make sure to set up your environment variables in the Vercel dashboard.
 
 ## Google Apps Script Integration
 
@@ -195,7 +194,7 @@ To update your Google Apps Script code to connect to this API:
 
 ```javascript
 function authenticate(email, password) {
-  const apiUrl = 'https://your-api-domain.com/api/auth/login';
+  const apiUrl = 'https://your-api-domain.com/api/verify-password';
   
   const options = {
     'method': 'post',
@@ -244,33 +243,13 @@ function fetchDataFromApi(endpoint, token) {
 
 ## Security Considerations
 
-- The API uses JWT for authentication
-- Passwords are hashed using bcrypt
-- HTTPS should be enabled in production
-- Input validation is performed using Zod
-- Rate limiting is implemented for sensitive endpoints
-- Helmet is used to set secure HTTP headers
-
-## Deployment
-
-This application can be deployed on Vercel, Heroku, or any other platform that supports Node.js applications.
-
-### Next.js Frontend
-
-The frontend can be deployed on Vercel:
-
-```
-vercel
-```
-
-### Express API
-
-The API can be deployed separately on a platform like Heroku:
-
-```
-heroku create
-git push heroku main
-```
+- The API uses JWT for authentication with token tracking
+- Tokens are stored in MongoDB with TTL indexes for automatic expiration
+- Passwords are hashed using bcrypt with Mongoose pre-save hooks
+- HTTPS is enforced in production
+- Input validation is performed on all endpoints
+- Connection pooling is used to prevent MongoDB connection leaks
+- Environment variables are used for all sensitive configuration
 
 ## License
 
