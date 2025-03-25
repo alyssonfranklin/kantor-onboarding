@@ -13,6 +13,7 @@ interface FormData {
   companyName: string;
   password: string;
   version: string;
+  createDefaultDepartment: boolean;
 }
 
 const AgentOrgAdminCreation = () => {
@@ -21,7 +22,8 @@ const AgentOrgAdminCreation = () => {
     name: '',
     companyName: '',
     password: '',
-    version: 'Free'
+    version: 'Free',
+    createDefaultDepartment: false
   });
 
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -36,11 +38,20 @@ const AgentOrgAdminCreation = () => {
   const handleChange = (
     e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>
   ) => {
-    const { name, value } = e.target;
-    setFormData(prev => ({
-      ...prev,
-      [name]: value
-    }));
+    const { name, value, type } = e.target;
+    
+    if (type === 'checkbox') {
+      const checkbox = e.target as HTMLInputElement;
+      setFormData(prev => ({
+        ...prev,
+        [name]: checkbox.checked
+      }));
+    } else {
+      setFormData(prev => ({
+        ...prev,
+        [name]: value
+      }));
+    }
   };
 
   const validateEmail = (email: string): boolean => {
@@ -81,11 +92,13 @@ const AgentOrgAdminCreation = () => {
       const agentData = await agentResponse.json();
       const assistantId = agentData.assistantId;
 
-      // Add user and company to spreadsheet
+      // Add user and company to database
       const spreadsheetResponse = await fetch('/api/add-user', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
+          // Set header for department creation based on checkbox
+          'x-create-default-department': formData.createDefaultDepartment ? 'true' : 'false',
         },
         body: JSON.stringify({
           email: formData.email,
@@ -117,7 +130,8 @@ const AgentOrgAdminCreation = () => {
         name: '',
         companyName: '',
         password: '',
-        version: 'Free'
+        version: 'Free',
+        createDefaultDepartment: false
       });
     } catch (error: unknown) {
       const err = error as Error;
@@ -217,6 +231,20 @@ const AgentOrgAdminCreation = () => {
               <option value="Basic">Basic</option>
               <option value="Business">Business</option>
             </select>
+          </div>
+
+          <div className="flex items-center my-4">
+            <input
+              type="checkbox"
+              id="createDefaultDepartment"
+              name="createDefaultDepartment"
+              checked={formData.createDefaultDepartment}
+              onChange={handleChange}
+              className="w-4 h-4 mr-2"
+            />
+            <label htmlFor="createDefaultDepartment" className="text-white">
+              Create default Management department
+            </label>
           </div>
 
           {error && (

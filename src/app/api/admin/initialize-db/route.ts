@@ -51,13 +51,16 @@ export async function POST() {
         company_role: 'Admin'
       });
       
-      // Create default department
-      await Department.create({
+      // For the admin initialization, we'll keep the Management department creation
+      // as it makes sense for the admin to have a department
+      const managementDept = await Department.create({
         company_id: companyId,
         department_name: 'Management',
         department_desc: 'Company management department',
         user_head: adminId
       });
+      
+      console.log('Created default Management department for admin:', managementDept);
       
       return NextResponse.json({ 
         success: true, 

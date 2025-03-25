@@ -103,13 +103,19 @@ export async function POST(req: Request) {
       password: password // Password will be hashed by the pre-save hook
     });
 
-    // Create default Management department
-    await Department.create({
-      company_id: companyId,
-      department_name: 'Management',
-      department_desc: 'Company management department',
-      user_head: userId
-    });
+    // Only create the Management department if specifically requested
+    // Remove this if you don't want automatic department creation
+    if (req.headers.get('x-create-default-department') === 'true') {
+      await Department.create({
+        company_id: companyId,
+        department_name: 'Management',
+        department_desc: 'Company management department',
+        user_head: userId
+      });
+      console.log('Created default Management department');
+    } else {
+      console.log('Skipping default Management department creation');
+    }
 
     return NextResponse.json({ 
       success: true,
