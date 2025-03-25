@@ -64,7 +64,7 @@ export default function PasswordProtection({ children }: PasswordProtectionProps
     
     try {
       // Verify password through an API route instead of client-side
-      const response = await fetch('/api/verify-password', {
+      const response = await fetch('/api/admin/verify-password', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
