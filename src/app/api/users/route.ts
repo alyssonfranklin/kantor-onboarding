@@ -10,9 +10,16 @@ import { generateId } from '@/lib/mongodb/utils/id-generator';
  */
 export async function GET(req: NextRequest) {
   return withAuth(req, async (req, user) => {
-    await dbConnect();
+    console.log('GET /api/users - Handler started with user:', {
+      id: user.id, 
+      role: user.role, 
+      companyId: user.company_id
+    });
     
     try {
+      await dbConnect();
+      console.log('GET /api/users - Connected to MongoDB');
+      
       // Access control - regular users can only see users from their company
       let query = {};
       if (user.role !== 'admin') {
@@ -26,6 +33,8 @@ export async function GET(req: NextRequest) {
       const limit = parseInt(url.searchParams.get('limit') || '100', 10);
       const skip = parseInt(url.searchParams.get('skip') || '0', 10);
       
+      console.log('GET /api/users - Query parameters:', { companyId, role, limit, skip });
+      
       // Add filters if provided
       if (companyId && (user.role === 'admin' || companyId === user.company_id)) {
         query = { ...query, company_id: companyId };
@@ -35,14 +44,25 @@ export async function GET(req: NextRequest) {
         query = { ...query, role };
       }
       
+      console.log('GET /api/users - Final query:', query);
+      
       // Query database with pagination
       const users = await User.find(query)
         .select('-password')
         .limit(limit)
         .skip(skip)
         .sort({ created_at: -1 });
-        
+      
       const total = await User.countDocuments(query);
+      
+      console.log(`GET /api/users - Found ${users.length} users out of ${total} total`);
+      
+      // For debugging, log the user IDs
+      if (users.length > 0) {
+        console.log('User IDs found:', users.map(u => u.id));
+      } else {
+        console.log('No users found for query');
+      }
       
       return NextResponse.json({
         success: true,
@@ -56,7 +76,11 @@ export async function GET(req: NextRequest) {
     } catch (error) {
       console.error('Error getting users:', error);
       return NextResponse.json(
-        { success: false, message: 'Failed to get users' },
+        { 
+          success: false, 
+          message: 'Failed to get users',
+          error: error instanceof Error ? error.message : String(error)
+        },
         { status: 500 }
       );
     }

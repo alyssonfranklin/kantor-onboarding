@@ -20,11 +20,25 @@ export default function AdminDashboardPage() {
   const [deleteModalOpen, setDeleteModalOpen] = useState(false);
   const [selectedItem, setSelectedItem] = useState<any>(null);
 
-  // Simulate login to get a JWT token
+  // Initialize database and login to get a JWT token
   useEffect(() => {
-    const simulateLogin = async () => {
+    const initializeAndLogin = async () => {
       try {
-        const response = await fetch('/api/verify-password', {
+        // First try to initialize the database if it's not already initialized
+        console.log('Attempting to initialize database...');
+        const initResponse = await fetch('/api/admin/initialize-db', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          }
+        });
+        
+        const initData = await initResponse.json();
+        console.log('Database initialization response:', initData);
+        
+        // Now try to login with admin credentials
+        console.log('Attempting to login...');
+        const loginResponse = await fetch('/api/verify-password', {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
@@ -35,22 +49,33 @@ export default function AdminDashboardPage() {
           }),
         });
         
-        const data = await response.json();
+        const loginData = await loginResponse.json();
+        console.log('Login response:', loginData);
         
-        if (data.token) {
-          setToken(data.token);
+        if (loginData.token) {
+          setToken(loginData.token);
+          console.log('Successfully logged in and got token');
+        } else {
+          setError('Login failed: ' + (loginData.error || 'Unknown error'));
+          console.error('Login failed:', loginData);
         }
       } catch (err) {
-        console.error('Error getting token:', err);
+        console.error('Error during initialization or login:', err);
+        setError('Failed to initialize or login: ' + (err instanceof Error ? err.message : 'Unknown error'));
       }
     };
     
-    simulateLogin();
+    initializeAndLogin();
   }, []);
 
   // Fetch data based on active tab
   useEffect(() => {
-    if (!token) return;
+    if (!token) {
+      console.log('No token available - skipping data fetch');
+      return;
+    }
+    
+    console.log(`Dashboard - Fetching ${activeTab} data with token:`, token.substring(0, 15) + '...');
     
     const fetchData = async () => {
       setIsLoading(true);
@@ -64,71 +89,96 @@ export default function AdminDashboardPage() {
         switch (activeTab) {
           case 'users':
             url = '/api/users';
+            console.log(`Dashboard - Fetching users from ${url}`);
+            
             response = await fetch(url, {
               headers: {
                 'Authorization': `Bearer ${token}`
               }
             });
+            
+            console.log(`Dashboard - Users API response status:`, response.status);
             result = await response.json();
+            console.log('Dashboard - Users API response body:', result);
             
             if (response.ok && result.success) {
+              console.log(`Dashboard - Got ${result.data?.length || 0} users`);
               setData(result.data || []);
             } else {
-              throw new Error(result.message || 'Failed to fetch users');
+              throw new Error(result.message || result.error || 'Failed to fetch users');
             }
             break;
             
           case 'companies':
             url = '/api/companies';
+            console.log(`Dashboard - Fetching companies from ${url}`);
+            
             response = await fetch(url, {
               headers: {
                 'Authorization': `Bearer ${token}`
               }
             });
+            
+            console.log(`Dashboard - Companies API response status:`, response.status);
             result = await response.json();
+            console.log('Dashboard - Companies API response body:', result);
             
             if (response.ok && result.success) {
+              console.log(`Dashboard - Got ${result.data?.length || 0} companies`);
               setData(result.data || []);
             } else {
-              throw new Error(result.message || 'Failed to fetch companies');
+              throw new Error(result.message || result.error || 'Failed to fetch companies');
             }
             break;
             
           case 'departments':
             url = '/api/departments';
+            console.log(`Dashboard - Fetching departments from ${url}`);
+            
             response = await fetch(url, {
               headers: {
                 'Authorization': `Bearer ${token}`
               }
             });
+            
+            console.log(`Dashboard - Departments API response status:`, response.status);
             result = await response.json();
+            console.log('Dashboard - Departments API response body:', result);
             
             if (response.ok && result.success) {
+              console.log(`Dashboard - Got ${result.data?.length || 0} departments`);
               setData(result.data || []);
             } else {
-              throw new Error(result.message || 'Failed to fetch departments');
+              throw new Error(result.message || result.error || 'Failed to fetch departments');
             }
             break;
             
           case 'employees':
             url = '/api/employees';
+            console.log(`Dashboard - Fetching employees from ${url}`);
+            
             response = await fetch(url, {
               headers: {
                 'Authorization': `Bearer ${token}`
               }
             });
+            
+            console.log(`Dashboard - Employees API response status:`, response.status);
             result = await response.json();
+            console.log('Dashboard - Employees API response body:', result);
             
             if (response.ok && result.success) {
+              console.log(`Dashboard - Got ${result.data?.length || 0} employees`);
               setData(result.data || []);
             } else {
-              throw new Error(result.message || 'Failed to fetch employees');
+              throw new Error(result.message || result.error || 'Failed to fetch employees');
             }
             break;
             
           case 'tokens':
             // For tokens, we don't have a direct API yet
             // Future implementation would fetch from a tokens endpoint
+            console.log('Dashboard - Using mock data for tokens');
             setData([
               { 
                 token: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...', 
@@ -139,8 +189,9 @@ export default function AdminDashboardPage() {
             break;
         }
       } catch (err) {
-        setError(err instanceof Error ? err.message : 'Failed to fetch data');
-        console.error('Error fetching data:', err);
+        const errorMessage = err instanceof Error ? err.message : 'Failed to fetch data';
+        console.error(`Dashboard - Error fetching ${activeTab}:`, err);
+        setError(errorMessage);
       } finally {
         setIsLoading(false);
       }
