@@ -33,6 +33,7 @@ const AgentOrgAdminCreation = () => {
     companyId?: string;
     userId?: string;
     assistantId?: string;
+    companyWasExisting?: boolean;
   }>({});
 
   const handleChange = (
@@ -120,7 +121,8 @@ const AgentOrgAdminCreation = () => {
       setCreatedData({
         companyId: spreadsheetData.companyId,
         userId: spreadsheetData.userId,
-        assistantId
+        assistantId,
+        companyWasExisting: spreadsheetData.companyWasExisting
       });
 
       setSuccess(true);
@@ -256,12 +258,16 @@ const AgentOrgAdminCreation = () => {
           {success && (
             <Alert>
               <AlertDescription>
-                <p>Company and admin user created successfully!</p>
+                {createdData.companyWasExisting ? (
+                  <p>New user added to existing company successfully!</p>
+                ) : (
+                  <p>Company and admin user created successfully!</p>
+                )}
                 {createdData.assistantId && (
                   <p className="mt-2 text-sm">Assistant ID: {createdData.assistantId}</p>
                 )}
                 {createdData.companyId && (
-                  <p className="text-sm">Company ID: {createdData.companyId}</p>
+                  <p className="text-sm">Company ID: {createdData.companyId} {createdData.companyWasExisting && '(existing)'}</p>
                 )}
                 {createdData.userId && (
                   <p className="text-sm">User ID: {createdData.userId}</p>

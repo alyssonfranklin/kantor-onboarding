@@ -32,16 +32,7 @@ export async function POST(req: Request) {
       );
     }
 
-    // Check if company or user already exists
-    const existingCompany = await Company.findOne({ name: companyName });
-    if (existingCompany) {
-      console.log('Company already exists:', existingCompany);
-      return NextResponse.json(
-        { error: 'Company name already exists' },
-        { status: 400 }
-      );
-    }
-
+    // Check if email already exists (regardless of company)
     const existingUser = await User.findOne({ email });
     if (existingUser) {
       console.log('User already exists:', existingUser);
@@ -51,32 +42,54 @@ export async function POST(req: Request) {
       );
     }
     
-    // Generate IDs
-    const companyId = await generateId('COMP');
-    const userId = await generateId('USER');
-    
-    // Current timestamp
+    // Check if company already exists
+    let companyId;
     const timestamp = new Date();
+    const existingCompany = await Company.findOne({ name: companyName });
+    
+    if (existingCompany) {
+      // Company exists - use its ID instead of creating a new company
+      console.log('Company already exists, using existing company:', existingCompany);
+      companyId = existingCompany.company_id;
+      
+      // If assistant ID is different from what was provided, we'll update it
+      if (existingCompany.assistant_id !== assistantId) {
+        console.log(`Updating company assistant_id from ${existingCompany.assistant_id} to ${assistantId}`);
+        await Company.findOneAndUpdate(
+          { company_id: companyId },
+          { 
+            assistant_id: assistantId,
+            updated_at: timestamp
+          }
+        );
+      }
+    } else {
+      // Company doesn't exist - create a new one
+      companyId = await generateId('COMP');
+      
+      // Debug the company data structure
+      console.log('Adding new company:', {
+        company_id: companyId,
+        name: companyName,
+        assistant_id: assistantId,
+        status: 'active',
+        created_at: timestamp,
+        updated_at: timestamp
+      });
 
-    // Debug the company data structure
-    console.log('Adding company:', {
-      company_id: companyId,
-      name: companyName,
-      assistant_id: assistantId,
-      status: 'active',
-      created_at: timestamp,
-      updated_at: timestamp
-    });
-
-    // Create company in MongoDB
-    await Company.create({
-      company_id: companyId,
-      name: companyName,
-      assistant_id: assistantId,
-      status: 'active',
-      created_at: timestamp,
-      updated_at: timestamp
-    });
+      // Create company in MongoDB
+      await Company.create({
+        company_id: companyId,
+        name: companyName,
+        assistant_id: assistantId,
+        status: 'active',
+        created_at: timestamp,
+        updated_at: timestamp
+      });
+    }
+    
+    // Generate user ID - always create a new user
+    const userId = await generateId('USER');
 
     // Debug the user data structure
     console.log('Adding user:', {
@@ -117,11 +130,17 @@ export async function POST(req: Request) {
       console.log('Skipping default Management department creation');
     }
 
+    // Prepare a more detailed success message
+    const wasExistingCompany = !!existingCompany;
+    
     return NextResponse.json({ 
       success: true,
-      message: 'Company and user added to database successfully',
+      message: wasExistingCompany 
+        ? 'User added to existing company successfully' 
+        : 'Company and user added to database successfully',
       companyId,
-      userId
+      userId,
+      companyWasExisting: wasExistingCompany
     });
   } catch (error: unknown) {
     const err = error as Error;
