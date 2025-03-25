@@ -3,7 +3,13 @@ export default function AdminDashboard() {
     <div>
       <h1 className="text-3xl font-bold mb-8">Admin Dashboard</h1>
       
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6">
+        <DashboardCard 
+          title="Data Dashboard" 
+          description="View and manage all data"
+          link="/admin/dashboard"
+          highlight={true}
+        />
         <DashboardCard 
           title="Users" 
           description="Create and manage users"
@@ -57,11 +63,25 @@ export default function AdminDashboard() {
   );
 }
 
-function DashboardCard({ title, description, link }: { title: string; description: string; link: string }) {
+function DashboardCard({ 
+  title, 
+  description, 
+  link, 
+  highlight = false 
+}: { 
+  title: string; 
+  description: string; 
+  link: string;
+  highlight?: boolean;
+}) {
   return (
     <a 
       href={link}
-      className="block bg-gray-800 rounded-lg p-6 hover:bg-gray-700 transition-colors"
+      className={`block rounded-lg p-6 hover:bg-gray-700 transition-colors ${
+        highlight 
+          ? 'bg-red-900 border border-red-700' 
+          : 'bg-gray-800'
+      }`}
     >
       <h3 className="text-xl font-bold mb-2 text-red-400">{title}</h3>
       <p className="text-gray-300">{description}</p>

@@ -18,6 +18,8 @@ export default function AdminLayout({
             <h1 className="text-2xl font-bold">Kantor Admin</h1>
             <nav>
               <ul className="flex space-x-4">
+                <li><a href="/admin" className="hover:text-red-400">Admin Home</a></li>
+                <li><a href="/admin/dashboard" className="hover:text-red-400">Dashboard</a></li>
                 <li><a href="/admin/users/create" className="hover:text-red-400">Users</a></li>
                 <li><a href="/admin/companies/create" className="hover:text-red-400">Companies</a></li>
                 <li><a href="/admin/departments/create" className="hover:text-red-400">Departments</a></li>
