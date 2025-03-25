@@ -1,15 +1,15 @@
 // src/app/api/add-user/route.ts
 import { NextResponse } from 'next/server';
-import { connectToDatabase } from '@/lib/mongodb/connect';
+import { dbConnect } from '@/lib/mongodb/connect';
 import User from '@/lib/mongodb/models/user.model';
 import Company from '@/lib/mongodb/models/company.model';
 import Department from '@/lib/mongodb/models/department.model';
-import { generateCustomId } from '@/lib/mongodb/utils/id-generator';
+import { generateId } from '@/lib/mongodb/utils/id-generator';
 
 export async function POST(req: Request) {
   try {
     // Connect to MongoDB
-    await connectToDatabase();
+    await dbConnect();
     
     const { email, name, companyName, password, version, assistantId } = await req.json();
 
@@ -39,8 +39,8 @@ export async function POST(req: Request) {
     }
     
     // Generate IDs
-    const companyId = generateCustomId();
-    const userId = generateCustomId();
+    const companyId = await generateId('COMP');
+    const userId = await generateId('USER');
     
     // Current timestamp
     const timestamp = new Date();
@@ -56,7 +56,7 @@ export async function POST(req: Request) {
     });
 
     // Create company in MongoDB
-    const company = await Company.create({
+    await Company.create({
       company_id: companyId,
       name: companyName,
       assistant_id: assistantId,
@@ -78,7 +78,7 @@ export async function POST(req: Request) {
     });
 
     // Create user in MongoDB
-    const user = await User.create({
+    await User.create({
       id: userId,
       email: email,
       name: name,

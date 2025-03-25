@@ -1,141 +1,63 @@
 import { NextResponse } from 'next/server';
-import { Low } from 'lowdb';
-import { JSONFile } from 'lowdb/node';
-import fs from 'fs';
-import path from 'path';
-import bcrypt from 'bcryptjs';
-import { generateCustomId } from '../../../../server/utils/id-generator';
+// No need for bcrypt as model handles password hashing
+import { dbConnect } from '@/lib/mongodb/connect';
+import User from '@/lib/mongodb/models/user.model';
+import Company from '@/lib/mongodb/models/company.model';
+import Department from '@/lib/mongodb/models/department.model';
+import { generateId } from '@/lib/mongodb/utils/id-generator';
 
-// Define database structure
-type Database = {
-  users: Array<{
-    id: string;
-    email: string;
-    name: string;
-    company_id: string;
-    role: string;
-    created_at: string;
-    department: string;
-    company_role: string;
-    password: string;
-  }>;
-  companies: Array<{
-    company_id: string;
-    name: string;
-    assistant_id: string;
-    status: string;
-    created_at: string;
-    updated_at: string;
-  }>;
-  accessTokens: Array<{
-    token: string;
-    user_id: string;
-    expires_at: string;
-  }>;
-  departments: Array<{
-    company_id: string;
-    department_name: string;
-    department_desc: string;
-    user_head: string;
-  }>;
-  employees: Array<{
-    employee_id: string;
-    employee_name: string;
-    employee_role: string;
-    employee_leader: string;
-    company_id: string;
-  }>;
-};
-
-export async function POST(_req: Request) {
+export async function POST() {
   try {
-    // Define the database file path
-    const DB_PATH = process.env.DB_PATH || './data';
-
-    // Ensure the data directory exists
-    if (!fs.existsSync(DB_PATH)) {
-      fs.mkdirSync(DB_PATH, { recursive: true });
-      console.log(`Created database directory at ${DB_PATH}`);
-    }
-
-    const dbPath = path.join(DB_PATH, 'db.json');
-    const dbExists = fs.existsSync(dbPath);
-
-    // Initialize default data structure
-    const defaultData: Database = {
-      users: [],
-      companies: [],
-      accessTokens: [],
-      departments: [],
-      employees: []
-    };
-
-    // Create the database adapter
-    const adapter = new JSONFile<Database>(dbPath);
-    const db = new Low<Database>(adapter, defaultData);
-
-    // If the database exists, read it first
-    if (dbExists) {
-      await db.read();
-      
-      // If the database is empty or doesn't have the expected structure, initialize it
-      if (!db.data || !db.data.users || !db.data.companies) {
-        db.data = defaultData;
-        await db.write();
-      }
-      
+    // Connect to MongoDB
+    await dbConnect();
+    
+    // Check if admin user already exists
+    const adminExists = await User.findOne({ role: 'admin' });
+    
+    if (adminExists) {
       return NextResponse.json({ 
         success: true,
-        message: 'Database structure verified', 
+        message: 'Database already initialized with admin user', 
         existing: true
       });
     } else {
-      // Create a default admin user if the database doesn't exist
+      // Create a default admin user if none exists
       
       // Generate IDs
-      const adminId = generateCustomId();
-      const companyId = generateCustomId();
-      
-      // Current timestamp
-      const timestamp = new Date().toISOString();
-      
-      // Create admin user
-      const adminPassword = 'admin123'; // Default password
-      const hashedPassword = await bcrypt.hash(adminPassword, 10);
-      
-      defaultData.users.push({
-        id: adminId,
-        email: 'admin@voxerion.com',
-        name: 'System Admin',
-        company_id: companyId,
-        role: 'admin',
-        created_at: timestamp,
-        department: 'Management',
-        company_role: 'Admin',
-        password: hashedPassword
-      });
+      const adminId = await generateId('USER');
+      const companyId = await generateId('COMP');
       
       // Create default company
-      defaultData.companies.push({
+      await Company.create({
         company_id: companyId,
         name: 'Voxerion Inc.',
         assistant_id: 'default_assistant_id',
         status: 'active',
-        created_at: timestamp,
-        updated_at: timestamp
+        created_at: new Date(),
+        updated_at: new Date()
+      });
+      
+      // Create admin user with default password
+      const adminPassword = 'admin123';
+      await User.create({
+        id: adminId,
+        email: 'admin@voxerion.com',
+        password: adminPassword, // Will be hashed by the pre-save hook
+        name: 'System Admin',
+        company_id: companyId,
+        role: 'admin',
+        created_at: new Date(),
+        department: 'Management',
+        company_role: 'Admin'
       });
       
       // Create default department
-      defaultData.departments.push({
+      await Department.create({
         company_id: companyId,
         department_name: 'Management',
         department_desc: 'Company management department',
         user_head: adminId
       });
-      
-      // Write to database
-      db.data = defaultData;
-      await db.write();
       
       return NextResponse.json({ 
         success: true, 

@@ -159,15 +159,18 @@ This project includes both a Next.js frontend and REST API:
 
 3. Create a `.env.local` file in the root directory with the following variables:
    ```
-   # MongoDB Configuration
+   # MongoDB Configuration (required)
    MONGODB_URI=mongodb+srv://your_username:your_password@your_cluster.mongodb.net/your_database?retryWrites=true&w=majority
 
-   # JWT Configuration
+   # JWT Configuration (required)
    JWT_SECRET=your_secure_jwt_secret_key
    JWT_EXPIRY=7d
 
-   # CORS Configuration
-   ALLOWED_ORIGINS=http://localhost:3000,https://script.google.com
+   # OpenAI Configuration (if using assistants)
+   OPENAI_API_KEY=your_openai_api_key
+
+   # Application URL (for CORS and callbacks)
+   NEXT_PUBLIC_APP_URL=http://localhost:3000
    ```
 
 ### Running the Application
@@ -176,7 +179,7 @@ This project includes both a Next.js frontend and REST API:
 npm run dev
 ```
 
-This will start both the Next.js frontend and API endpoints on the same port (default 3000).
+This will start the Next.js application with both frontend and API endpoints on the same port (default 3000).
 
 ### Vercel Deployment
 

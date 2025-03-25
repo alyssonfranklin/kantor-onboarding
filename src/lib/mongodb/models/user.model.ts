@@ -37,16 +37,22 @@ UserSchema.pre('save', async function (next) {
 
   try {
     const salt = await bcrypt.genSalt(10);
-    this.password = await bcrypt.hash(this.password, salt);
+    // Type assertion to ensure this.password is treated as a string
+    const password = this.password as string;
+    this.password = await bcrypt.hash(password, salt);
     next();
-  } catch (error: any) {
-    next(error);
+  } catch (error: unknown) {
+    // Convert unknown error to Error object
+    const err = error instanceof Error ? error : new Error(String(error));
+    next(err);
   }
 });
 
 // Compare password method
 UserSchema.methods.comparePassword = async function (candidatePassword: string): Promise<boolean> {
-  return bcrypt.compare(candidatePassword, this.password);
+  // Type assertion to ensure this.password is treated as a string
+  const password = this.password as string;
+  return bcrypt.compare(candidatePassword, password);
 };
 
 // Export the model or create it if it doesn't exist

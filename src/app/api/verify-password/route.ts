@@ -1,6 +1,6 @@
 // src/app/api/verify-password/route.ts
 import { NextResponse } from 'next/server';
-import { connectToDatabase } from '@/lib/mongodb/connect';
+import { dbConnect } from '@/lib/mongodb/connect';
 import User from '@/lib/mongodb/models/user.model';
 import { generateToken } from '@/lib/mongodb/utils/jwt-utils';
 
@@ -48,7 +48,7 @@ export async function POST(req: Request) {
     }
 
     // Connect to MongoDB
-    await connectToDatabase();
+    await dbConnect();
     
     // Find user by email
     const user = await User.findOne({ email });
@@ -76,7 +76,8 @@ export async function POST(req: Request) {
       
       // Return user data (without password) and token
       const userObj = user.toObject();
-      const { password: _password, ...userWithoutPassword } = userObj;
+      // eslint-disable-next-line @typescript-eslint/no-unused-vars
+      const { password: _, ...userWithoutPassword } = userObj;
       
       return NextResponse.json({ 
         success: true,

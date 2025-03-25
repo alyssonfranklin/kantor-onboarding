@@ -3,18 +3,13 @@ import { dbConnect } from '@/lib/mongodb/connect';
 import Department from '@/lib/mongodb/models/department.model';
 import { withAuth } from '@/lib/middleware/auth';
 
-interface DepartmentParams {
-  companyId: string;
-  departmentName: string;
-}
-
 /**
  * Get a specific department
  * GET /api/departments/[companyId]/[departmentName]
  */
 export async function GET(
   req: NextRequest,
-  { params }: { params: DepartmentParams }
+  { params }: { params: { companyId: string; departmentName: string } }
 ) {
   return withAuth(req, async (req, user) => {
     await dbConnect();
@@ -64,7 +59,7 @@ export async function GET(
  */
 export async function PUT(
   req: NextRequest,
-  { params }: { params: DepartmentParams }
+  { params }: { params: { companyId: string; departmentName: string } }
 ) {
   return withAuth(req, async (req, user) => {
     await dbConnect();
@@ -128,7 +123,7 @@ export async function PUT(
  */
 export async function DELETE(
   req: NextRequest,
-  { params }: { params: DepartmentParams }
+  { params }: { params: { companyId: string; departmentName: string } }
 ) {
   return withAuth(req, async (req, user) => {
     await dbConnect();

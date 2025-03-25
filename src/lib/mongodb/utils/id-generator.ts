@@ -1,8 +1,31 @@
 import crypto from 'crypto';
 
+// Counter for generating sequential IDs for each prefix
+const counters: Record<string, number> = {};
+
+/**
+ * Generates an ID with the specified prefix followed by a sequential number
+ * Format: PREFIX_0001, PREFIX_0002, etc.
+ */
+export async function generateId(prefix: string): Promise<string> {
+  // Initialize counter for this prefix if it doesn't exist
+  if (!counters[prefix]) {
+    counters[prefix] = 1;
+  } else {
+    counters[prefix]++;
+  }
+  
+  // Format the counter with leading zeros
+  const counter = counters[prefix].toString().padStart(4, '0');
+  
+  // Return the formatted ID
+  return `${prefix}_${counter}`;
+}
+
 /**
  * Generates a custom ID in the format:
  * abc123de-4567-89fg-hij0-klmno123456
+ * @deprecated Use generateId instead
  */
 export function generateCustomId(): string {
   // Generate a standard UUID

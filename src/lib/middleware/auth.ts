@@ -10,6 +10,7 @@ interface AuthOptions {
  */
 export async function withAuth(
   req: NextRequest,
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   handler: (req: NextRequest, user: any) => Promise<NextResponse>,
   options: AuthOptions = {}
 ): Promise<NextResponse> {
@@ -73,7 +74,8 @@ export function getUserIdFromRequest(req: NextRequest): string | null {
     const decoded = verifyToken(token);
     
     return decoded.id as string;
-  } catch (error) {
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  } catch (_error) {
     return null;
   }
 }
@@ -93,7 +95,8 @@ export function getCompanyIdFromRequest(req: NextRequest): string | null {
     const decoded = verifyToken(token);
     
     return decoded.company_id as string;
-  } catch (error) {
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  } catch (_error) {
     return null;
   }
 }

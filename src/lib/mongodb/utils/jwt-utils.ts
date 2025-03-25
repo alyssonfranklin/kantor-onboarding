@@ -5,6 +5,15 @@ import Token from '../models/token.model';
 const JWT_SECRET = process.env.JWT_SECRET || 'voxerion_secret_key_change_in_production';
 const JWT_EXPIRY = process.env.JWT_EXPIRY || '7d';
 
+type JwtPayloadExtended = {
+  id: string;
+  email: string;
+  role: string;
+  company_id: string;
+  iat?: number;
+  exp?: number;
+};
+
 /**
  * Generate a JWT token for a user
  */
@@ -17,7 +26,7 @@ export const generateToken = async (user: IUser): Promise<string> => {
       company_id: user.company_id
     };
 
-    const token = jwt.sign(payload, JWT_SECRET, { expiresIn: JWT_EXPIRY });
+    const token = jwt.sign(payload, String(JWT_SECRET), { expiresIn: JWT_EXPIRY });
     
     // Calculate expiry date
     const expiryDays = parseInt(JWT_EXPIRY.replace('d', ''), 10);
@@ -41,10 +50,10 @@ export const generateToken = async (user: IUser): Promise<string> => {
 /**
  * Verify a JWT token
  */
-export const verifyToken = (token: string): jwt.JwtPayload => {
+export const verifyToken = (token: string): JwtPayloadExtended => {
   try {
-    const decoded = jwt.verify(token, JWT_SECRET) as jwt.JwtPayload;
-    return decoded;
+    const decoded = jwt.verify(token, String(JWT_SECRET));
+    return decoded as JwtPayloadExtended;
   } catch (error) {
     console.error('Error verifying JWT token:', error);
     throw new Error('Invalid or expired token');
