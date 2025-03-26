@@ -79,6 +79,7 @@ export async function POST(req: NextRequest) {
     }
     
     // Find user by email
+    console.log(`Looking for user with email: ${body.email}`);
     const user = await User.findOne({ email: body.email });
     
     if (!user) {
@@ -89,14 +90,40 @@ export async function POST(req: NextRequest) {
       );
     }
     
-    // Check password
-    const isMatch = await user.comparePassword(body.password);
+    console.log(`Found user with email: ${body.email}`);
+    console.log('User details:', {
+      id: user.id,
+      email: user.email,
+      role: user.role,
+      hasPassword: !!user.password,
+      passwordLength: user.password ? user.password.length : 0
+    });
     
-    if (!isMatch) {
-      console.log(`POST /api/users/login - Invalid password for user: ${body.email}`);
+    // Check password - URI decode the password first
+    const decodedPassword = decodeURIComponent(body.password);
+    console.log(`Comparing password: [${body.password}] (length: ${body.password.length})`);
+    console.log(`Decoded password: [${decodedPassword}] (length: ${decodedPassword.length})`);
+    try {
+      // Try with both original and decoded password
+      let isMatch = await user.comparePassword(body.password);
+      if (!isMatch) {
+        console.log('First attempt failed, trying with decoded password');
+        isMatch = await user.comparePassword(decodedPassword);
+      }
+      console.log(`Password match result: ${isMatch}`);
+      
+      if (!isMatch) {
+        console.log(`POST /api/users/login - Invalid password for user: ${body.email}`);
+        return NextResponse.json(
+          { success: false, message: 'Invalid credentials' },
+          { status: 401, headers: corsHeaders }
+        );
+      }
+    } catch (error) {
+      console.error('Error comparing password:', error);
       return NextResponse.json(
-        { success: false, message: 'Invalid credentials' },
-        { status: 401, headers: corsHeaders }
+        { success: false, message: 'Error during authentication', error: String(error) },
+        { status: 500, headers: corsHeaders }
       );
     }
     
@@ -178,6 +205,7 @@ export async function GET(req: NextRequest) {
     }
     
     // Find user by email
+    console.log(`GET - Looking for user with email: ${email}`);
     const user = await User.findOne({ email });
     
     if (!user) {
@@ -188,14 +216,41 @@ export async function GET(req: NextRequest) {
       );
     }
     
-    // Check password
-    const isMatch = await user.comparePassword(password);
+    console.log(`GET - Found user with email: ${email}`);
+    console.log('GET - User details:', {
+      id: user.id,
+      email: user.email,
+      role: user.role,
+      hasPassword: !!user.password,
+      passwordLength: user.password ? user.password.length : 0
+    });
     
-    if (!isMatch) {
-      console.log(`GET /api/users/login - Invalid password for user: ${email}`);
+    // Check password - password may already be decoded since it came from URL params
+    // But let's try both ways to be sure
+    const decodedPassword = decodeURIComponent(password);
+    console.log(`GET - Comparing password: [${password}] (length: ${password.length})`);
+    console.log(`GET - Decoded password: [${decodedPassword}] (length: ${decodedPassword.length})`);
+    try {
+      // Try with both original and decoded password
+      let isMatch = await user.comparePassword(password);
+      if (!isMatch) {
+        console.log('GET - First attempt failed, trying with decoded password');
+        isMatch = await user.comparePassword(decodedPassword);
+      }
+      console.log(`GET - Password match result: ${isMatch}`);
+      
+      if (!isMatch) {
+        console.log(`GET /api/users/login - Invalid password for user: ${email}`);
+        return NextResponse.json(
+          { success: false, message: 'Invalid credentials' },
+          { status: 401, headers: corsHeaders }
+        );
+      }
+    } catch (error) {
+      console.error('GET - Error comparing password:', error);
       return NextResponse.json(
-        { success: false, message: 'Invalid credentials' },
-        { status: 401, headers: corsHeaders }
+        { success: false, message: 'Error during authentication', error: String(error) },
+        { status: 500, headers: corsHeaders }
       );
     }
     
