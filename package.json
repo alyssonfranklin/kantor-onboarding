@@ -6,7 +6,9 @@
     "dev": "next dev --turbopack",
     "build": "next build",
     "start": "next start",
-    "lint": "next lint"
+    "lint": "next lint",
+    "api:dev": "nodemon src/server.js",
+    "api:start": "node src/server.js"
   },
   "dependencies": {
     "@radix-ui/react-alert-dialog": "^1.1.6",
@@ -17,6 +19,7 @@
     "cors": "^2.8.5",
     "dotenv": "^16.4.7",
     "express": "^4.18.3",
+    "express-rate-limit": "^7.5.0",
     "google-auth-library": "^9.15.1",
     "googleapis": "^144.0.0",
     "helmet": "^7.1.0",
