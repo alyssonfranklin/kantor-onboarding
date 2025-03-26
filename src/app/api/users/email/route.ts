@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { dbConnect } from '@/lib/mongodb/connect';
 import User from '@/lib/mongodb/models/user.model';
+import mongoose from 'mongoose';
+import Company from '@/lib/mongodb/models/company.model';
 
 // CORS headers for cross-origin requests (needed for Google Apps Script)
 const corsHeaders = {
@@ -50,6 +52,37 @@ export async function GET(req: NextRequest) {
     
     console.log(`GET /api/users/email - Found user with ID: ${user.id}`);
     
+    // Get the company info to include the assistant ID
+    // This is done here to avoid requiring authentication in the Google Calendar script
+    try {
+      // Company model is already imported
+      
+      // Find the company by ID
+      const company = await Company.findOne({ company_id: user.company_id });
+      
+      if (company) {
+        console.log(`GET /api/users/email - Found company: ${company.name} with assistant_id: ${company.assistant_id}`);
+        
+        // Return the user data with company information including assistant_id
+        return NextResponse.json({
+          success: true,
+          data: {
+            ...user.toObject(),
+            company_name: company.name,
+            assistant_id: company.assistant_id
+          },
+          exists: true,
+          accessGranted: true
+        }, {
+          headers: corsHeaders
+        });
+      }
+    } catch (companyError) {
+      console.error('Error fetching company information:', companyError);
+      // Continue without company info
+    }
+    
+    // Fallback without company information
     return NextResponse.json({
       success: true,
       data: user,
