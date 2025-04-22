@@ -56,9 +56,19 @@ export async function POST(req: NextRequest) {
       );
     }
     
-    // Update user's insightsLeft field
-    user.insightsLeft = insightsLeft;
-    await user.save();
+    // Update user's insightsLeft field using updateOne to avoid validation issues
+    const updateResult = await User.updateOne(
+      { email },
+      { $set: { insightsLeft } }
+    );
+    
+    if (updateResult.modifiedCount === 0) {
+      console.log(`POST /api/users/update-insights - Failed to update user: ${email}`);
+      return NextResponse.json(
+        { success: false, message: 'Failed to update insights count' },
+        { status: 500, headers: corsHeaders }
+      );
+    }
     
     console.log(`POST /api/users/update-insights - Successfully updated insights count for user ${email} to ${insightsLeft}`);
     
@@ -69,7 +79,7 @@ export async function POST(req: NextRequest) {
       data: {
         id: user.id,
         email: user.email,
-        insightsLeft: user.insightsLeft
+        insightsLeft: insightsLeft // Use the value we set since we didn't reload the user
       }
     }, {
       headers: corsHeaders
@@ -143,9 +153,19 @@ export async function GET(req: NextRequest) {
       );
     }
     
-    // Update user's insightsLeft field
-    user.insightsLeft = insightsLeft;
-    await user.save();
+    // Update user's insightsLeft field using updateOne to avoid validation issues
+    const updateResult = await User.updateOne(
+      { email },
+      { $set: { insightsLeft } }
+    );
+    
+    if (updateResult.modifiedCount === 0) {
+      console.log(`GET /api/users/update-insights - Failed to update user: ${email}`);
+      return NextResponse.json(
+        { success: false, message: 'Failed to update insights count' },
+        { status: 500, headers: corsHeaders }
+      );
+    }
     
     console.log(`GET /api/users/update-insights - Successfully updated insights count for user ${email} to ${insightsLeft}`);
     
@@ -156,7 +176,7 @@ export async function GET(req: NextRequest) {
       data: {
         id: user.id,
         email: user.email,
-        insightsLeft: user.insightsLeft
+        insightsLeft: insightsLeft // Use the value we set since we didn't reload the user
       }
     }, {
       headers: corsHeaders
