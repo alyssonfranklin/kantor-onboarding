@@ -11,6 +11,8 @@ export interface IUser extends Document {
   department: string;
   company_role: string;
   password: string;
+  insightsLeft?: number; // Number of insights credits remaining
+  insightsDay?: number;  // The day of the month when insights reset
   comparePassword(candidatePassword: string): Promise<boolean>;
 }
 
@@ -25,6 +27,8 @@ const UserSchema: Schema = new Schema(
     department: { type: String, required: true },
     company_role: { type: String, required: true },
     password: { type: String, required: true },
+    insightsLeft: { type: Number, default: 20 }, // Default number of insights credits
+    insightsDay: { type: Number, default: 1 },   // Default day of month for reset
   },
   { timestamps: true }
 );

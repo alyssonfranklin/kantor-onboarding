@@ -29,15 +29,22 @@ export async function GET(req: NextRequest) {
       // Get search params
       const url = new URL(req.url);
       const companyId = url.searchParams.get('companyId');
+      const email = url.searchParams.get('email');
       const role = url.searchParams.get('role');
       const limit = parseInt(url.searchParams.get('limit') || '100', 10);
       const skip = parseInt(url.searchParams.get('skip') || '0', 10);
       
-      console.log('GET /api/users - Query parameters:', { companyId, role, limit, skip });
+      console.log('GET /api/users - Query parameters:', { companyId, email, role, limit, skip });
       
       // Add filters if provided
       if (companyId && (user.role === 'admin' || companyId === user.company_id)) {
         query = { ...query, company_id: companyId };
+      }
+      
+      if (email) {
+        // If email is provided, this takes precedence (exact match search)
+        console.log(`GET /api/users - Searching for user with email: ${email}`);
+        query = { ...query, email };
       }
       
       if (role) {
