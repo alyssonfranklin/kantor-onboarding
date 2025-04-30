@@ -5,6 +5,7 @@ import User from '@/lib/mongodb/models/user.model';
 import Company from '@/lib/mongodb/models/company.model';
 import Department from '@/lib/mongodb/models/department.model';
 import { generateId } from '@/lib/mongodb/utils/id-generator';
+import { seedLabels } from './seedLabels';
 
 export async function POST() {
   try {
@@ -62,6 +63,11 @@ export async function POST() {
       
       console.log('Created default Management department for admin:', managementDept);
       
+      // Seed labels for internationalization
+      console.log('Seeding labels...');
+      const labelsResult = await seedLabels();
+      console.log('Labels seeding result:', labelsResult);
+      
       return NextResponse.json({ 
         success: true, 
         message: 'Database initialized with default admin user', 
@@ -69,7 +75,8 @@ export async function POST() {
         adminEmail: 'admin@voxerion.com',
         adminPassword: adminPassword, // Return the password in the response
         companyId,
-        adminId
+        adminId,
+        labels: labelsResult
       });
     }
   } catch (error: Error | unknown) {
