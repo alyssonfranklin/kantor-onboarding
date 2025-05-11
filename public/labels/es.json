@@ -11,7 +11,13 @@
   "new_event": "Nueva reunión siendo creada",
   "no_title": "Sin título proporcionado",
   "get_insight": "Obtener Insights",
-  
+  "add_personal_context": "Añadir Contexto Personal",
+
+  "personal_context_title": "Añadir Contexto Personal",
+  "personal_context_description": "Añada cualquier contexto o información personal que ayude a generar insights más relevantes para esta reunión.",
+  "personal_context_input_title": "Su contexto personal",
+  "personal_context_hint": "Ej., discusiones previas, objetivos específicos, preocupaciones o información de antecedentes...",
+
   "apiGenIns": "Generando insights...",
   "apiGenLoa": "Cargando insights...",
   "apiGenWai": "Por favor, espere mientras analizamos los detalles de su reunión...",
@@ -29,7 +35,7 @@
   "apiCopyIns": "Copiar Insights",
   "apiCopyTxt": "El texto se ha añadido a un campo de texto arriba. Presione Ctrl+C (o Cmd+C) para copiarlo.",
   "apiDone": "Hecho",
-  
+
   "access_required": "🔒 Acceso Requerido",
   "contact_admin": "Comuníquese con su administrador para obtener acceso a Voxerion.",
   "contact_support": "Contactar Soporte",
@@ -39,10 +45,10 @@
   "logout": "Cerrar Sesión",
   "logout_success": "Sesión cerrada con éxito",
   "return_to_login": "Volver al Inicio de Sesión",
-  
+
   "error": "Ha ocurrido un error",
   "error_try_again": "Ha ocurrido un error. Por favor, inténtelo de nuevo más tarde.",
-  
+
   "insights_limit_title": "⚠️ Límite de Créditos de Insights Alcanzado",
   "insights_limit_message": "Ha utilizado todos sus créditos de insights disponibles para este período.",
   "insights_limit_contact": "Comuníquese con el administrador de Voxerion en su empresa para aumentar su límite.",
@@ -56,7 +62,7 @@
   "support_email_subject": "Solicitud de Más Créditos de Insights",
   "fallback_error_message": "Límite de créditos de insights alcanzado. Contacte a soporte@voxerion.com para obtener ayuda.",
   "access_denied_fallback": "Acceso denegado para {email}. Contacte a soporte@kantorapp.com.",
-  
+
   "unregistered_title": "Acceso Requerido",
   "unregistered_message": "El correo electrónico <b>{email}</b> no está registrado en Voxerion.",
   "unregistered_fallback": "Acceso Requerido: El correo electrónico <b>{email}</b> no está registrado en Voxerion.",

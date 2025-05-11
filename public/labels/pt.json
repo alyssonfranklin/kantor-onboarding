@@ -11,7 +11,13 @@
   "new_event": "Nova reunião sendo criada",
   "no_title": "Sem título fornecido",
   "get_insight": "Obter Insights",
-  
+  "add_personal_context": "Adicionar Contexto Pessoal",
+
+  "personal_context_title": "Adicionar Contexto Pessoal",
+  "personal_context_description": "Adicione qualquer contexto ou informação pessoal que ajude a gerar insights mais relevantes para esta reunião.",
+  "personal_context_input_title": "Seu contexto pessoal",
+  "personal_context_hint": "Ex., discussões anteriores, objetivos específicos, preocupações ou informações de fundo...",
+
   "apiGenIns": "Gerando insights...",
   "apiGenLoa": "Carregando insights...",
   "apiGenWai": "Por favor, aguarde enquanto analisamos os detalhes da sua reunião...",
@@ -29,7 +35,7 @@
   "apiCopyIns": "Copiar Insights",
   "apiCopyTxt": "O texto foi adicionado a um campo de texto acima. Pressione Ctrl+C (ou Cmd+C) para copiá-lo.",
   "apiDone": "Concluído",
-  
+
   "access_required": "🔒 Acesso Necessário",
   "contact_admin": "Entre em contato com o administrador para obter acesso ao Voxerion.",
   "contact_support": "Contatar Suporte",
@@ -39,10 +45,10 @@
   "logout": "Sair",
   "logout_success": "Desconectado com sucesso",
   "return_to_login": "Voltar ao Login",
-  
+
   "error": "Ocorreu um erro",
   "error_try_again": "Ocorreu um erro. Por favor, tente novamente mais tarde.",
-  
+
   "insights_limit_title": "⚠️ Limite de Créditos de Insights Atingido",
   "insights_limit_message": "Você usou todos os seus créditos de insights disponíveis para este período.",
   "insights_limit_contact": "Entre em contato com o administrador do Voxerion na sua empresa para aumentar seu limite.",
@@ -56,7 +62,7 @@
   "support_email_subject": "Solicitação de Mais Créditos de Insights",
   "fallback_error_message": "Limite de créditos de insights atingido. Contate suporte@voxerion.com para obter ajuda.",
   "access_denied_fallback": "Acesso negado para {email}. Contate suporte@kantorapp.com.",
-  
+
   "unregistered_title": "Acesso Necessário",
   "unregistered_message": "O email <b>{email}</b> não está registrado no Voxerion.",
   "unregistered_fallback": "Acesso Necessário: O email <b>{email}</b> não está registrado no Voxerion.",

@@ -1,6 +1,6 @@
 {
   "welcome_title": "Welcome to Voxerion",
-  "welcome_desc": "A personalx assistant that helps you to better communicate with your employees helping you to become a better leader and progress in your career.",
+  "welcome_desc": "A personal assistant that helps you to better communicate with your employees helping you to become a better leader and progress in your career.",
   "welcome_start": "Select a calendar event to start.",
   "meeting_starts_in": "This meeting starts in",
   "meeting_started": "This meeting has started",
@@ -11,7 +11,13 @@
   "new_event": "New meeting being created",
   "no_title": "No title provided",
   "get_insight": "Get Insights",
-  
+  "add_personal_context": "Add Personal Context",
+
+  "personal_context_title": "Add Personal Context",
+  "personal_context_description": "Add any personal context or information that would help generate more relevant insights for this meeting.",
+  "personal_context_input_title": "Your personal context",
+  "personal_context_hint": "E.g., previous discussions, specific objectives, concerns, or background information...",
+
   "apiGenIns": "Generating insights...",
   "apiGenLoa": "Loading insights...",
   "apiGenWai": "Please wait while we analyze your meeting details...",
@@ -29,7 +35,7 @@
   "apiCopyIns": "Copy Insights",
   "apiCopyTxt": "The text has been added to a text field above. Press Ctrl+C (or Cmd+C) to copy it.",
   "apiDone": "Done",
-  
+
   "access_required": "🔒 Access Required",
   "contact_admin": "Please contact your administrator to get access to Voxerion.",
   "contact_support": "Contact Support",
@@ -39,10 +45,10 @@
   "logout": "Logout",
   "logout_success": "Logged out successfully",
   "return_to_login": "Return to Login",
-  
+
   "error": "An error occurred",
   "error_try_again": "An error occurred. Please try again later.",
-  
+
   "insights_limit_title": "⚠️ Insights Credit Limit Reached",
   "insights_limit_message": "You've used all your available insights credits for this period.",
   "insights_limit_contact": "Please contact the Voxerion administrator at your company to increase your limit.",
@@ -56,7 +62,7 @@
   "support_email_subject": "Request for More Insights Credits",
   "fallback_error_message": "Insights credit limit reached. Contact support@voxerion.com for help.",
   "access_denied_fallback": "Access denied for {email}. Contact support@kantorapp.com.",
-  
+
   "unregistered_title": "Access Required",
   "unregistered_message": "The email <b>{email}</b> is not registered with Voxerion.",
   "unregistered_fallback": "Access Required: The email <b>{email}</b> is not registered with Voxerion.",
