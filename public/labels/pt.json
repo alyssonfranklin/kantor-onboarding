@@ -67,5 +67,9 @@
   "unregistered_message": "O email <b>{email}</b> não está registrado no Voxerion.",
   "unregistered_fallback": "Acesso Necessário: O email <b>{email}</b> não está registrado no Voxerion.",
   "visit_website": "Visite Voxerion.com e cadastre-se!",
-  "website_url": "https://voxerion.com"
+  "website_url": "https://voxerion.com",
+
+  "debug_title": "Informações de Depuração",
+  "debug_error": "Erro ao gerar informações de depuração: ",
+  "debug_success": "Informações de depuração geradas com sucesso"
 }

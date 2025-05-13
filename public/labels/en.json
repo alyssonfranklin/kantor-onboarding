@@ -67,5 +67,9 @@
   "unregistered_message": "The email <b>{email}</b> is not registered with Voxerion.",
   "unregistered_fallback": "Access Required: The email <b>{email}</b> is not registered with Voxerion.",
   "visit_website": "Visit Voxerion.com and onboard!",
-  "website_url": "https://voxerion.com"
+  "website_url": "https://voxerion.com",
+
+  "debug_title": "Debug Information",
+  "debug_error": "Error generating debug information: ",
+  "debug_success": "Debug information generated successfully"
 }
