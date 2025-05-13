@@ -17,7 +17,7 @@
   "personal_context_title": "Personal Context",
   "personal_context_description": "Add any personal context or information that would help generate more relevant insights for this meeting.",
   "personal_context_input_title": "Your personal context",
-  "personal_context_hint": "E.g., previous discussions, specific objectives, concerns, or background information...",
+  "personal_context_hint": "I.e., previous discussions, specific objectives, concerns, or background information...",
 
   "apiGenIns": "Generating insights...",
   "apiGenLoa": "Loading insights...",
