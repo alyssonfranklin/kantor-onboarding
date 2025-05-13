@@ -12,9 +12,9 @@
   "new_event": "Nova reunião sendo criada",
   "no_title": "Sem título fornecido",
   "get_insight": "Obter Insights",
-  "add_personal_context": "Adicionar Contexto Pessoal",
+  "add_personal_context": "Contexto Pessoal",
 
-  "personal_context_title": "Adicionar Contexto Pessoal",
+  "personal_context_title": "Contexto Pessoal",
   "personal_context_description": "Adicione qualquer contexto ou informação pessoal que ajude a gerar insights mais relevantes para esta reunião.",
   "personal_context_input_title": "Seu contexto pessoal",
   "personal_context_hint": "Ex., discussões anteriores, objetivos específicos, preocupações ou informações de fundo...",
