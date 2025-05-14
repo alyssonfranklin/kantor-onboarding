@@ -38,9 +38,9 @@ const nextConfig: NextConfig = {
   // Configure redirects for custom domain handling
   async redirects() {
     return [
-      // Example: Redirect www to non-www in production
+      // Redirect www to non-www in production
       isProduction ? {
-        source: `https://www.${prodDomain}/:path*`,
+        source: '/from-www/:path*',
         destination: `https://${prodDomain}/:path*`,
         permanent: true,
       } : null,
@@ -57,7 +57,6 @@ const nextConfig: NextConfig = {
   // Build optimization
   poweredByHeader: false,
   reactStrictMode: true,
-  swcMinify: true,
   
   // Error handling during builds
   eslint: {

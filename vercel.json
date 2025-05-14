@@ -63,7 +63,13 @@
   ],
   "redirects": [
     {
-      "source": "/www.app.voxerion.com/:path*",
+      "source": "/:path*",
+      "has": [
+        {
+          "type": "host",
+          "value": "www.app.voxerion.com"
+        }
+      ],
       "destination": "https://app.voxerion.com/:path*",
       "permanent": true
     }
