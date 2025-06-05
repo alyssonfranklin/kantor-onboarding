@@ -1,12 +1,14 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { verifyToken, isTokenValid } from '../mongodb/utils/jwt-utils';
+import { getEnvironment, isProduction } from '../environment';
 
 interface AuthOptions {
   requiredRole?: string;
+  allowCredentials?: boolean;
 }
 
 /**
- * Authentication middleware for Next.js API routes
+ * Authentication middleware for Next.js API routes with cross-domain support
  */
 export async function withAuth(
   req: NextRequest,
@@ -15,23 +17,33 @@ export async function withAuth(
   options: AuthOptions = {}
 ): Promise<NextResponse> {
   try {
-    // Get the token from the Authorization header
+    // Get the token from the Authorization header or from cookies
     const authHeader = req.headers.get('authorization');
+    const cookies = req.cookies;
+    const tokenFromCookie = cookies.get('auth_token')?.value;
     
     console.log(`Auth middleware - Received request to ${req.method} ${req.url}`, { 
       hasAuthHeader: !!authHeader,
+      hasAuthCookie: !!tokenFromCookie,
       isBearer: authHeader?.startsWith('Bearer ') || false
     });
     
-    if (!authHeader || !authHeader.startsWith('Bearer ')) {
-      console.warn('Auth middleware - No valid authorization header');
+    // Determine which token to use (prefer header, fallback to cookie)
+    let token: string | undefined;
+    
+    if (authHeader && authHeader.startsWith('Bearer ')) {
+      token = authHeader.split(' ')[1];
+    } else if (tokenFromCookie) {
+      token = tokenFromCookie;
+    }
+    
+    if (!token) {
+      console.warn('Auth middleware - No valid authentication token found');
       return NextResponse.json(
         { success: false, message: 'Authentication required' },
         { status: 401 }
       );
     }
-    
-    const token = authHeader.split(' ')[1];
     
     // Verify the token format and signature
     console.log('Auth middleware - Verifying token');
@@ -65,7 +77,25 @@ export async function withAuth(
     
     console.log('Auth middleware - Authentication successful, proceeding to handler');
     // Pass the request to the handler with the decoded user info
-    return handler(req, decoded);
+    const response = await handler(req, decoded);
+    
+    // If allowCredentials is true, ensure the token is also set as a cookie for cross-domain support
+    if (options.allowCredentials && !response.cookies.get('auth_token')) {
+      const cookieOptions = {
+        // Cookie expiry should match token expiry
+        expires: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000), // 7 days
+        httpOnly: true,
+        secure: isProduction(),
+        path: '/',
+        sameSite: isProduction() ? 'none' as const : 'lax' as const,
+        // In production, set domain to the root domain to allow sharing between subdomains
+        ...(isProduction() && { domain: '.voxerion.com' }),
+      };
+      
+      response.cookies.set('auth_token', token, cookieOptions);
+    }
+    
+    return response;
   } catch (error) {
     console.error('Authentication error:', error);
     return NextResponse.json(
@@ -80,16 +110,23 @@ export async function withAuth(
  */
 export function getUserIdFromRequest(req: NextRequest): string | null {
   try {
+    // Check header first
     const authHeader = req.headers.get('authorization');
     
-    if (!authHeader || !authHeader.startsWith('Bearer ')) {
-      return null;
+    if (authHeader && authHeader.startsWith('Bearer ')) {
+      const token = authHeader.split(' ')[1];
+      const decoded = verifyToken(token);
+      return decoded.id as string;
     }
     
-    const token = authHeader.split(' ')[1];
-    const decoded = verifyToken(token);
+    // Fall back to cookie
+    const tokenFromCookie = req.cookies.get('auth_token')?.value;
+    if (tokenFromCookie) {
+      const decoded = verifyToken(tokenFromCookie);
+      return decoded.id as string;
+    }
     
-    return decoded.id as string;
+    return null;
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
   } catch (_error) {
     return null;
@@ -101,16 +138,23 @@ export function getUserIdFromRequest(req: NextRequest): string | null {
  */
 export function getCompanyIdFromRequest(req: NextRequest): string | null {
   try {
+    // Check header first
     const authHeader = req.headers.get('authorization');
     
-    if (!authHeader || !authHeader.startsWith('Bearer ')) {
-      return null;
+    if (authHeader && authHeader.startsWith('Bearer ')) {
+      const token = authHeader.split(' ')[1];
+      const decoded = verifyToken(token);
+      return decoded.company_id as string;
     }
     
-    const token = authHeader.split(' ')[1];
-    const decoded = verifyToken(token);
+    // Fall back to cookie
+    const tokenFromCookie = req.cookies.get('auth_token')?.value;
+    if (tokenFromCookie) {
+      const decoded = verifyToken(tokenFromCookie);
+      return decoded.company_id as string;
+    }
     
-    return decoded.company_id as string;
+    return null;
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
   } catch (_error) {
     return null;

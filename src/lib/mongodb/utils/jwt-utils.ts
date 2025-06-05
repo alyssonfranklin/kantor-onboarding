@@ -1,9 +1,16 @@
 import jwt from 'jsonwebtoken';
 import { IUser } from '../models/user.model';
 import Token from '../models/token.model';
+import { isProduction } from '@/lib/environment';
+import { cookies } from 'next/headers';
+import { NextResponse } from 'next/server';
 
 const JWT_SECRET = process.env.JWT_SECRET || 'voxerion_secret_key_change_in_production';
 const JWT_EXPIRY = process.env.JWT_EXPIRY || '7d';
+
+// Domain configuration for cookies
+const ROOT_DOMAIN = 'voxerion.com';
+const COOKIE_DOMAIN = isProduction() ? `.${ROOT_DOMAIN}` : undefined;
 
 type JwtPayloadExtended = {
   id: string;
@@ -45,6 +52,71 @@ export const generateToken = async (user: IUser): Promise<string> => {
     console.error('Error generating JWT token:', error);
     throw new Error('Failed to generate authentication token');
   }
+};
+
+/**
+ * Set authentication cookie for cross-domain use
+ */
+export const setAuthCookie = (
+  response: NextResponse, 
+  token: string,
+  options: {
+    maxAge?: number;
+    secure?: boolean;
+    domain?: string;
+  } = {}
+): NextResponse => {
+  const cookieOptions = {
+    // Default to JWT expiry or 7 days if not specified
+    maxAge: options.maxAge || parseInt(JWT_EXPIRY.replace('d', ''), 10) * 24 * 60 * 60,
+    httpOnly: true,
+    secure: options.secure ?? isProduction(),
+    path: '/',
+    sameSite: isProduction() ? 'none' as const : 'lax' as const,
+    // In production, set domain to the root domain to allow sharing between subdomains
+    ...(isProduction() && { domain: options.domain || COOKIE_DOMAIN }),
+  };
+  
+  response.cookies.set('auth_token', token, cookieOptions);
+  return response;
+};
+
+/**
+ * Set authentication cookie in server action context
+ */
+export const setServerActionAuthCookie = (
+  token: string,
+  options: {
+    maxAge?: number;
+    secure?: boolean;
+    domain?: string;
+  } = {}
+): void => {
+  const cookieStore = cookies();
+  const cookieOptions = {
+    // Default to JWT expiry or 7 days if not specified
+    maxAge: options.maxAge || parseInt(JWT_EXPIRY.replace('d', ''), 10) * 24 * 60 * 60,
+    httpOnly: true,
+    secure: options.secure ?? isProduction(),
+    path: '/',
+    sameSite: isProduction() ? 'none' as const : 'lax' as const,
+    // In production, set domain to the root domain to allow sharing between subdomains
+    ...(isProduction() && { domain: options.domain || COOKIE_DOMAIN }),
+  };
+  
+  cookieStore.set('auth_token', token, cookieOptions);
+};
+
+/**
+ * Clear authentication cookie
+ */
+export const clearAuthCookie = (response: NextResponse): NextResponse => {
+  response.cookies.delete({
+    name: 'auth_token',
+    path: '/',
+    domain: COOKIE_DOMAIN,
+  });
+  return response;
 };
 
 /**
