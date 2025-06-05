@@ -15,6 +15,7 @@ const geistMono = Geist_Mono({
 });
 
 // Base URL for the site - dynamically determined based on environment
+// This is safe to use in RSC because getBaseUrl only accesses NEXT_PUBLIC_ variables
 const siteUrl = getBaseUrl();
 
 // App details
