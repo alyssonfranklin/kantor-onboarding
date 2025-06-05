@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
@@ -8,11 +8,26 @@ import Link from "next/link";
 import { clientCsrf } from "@/lib/auth/index-client";
 
 /**
- * Reset Password Page
- * 
- * Handles the password reset flow after a user clicks a reset link.
+ * Loading component shown while page is loading
  */
-export default function ResetPasswordPage() {
+function ResetPasswordLoading() {
+  return (
+    <div className="min-h-screen flex flex-col items-center justify-center p-4 bg-gray-50">
+      <Card className="w-full max-w-md mx-auto">
+        <CardContent className="pt-6 text-center">
+          <div className="animate-pulse">
+            <p>Loading password reset...</p>
+          </div>
+        </CardContent>
+      </Card>
+    </div>
+  );
+}
+
+/**
+ * Reset Password Form Component
+ */
+function ResetPasswordForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const token = searchParams.get('token');
@@ -232,5 +247,19 @@ export default function ResetPasswordPage() {
         </CardFooter>
       </Card>
     </div>
+  );
+}
+
+/**
+ * Reset Password Page
+ * 
+ * Handles the password reset flow after a user clicks a reset link.
+ * Wrapped with Suspense to handle useSearchParams properly.
+ */
+export default function ResetPasswordPage() {
+  return (
+    <Suspense fallback={<ResetPasswordLoading />}>
+      <ResetPasswordForm />
+    </Suspense>
   );
 }

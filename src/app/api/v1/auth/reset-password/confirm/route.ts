@@ -8,8 +8,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { dbConnect } from '@/lib/mongodb/connect';
 import User from '@/lib/mongodb/models/user.model';
-import { verifyResetToken } from '@/lib/auth/resetToken';
-import { withCsrfProtection } from '@/lib/auth/csrf';
+import { verifyResetToken, withCsrfProtection } from '@/lib/auth/index-server';
 import bcrypt from 'bcryptjs';
 
 export async function POST(req: NextRequest) {

@@ -9,8 +9,9 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { dbConnect } from '@/lib/mongodb/connect';
 import User from '@/lib/mongodb/models/user.model';
-import { generateResetToken, createResetUrl, getResetTokenExpiry } from '@/lib/auth/resetToken';
-import { withCsrfProtection } from '@/lib/auth/csrf';
+import { generateResetToken, getResetTokenExpiry } from '@/lib/auth/index-server';
+import { createResetUrl } from '@/lib/auth/resetToken-client';
+import { withCsrfProtection } from '@/lib/auth/index-server';
 import { getBaseUrl } from '@/lib/environment';
 
 export async function POST(req: NextRequest) {

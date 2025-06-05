@@ -6,7 +6,7 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server';
-import { verifyResetToken } from '@/lib/auth/resetToken';
+import { verifyResetToken } from '@/lib/auth/index-server';
 
 export async function GET(req: NextRequest) {
   try {
