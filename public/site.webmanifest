@@ -1,0 +1,40 @@
+{
+  "name": "Voxerion",
+  "short_name": "Voxerion",
+  "description": "Business productivity platform for modern teams",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#FFFFFF",
+  "theme_color": "#E64A19",
+  "orientation": "portrait-primary",
+  "icons": [
+    {
+      "src": "/images/android-chrome-192x192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/images/android-chrome-512x512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "Dashboard",
+      "url": "/admin/dashboard",
+      "description": "View your dashboard"
+    },
+    {
+      "name": "Create Assistant",
+      "url": "/create-assistant",
+      "description": "Create a new assistant"
+    }
+  ],
+  "lang": "en",
+  "dir": "ltr",
+  "prefer_related_applications": false,
+  "categories": ["productivity", "business", "utilities"]
+}
