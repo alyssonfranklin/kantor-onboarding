@@ -1,3 +1,5 @@
+"use client";
+
 /**
  * Authentication Hooks
  * 
@@ -8,8 +10,9 @@
 import { useState, useEffect, useCallback, useContext } from 'react';
 import { AuthContext, AuthContextType } from './context';
 import { AUTH_URLS, SESSION_EVENTS, STORAGE_KEYS, SESSION_SETTINGS } from './constants';
-import { JwtPayload, getUserFromToken, needsRefresh, getTokenFromBrowser } from './token';
-import { clientCsrf } from './csrf';
+import { JwtPayload } from './token-server';
+import { getUserFromToken, needsRefresh, getTokenFromBrowser } from './token-client';
+import { clientCsrf } from './csrf-client';
 
 /**
  * Custom hook to access authentication context

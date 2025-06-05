@@ -1,3 +1,5 @@
+"use client";
+
 /**
  * Session Management
  * 
@@ -6,7 +8,7 @@
  */
 
 import { SESSION_EVENTS, STORAGE_KEYS } from './constants';
-import { getBrowserCookie, deleteBrowserCookie } from './cookies';
+import { getBrowserCookie, deleteBrowserCookie } from './cookies-client';
 import { AUTH_TOKEN_NAME, REFRESH_TOKEN_NAME, CSRF_TOKEN_NAME } from './constants';
 
 interface SessionEventData {

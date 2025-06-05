@@ -1,3 +1,5 @@
+"use client";
+
 /**
  * Authentication Provider Component
  * 
