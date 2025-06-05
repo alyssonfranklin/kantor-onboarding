@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Image from 'next/image';
+import { AUTH_URLS } from '@/lib/auth/constants';
 
 export default function ResetPasswordForm() {
   const [email, setEmail] = useState('');
@@ -14,7 +15,7 @@ export default function ResetPasswordForm() {
     e.preventDefault();
     setError('');
 
-    const res = await fetch('/api/users/reset-password', {
+    const res = await fetch(AUTH_URLS.REFRESH, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -51,7 +52,7 @@ export default function ResetPasswordForm() {
   };
 
   return (
-    <div className='w-1/3'>
+    <div className='w-11/12 md:w-2/5'>
         <div className='flex justify-center'>
             <Image src="/voxerion-logo.png" alt="Voxerion Logo" width={32} height={32} />
         </div>

@@ -32,7 +32,7 @@ export default function LoginForm() {
   };
 
   return (
-    <div className='w-4/5 md:w-2/5 border border-red-500'>
+    <div className='w-11/12 md:w-2/5'>
         <div className='flex justify-center'>
             <Image src="/voxerion-logo.png" alt="Voxerion Logo" width={32} height={32} />
         </div>

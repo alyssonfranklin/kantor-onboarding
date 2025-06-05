@@ -6,11 +6,11 @@ export default function AuthLayout({
   children: React.ReactNode;
 }) {
   return (
-    <div className="w-full h-auto bg-white border border-green-500">
+    <div className="w-full h-auto bg-white">
         <div>
           <NavBar />
         </div>
-        <div className="w-full border border-yellow-500">
+        <div className="w-full">
             {children}
         </div>
     </div>

@@ -1,29 +1,22 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { dbConnect } from '@/lib/mongodb/connect';
 import User from '@/lib/mongodb/models/user.model';
-import { generateToken } from '@/lib/mongodb/utils/jwt-utils';
-
-// CORS headers for all responses
-const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
-  'Access-Control-Allow-Headers': 'Content-Type, Authorization',
-};
+import { generateToken, setAuthCookie } from '@/lib/mongodb/utils/jwt-utils';
 
 /**
  * User login API route
- * POST /api/users/login
+ * POST /api/v1/users/login
  */
 export async function POST(req: NextRequest) {
   try {
     // Log request details for debugging
-    console.log('POST /api/users/login - Request received');
+    console.log('POST /api/v1/users/login - Request received');
     console.log('Method:', req.method);
     console.log('Headers:', Object.fromEntries([...req.headers.entries()]));
     console.log('URL:', req.url);
     
     await dbConnect();
-    console.log('POST /api/users/login - Connected to MongoDB');
+    console.log('POST /api/v1/users/login - Connected to MongoDB');
     
     // Check content-type to determine how to parse the request body
     const contentType = req.headers.get('content-type');
@@ -63,7 +56,7 @@ export async function POST(req: NextRequest) {
       }
     }
     
-    console.log('POST /api/users/login - Request body parsed:', { 
+    console.log('POST /api/v1/users/login - Request body parsed:', { 
       hasEmail: !!body.email,
       hasPassword: !!body.password,
       contentType 
@@ -71,10 +64,10 @@ export async function POST(req: NextRequest) {
     
     // Validate required fields
     if (!body.email || !body.password) {
-      console.log('POST /api/users/login - Missing required fields');
+      console.log('POST /api/v1/users/login - Missing required fields');
       return NextResponse.json(
         { success: false, message: 'Email and password are required' },
-        { status: 400, headers: corsHeaders }
+        { status: 400 }
       );
     }
     
@@ -83,10 +76,10 @@ export async function POST(req: NextRequest) {
     const user = await User.findOne({ email: body.email });
     
     if (!user) {
-      console.log(`POST /api/users/login - User not found for email: ${body.email}`);
+      console.log(`POST /api/v1/users/login - User not found for email: ${body.email}`);
       return NextResponse.json(
         { success: false, message: 'Invalid credentials' },
-        { status: 401, headers: corsHeaders }
+        { status: 401 }
       );
     }
     
@@ -113,38 +106,42 @@ export async function POST(req: NextRequest) {
       console.log(`Password match result: ${isMatch}`);
       
       if (!isMatch) {
-        console.log(`POST /api/users/login - Invalid password for user: ${body.email}`);
+        console.log(`POST /api/v1/users/login - Invalid password for user: ${body.email}`);
         return NextResponse.json(
           { success: false, message: 'Invalid credentials' },
-          { status: 401, headers: corsHeaders }
+          { status: 401 }
         );
       }
     } catch (error) {
       console.error('Error comparing password:', error);
       return NextResponse.json(
         { success: false, message: 'Error during authentication', error: String(error) },
-        { status: 500, headers: corsHeaders }
+        { status: 500 }
       );
     }
     
     // Generate JWT token
     const token = await generateToken(user);
     
-    console.log(`POST /api/users/login - Login successful for user: ${body.email}`);
+    console.log(`POST /api/v1/users/login - Login successful for user: ${body.email}`);
     
     // Return token and user info (excluding password)
     const userObj = user.toObject();
     delete userObj.password;
     
-    return NextResponse.json({
+    // Create response
+    const response = NextResponse.json({
       success: true,
       message: 'Login successful',
       token: token,
       accessToken: token, // Add accessToken field for compatibility
       user: userObj
-    }, { 
-      headers: corsHeaders // Add CORS headers
     });
+    
+    // Set authentication cookie for cross-domain support
+    setAuthCookie(response, token);
+    
+    return response;
   } catch (error) {
     console.error('Error in login:', error);
     return NextResponse.json(
@@ -153,54 +150,41 @@ export async function POST(req: NextRequest) {
         message: 'Login failed',
         error: error instanceof Error ? error.message : String(error)
       },
-      { 
-        status: 500,
-        headers: corsHeaders 
-      }
+      { status: 500 }
     );
   }
 }
 
 /**
- * Handle OPTIONS requests for CORS preflight
- */
-export async function OPTIONS() {
-  return new NextResponse(null, {
-    status: 204,
-    headers: corsHeaders,
-  });
-}
-
-/**
  * Handle GET requests for backward compatibility with Google Apps Script
- * GET /api/users/login?email=xxx&password=yyy
+ * GET /api/v1/users/login?email=xxx&password=yyy
  */
 export async function GET(req: NextRequest) {
   try {
     // Log request details for debugging
-    console.log('GET /api/users/login - Request received');
+    console.log('GET /api/v1/users/login - Request received');
     console.log('Method:', req.method);
     console.log('URL:', req.url);
     
     await dbConnect();
-    console.log('GET /api/users/login - Connected to MongoDB');
+    console.log('GET /api/v1/users/login - Connected to MongoDB');
     
     // Parse URL parameters
     const url = new URL(req.url);
     const email = url.searchParams.get('email');
     const password = url.searchParams.get('password');
     
-    console.log('GET /api/users/login - Parameters:', { 
+    console.log('GET /api/v1/users/login - Parameters:', { 
       hasEmail: !!email, 
       hasPassword: !!password 
     });
     
     // Validate required parameters
     if (!email || !password) {
-      console.log('GET /api/users/login - Missing required parameters');
+      console.log('GET /api/v1/users/login - Missing required parameters');
       return NextResponse.json(
         { success: false, message: 'Email and password are required' },
-        { status: 400, headers: corsHeaders }
+        { status: 400 }
       );
     }
     
@@ -209,10 +193,10 @@ export async function GET(req: NextRequest) {
     const user = await User.findOne({ email });
     
     if (!user) {
-      console.log(`GET /api/users/login - User not found for email: ${email}`);
+      console.log(`GET /api/v1/users/login - User not found for email: ${email}`);
       return NextResponse.json(
         { success: false, message: 'Invalid credentials' },
-        { status: 401, headers: corsHeaders }
+        { status: 401 }
       );
     }
     
@@ -240,38 +224,42 @@ export async function GET(req: NextRequest) {
       console.log(`GET - Password match result: ${isMatch}`);
       
       if (!isMatch) {
-        console.log(`GET /api/users/login - Invalid password for user: ${email}`);
+        console.log(`GET /api/v1/users/login - Invalid password for user: ${email}`);
         return NextResponse.json(
           { success: false, message: 'Invalid credentials' },
-          { status: 401, headers: corsHeaders }
+          { status: 401 }
         );
       }
     } catch (error) {
       console.error('GET - Error comparing password:', error);
       return NextResponse.json(
         { success: false, message: 'Error during authentication', error: String(error) },
-        { status: 500, headers: corsHeaders }
+        { status: 500 }
       );
     }
     
     // Generate JWT token
     const token = await generateToken(user);
     
-    console.log(`GET /api/users/login - Login successful for user: ${email}`);
+    console.log(`GET /api/v1/users/login - Login successful for user: ${email}`);
     
     // Return token and user info (excluding password)
     const userObj = user.toObject();
     delete userObj.password;
     
-    return NextResponse.json({
+    // Create response
+    const response = NextResponse.json({
       success: true,
       message: 'Login successful',
       token: token,
       accessToken: token, // Add accessToken field for compatibility
       user: userObj
-    }, { 
-      headers: corsHeaders
     });
+    
+    // Set authentication cookie for cross-domain support
+    setAuthCookie(response, token);
+    
+    return response;
   } catch (error) {
     console.error('Error in login (GET):', error);
     return NextResponse.json(
@@ -280,10 +268,7 @@ export async function GET(req: NextRequest) {
         message: 'Login failed',
         error: error instanceof Error ? error.message : String(error)
       },
-      { 
-        status: 500,
-        headers: corsHeaders 
-      }
+      { status: 500 }
     );
   }
 }

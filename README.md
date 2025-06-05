@@ -41,7 +41,7 @@ This project includes both a Next.js frontend and REST API:
 
 ## Environment Configuration
 
-The project uses a robust environment configuration system with support for multiple deployment environments:
+The project uses a robust environment configuration system with support for multiple deployment environments. For detailed documentation, see [ENVIRONMENT.md](ENVIRONMENT.md).
 
 ### Environment Files
 
@@ -54,10 +54,10 @@ The project uses a robust environment configuration system with support for mult
 
 ```typescript
 // Import environment utility
-import env, { getApiUrl, isProduction } from '../lib/environment';
+import { getEnv, getBaseUrl, isProduction } from '@/lib/environment';
 
 // Access environment variables in a type-safe way
-const port = env.PORT;
+const env = getEnv();
 const mongoUri = env.MONGODB_URI;
 
 // Use environment detection helpers
@@ -66,23 +66,37 @@ if (isProduction()) {
 }
 
 // Generate environment-aware URLs
-const apiUrl = getApiUrl();
-const absoluteUrl = getAbsoluteUrl('/users/profile');
+const baseUrl = getBaseUrl();
+const apiUrl = `${baseUrl}/api/v1`;
 ```
 
 ### API Client
 
-The application includes a centralized API client that uses environment-aware URLs:
+The application includes a centralized API client that handles environment-specific configuration:
 
 ```typescript
-import apiClient from '../lib/api-client';
+import { apiClient } from '@/lib/api-client';
 
-// GET request with authentication
-const users = await apiClient.get('/users', { token: userToken });
+// GET request with authentication (token handled automatically)
+const response = await apiClient.get('/users/me');
 
 // POST request with data
-const newUser = await apiClient.post('/users', userData, { token: adminToken });
+const newUser = await apiClient.post('/users', userData);
+
+// Using relative URLs (recommended for cross-domain support)
+const data = await apiClient.get('/companies', { useRelativeUrl: true });
 ```
+
+### Domain Transition Support
+
+The environment system is designed to support a smooth transition from development domains (kantor-onboarding.vercel.app) to production (app.voxerion.com):
+
+- URLs automatically adapt based on environment
+- Authentication cookies work across domains
+- API paths use consistent versioning
+- Assets use relative paths where possible
+
+For full details on domain transition, see the [Domain Transition](ENVIRONMENT.md#domain-transition) section in ENVIRONMENT.md.
 
 ## API Endpoints
 

@@ -3,6 +3,7 @@
  * 
  * This module provides a type-safe, centralized way to access environment variables
  * with validation, default values, and environment-specific overrides.
+ * It handles both client-side and server-side environments appropriately.
  */
 
 import { z } from 'zod';
@@ -13,57 +14,109 @@ import { z } from 'zod';
 export type Environment = 'development' | 'test' | 'production';
 
 /**
- * Environment Validation Schema
- * Defines all required environment variables with their types
+ * Detect if code is running on the server or client
+ * @returns {boolean} True if running on the server
  */
-const envSchema = z.object({
+export const isServer = typeof window === 'undefined';
+
+/**
+ * Client-Safe Environment Validation Schema
+ * Only includes variables that are safe to use on the client-side (NEXT_PUBLIC_*)
+ */
+const clientEnvSchema = z.object({
   // Application Environment
   NODE_ENV: z.enum(['development', 'test', 'production']).default('development'),
-  PORT: z.string().transform(val => parseInt(val, 10)).default('3000'),
   
-  // URLs and Endpoints
+  // Public URLs and Endpoints (safe for client)
   NEXT_PUBLIC_APP_URL: z.string().url().default('http://localhost:3000'),
   NEXT_PUBLIC_BASE_URL: z.string().url().default('http://localhost:3000'),
   NEXT_PUBLIC_API_URL: z.string().url().default('http://localhost:3000/api'),
   NEXT_PUBLIC_ASSETS_URL: z.string().url().default('http://localhost:3000'),
   
-  // Authentication
-  JWT_SECRET: z.string().min(10).default('voxerion_jwt_secret_key'),
-  JWT_EXPIRY: z.string().default('7d'),
-  JWT_REFRESH_EXPIRY: z.string().default('30d'),
-  
-  // Database
-  MONGODB_URI: z.string().url().includes('mongodb'),
-  
-  // CORS Settings
-  ALLOWED_ORIGINS: z.string().default('http://localhost:3000')
-    .transform(val => val.split(',').map(origin => origin.trim())),
-  
-  // Rate Limiting
-  RATE_LIMIT_REQUESTS: z.string().transform(val => parseInt(val, 10)).default('100'),
-  RATE_LIMIT_TIME: z.string().transform(val => parseInt(val, 10)).default('900000'),
-  
-  // Logging
-  LOG_LEVEL: z.enum(['error', 'warn', 'info', 'http', 'debug']).default('info'),
-  
-  // Optional Services
-  OPENAI_API_KEY: z.string().optional(),
+  // Optional client-safe services
   ANALYTICS_ID: z.string().optional(),
   SENTRY_DSN: z.string().optional(),
 });
 
 /**
- * Type definition for the validated environment
+ * Server-Side Environment Validation Schema
+ * Includes all environment variables, including server-only ones
  */
-export type Env = z.infer<typeof envSchema>;
+const serverEnvSchema = clientEnvSchema.extend({
+  // Server-only configuration
+  PORT: z.string().transform(val => parseInt(val, 10)).default('3000'),
+  
+  // Authentication (server-only)
+  JWT_SECRET: z.string().min(10).default('voxerion_jwt_secret_key'),
+  JWT_EXPIRY: z.string().default('7d'),
+  JWT_REFRESH_EXPIRY: z.string().default('30d'),
+  
+  // Database (server-only)
+  MONGODB_URI: z.string().url().includes('mongodb'),
+  
+  // CORS Settings (server-only)
+  ALLOWED_ORIGINS: z.string().default('http://localhost:3000')
+    .transform(val => val.split(',').map(origin => origin.trim())),
+  
+  // Rate Limiting (server-only)
+  RATE_LIMIT_REQUESTS: z.string().transform(val => parseInt(val, 10)).default('100'),
+  RATE_LIMIT_TIME: z.string().transform(val => parseInt(val, 10)).default('900000'),
+  
+  // Logging (server-only)
+  LOG_LEVEL: z.enum(['error', 'warn', 'info', 'http', 'debug']).default('info'),
+  
+  // Optional Services (server-only)
+  OPENAI_API_KEY: z.string().optional(),
+});
 
 /**
- * Parse and validate the environment variables
- * @returns {Env} The validated environment object
+ * Type definitions for validated environments
  */
-export function getEnv(): Env {
+export type ClientEnv = z.infer<typeof clientEnvSchema>;
+export type ServerEnv = z.infer<typeof serverEnvSchema>;
+export type Env = ServerEnv; // For backward compatibility
+
+/**
+ * Parse and validate the client environment variables
+ * @returns {ClientEnv} The validated client environment object
+ */
+export function getClientEnv(): ClientEnv {
   try {
-    // First collect all environment variables
+    // Collect client-safe environment variables
+    const env = {
+      NODE_ENV: process.env.NODE_ENV,
+      NEXT_PUBLIC_APP_URL: process.env.NEXT_PUBLIC_APP_URL,
+      NEXT_PUBLIC_BASE_URL: process.env.NEXT_PUBLIC_BASE_URL,
+      NEXT_PUBLIC_API_URL: process.env.NEXT_PUBLIC_API_URL,
+      NEXT_PUBLIC_ASSETS_URL: process.env.NEXT_PUBLIC_ASSETS_URL,
+      ANALYTICS_ID: process.env.ANALYTICS_ID,
+      SENTRY_DSN: process.env.SENTRY_DSN,
+    };
+
+    // Validate against the client schema
+    return clientEnvSchema.parse(env);
+  } catch (error) {
+    if (error instanceof z.ZodError) {
+      const missingVars = error.errors.map(err => err.path.join('.'));
+      console.error('❌ Client environment validation failed. Missing or invalid variables:', missingVars);
+      throw new Error(`Client environment validation failed: ${missingVars.join(', ')}`);
+    }
+    throw error;
+  }
+}
+
+/**
+ * Parse and validate all environment variables (server-side only)
+ * @returns {ServerEnv} The validated server environment object
+ */
+export function getServerEnv(): ServerEnv {
+  if (!isServer) {
+    console.warn('Attempting to access server environment variables on the client side');
+    throw new Error('Server environment variables are not available on the client side');
+  }
+
+  try {
+    // Collect all environment variables
     const env = {
       NODE_ENV: process.env.NODE_ENV,
       PORT: process.env.PORT,
@@ -84,16 +137,24 @@ export function getEnv(): Env {
       SENTRY_DSN: process.env.SENTRY_DSN,
     };
 
-    // Validate against the schema
-    return envSchema.parse(env);
+    // Validate against the server schema
+    return serverEnvSchema.parse(env);
   } catch (error) {
     if (error instanceof z.ZodError) {
       const missingVars = error.errors.map(err => err.path.join('.'));
-      console.error('❌ Environment validation failed. Missing or invalid variables:', missingVars);
-      throw new Error(`Environment validation failed: ${missingVars.join(', ')}`);
+      console.error('❌ Server environment validation failed. Missing or invalid variables:', missingVars);
+      throw new Error(`Server environment validation failed: ${missingVars.join(', ')}`);
     }
     throw error;
   }
+}
+
+/**
+ * Get the appropriate environment based on runtime context
+ * @returns {ClientEnv | ServerEnv} Environment variables appropriate for the current context
+ */
+export function getEnv(): ClientEnv | ServerEnv {
+  return isServer ? getServerEnv() : getClientEnv();
 }
 
 /**
@@ -130,6 +191,7 @@ export function isTest(): boolean {
 
 /**
  * Get the appropriate base URL for the current environment
+ * Safe for both client and server
  * @returns {string} The base URL
  */
 export function getBaseUrl(): string {
@@ -139,6 +201,7 @@ export function getBaseUrl(): string {
 
 /**
  * Get the API URL for the current environment
+ * Safe for both client and server
  * @returns {string} The API URL
  */
 export function getApiUrl(): string {
@@ -147,6 +210,7 @@ export function getApiUrl(): string {
 
 /**
  * Get the assets URL for the current environment
+ * Safe for both client and server
  * @returns {string} The assets URL
  */
 export function getAssetsUrl(): string {
@@ -155,6 +219,7 @@ export function getAssetsUrl(): string {
 
 /**
  * Generate an absolute URL
+ * Safe for both client and server
  * @param {string} path - The relative path
  * @returns {string} The absolute URL
  */
@@ -166,6 +231,7 @@ export function getAbsoluteUrl(path: string): string {
 
 /**
  * Generate an absolute API URL
+ * Safe for both client and server
  * @param {string} path - The relative API path
  * @returns {string} The absolute API URL
  */
@@ -177,6 +243,7 @@ export function getAbsoluteApiUrl(path: string): string {
 
 /**
  * Get an asset URL
+ * Safe for both client and server
  * @param {string} path - The asset path
  * @returns {string} The absolute asset URL
  */
@@ -186,6 +253,6 @@ export function getAssetUrl(path: string): string {
   return `${assetsUrl}/${cleanPath}`;
 }
 
-// Export a singleton instance of the environment
+// Export a singleton instance of the environment appropriate for the runtime context
 const env = getEnv();
 export default env;
