@@ -83,6 +83,11 @@ export async function POST(req: NextRequest) {
     
     // Generate JWT token
     const token = await generateToken(user);
+
+    return NextResponse.json(
+      { success: false, message: 'Generó el token: ' + token },
+      { status: 400 }
+    );
     
     // Return token and user info (excluding password)
     const userObj = user.toObject();

@@ -1,40 +1,59 @@
 'use client';
 
 import { useState } from 'react';
-import { useRouter } from 'next/navigation';
 import Image from 'next/image';
 import { AUTH_URLS } from '@/lib/auth/constants';
+import { clientCsrf } from "@/lib/auth/index-client";
 
 export default function ResetPasswordForm() {
-  const [email, setEmail] = useState('');
-  const [error, setError] = useState('');
+  const [email, setEmail] = useState("");
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isSubmitted, setIsSubmitted] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [resetUrl, setResetUrl] = useState<string | null>(null);
   const [showConfirm, setShowConfirm] = useState(false);
-  const router = useRouter();
 
   const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setError('');
-
-    const res = await fetch(AUTH_URLS.REFRESH, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({ email }),
-    });
-
-    if (res.ok) {
-      setShowConfirm(true);
-    } else {
-      const data = await res.json();
-      setError(data.message || 'Reset Password failed');
-    }
-  };
+      e.preventDefault();
+      setIsSubmitting(true);
+      setError(null);
+      
+      try {
+        // Get CSRF token for the request
+        const headers = clientCsrf.addToHeaders({
+          'Content-Type': 'application/json'
+        });
+        
+        const response = await fetch('/api/v1/auth/reset-password/request', {
+          method: 'POST',
+          headers,
+          body: JSON.stringify({ email }),
+        });
+        
+        const data = await response.json();
+        
+        if (!response.ok) {
+          throw new Error(data.message || 'Failed to send reset email');
+        }
+        
+        // In development, we return the reset URL for testing
+        if (data.resetUrl) {
+          setResetUrl(data.resetUrl);
+        }
+        
+        setIsSubmitted(true);
+      } catch (err) {
+        console.error("Password reset request failed:", err);
+        setError("Failed to send password reset email. Please try again later.");
+      } finally {
+        setIsSubmitting(false);
+      }
+    };
 
   const resendEmail = async (e: React.MouseEvent<HTMLAnchorElement>) => {
       e.preventDefault();
       setError('');
-      const res = await fetch('/api/users/resend-email', {
+      const res = await fetch('/api/v1/auth/reset-password/request', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -147,9 +166,6 @@ export default function ResetPasswordForm() {
 
             </div>
         }
-        
-        
-
         
     </div>
   );
