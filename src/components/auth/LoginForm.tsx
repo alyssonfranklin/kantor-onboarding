@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { useLogin, useAuth, clientCsrf } from "@/lib/auth";
+import { useLogin, useAuth, clientCsrf } from "@/lib/auth/index-client";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import Link from "next/link";

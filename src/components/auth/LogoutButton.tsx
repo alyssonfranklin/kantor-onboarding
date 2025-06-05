@@ -1,6 +1,6 @@
 "use client";
 
-import { useLogout } from "@/lib/auth";
+import { useLogout } from "@/lib/auth/index-client";
 import { Button } from "@/components/ui/button";
 
 interface LogoutButtonProps {

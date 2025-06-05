@@ -4,7 +4,7 @@ import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import Link from "next/link";
-import { clientCsrf } from "@/lib/auth";
+import { clientCsrf } from "@/lib/auth/index-client";
 
 /**
  * Forgot Password Page
