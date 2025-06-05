@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { dbConnect } from '@/lib/mongodb/connect';
 import User from '@/lib/mongodb/models/user.model';
-import { generateJwtToken } from '@/lib/mongodb/utils/jwt-utils';
+import { generateToken } from '@/lib/mongodb/utils/jwt-utils';
 
 // CORS headers for all responses
 const corsHeaders = {
@@ -128,7 +128,7 @@ export async function POST(req: NextRequest) {
     }
     
     // Generate JWT token
-    const token = await generateJwtToken(user);
+    const token = await generateToken(user);
     
     console.log(`POST /api/users/login - Login successful for user: ${body.email}`);
     
@@ -255,7 +255,7 @@ export async function GET(req: NextRequest) {
     }
     
     // Generate JWT token
-    const token = await generateJwtToken(user);
+    const token = await generateToken(user);
     
     console.log(`GET /api/users/login - Login successful for user: ${email}`);
     
