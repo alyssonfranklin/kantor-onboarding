@@ -6,7 +6,7 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server';
-import { createCsrfToken } from '@/lib/auth/csrf';
+import { createCsrfToken } from '@/lib/auth/index-server';
 
 export async function GET(req: NextRequest) {
   try {

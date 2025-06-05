@@ -81,12 +81,23 @@ export async function POST(req: NextRequest) {
       );
     }
     
-    // Generate JWT token
-    const token = await generateToken(user);
-    
-    // Return token and user info (excluding password)
+    // Return user info (excluding password)
     const userObj = user.toObject();
     delete userObj.password;
+    
+    // Generate JWT token with only the necessary payload properties
+    // Convert Mongoose document properties to plain strings
+    const tokenPayload = {
+      id: String(user.id),
+      email: String(user.email),
+      role: String(user.role || 'user'), // Default to 'user' if role is undefined
+      company_id: user.company_id ? String(user.company_id) : undefined
+    };
+    
+    // Debug payload
+    console.log('Token payload:', JSON.stringify(tokenPayload));
+    
+    const token = generateToken(tokenPayload);
     
     // Create response
     const response = NextResponse.json({
