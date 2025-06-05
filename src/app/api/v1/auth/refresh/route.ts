@@ -7,16 +7,13 @@
 
 import { NextRequest, NextResponse } from 'next/server';
 import { dbConnect } from '@/lib/mongodb/connect';
-import { verifyToken, isTokenValid, invalidateToken } from '@/lib/mongodb/utils/jwt-utils';
-import { getRequestCookie } from '@/lib/auth/cookies';
+import { verifyToken, generateToken, getRequestCookie, setAuthCookie, withCsrfProtection } from '@/lib/auth/index-server';
+import { isTokenValid, invalidateToken } from '@/lib/mongodb/utils/jwt-utils';
 import { 
   REFRESH_TOKEN_NAME, 
   AUTH_COOKIE_OPTIONS,
   AUTH_TOKEN_NAME
 } from '@/lib/auth/constants';
-import { setAuthCookie } from '@/lib/auth/cookies';
-import { generateToken } from '@/lib/auth/token';
-import { withCsrfProtection } from '@/lib/auth/csrf';
 import User from '@/lib/mongodb/models/user.model';
 
 export async function POST(req: NextRequest) {
@@ -62,12 +59,12 @@ export async function POST(req: NextRequest) {
       await invalidateToken(oldAuthToken);
     }
     
-    // Generate a new token
+    // Generate a new token with properly formatted payload
     const newToken = generateToken({
-      id: user.id,
-      email: user.email,
-      role: user.role,
-      company_id: user.company_id
+      id: String(user.id),
+      email: String(user.email),
+      role: String(user.role || 'user'),
+      company_id: user.company_id ? String(user.company_id) : undefined
     });
     
     // Create response with new token

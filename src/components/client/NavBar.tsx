@@ -4,9 +4,9 @@ import React, { useState } from "react";
 import Image from 'next/image'
 
 const languages = [
-  { code: "en", label: "English" },
-  { code: "es", label: "Español" },
-  { code: "pt", label: "Português" },
+  { code: "en", label: "English", flag: 'us.svg' },
+  { code: "es", label: "Español" , flag: 'es.svg'},
+  { code: "pt", label: "Português", flag: 'pt.svg' },
 ];
 
 export default function NavBar() {
@@ -23,14 +23,14 @@ export default function NavBar() {
 
         <div className="flex gap-4 items-center">
           <a 
-            href="/pages" 
+            href="/login" 
             className="flex items-center space-x-3 rtl:space-x-reverse"
           >
             <Image 
               src="/voxerion-logo.png" 
               alt="Voxerion Logo" 
-              width={32} 
-              height={32} 
+              width={30} 
+              height={30} 
             />
             <span className="self-center text-2xl font-semibold whitespace-nowrap dark:text-white">
               Voxerion
@@ -38,7 +38,7 @@ export default function NavBar() {
           </a>
 
           <div 
-            className="hidden w-full md:block md:w-auto" 
+            className="hidden w-full md:block md:w-auto md:pl-10" 
             id="navbar-default"
           >
             <ul className="font-medium flex flex-col p-4 md:p-0 mt-4 border border-gray-100 rounded-lg bg-gray-50 md:flex-row md:space-x-8 rtl:space-x-reverse md:mt-0 md:border-0 md:bg-white dark:bg-gray-800 md:dark:bg-gray-900 dark:border-gray-700">
@@ -149,7 +149,7 @@ export default function NavBar() {
         </div>
 
         <div>
-          <select
+          {/* <select
             value={lang}
             onChange={e => setLang(e.target.value)}
             className="border-none px-3 py-1 focus:outline-none focus:ring-0"
@@ -159,7 +159,35 @@ export default function NavBar() {
                 {l.label}
               </option>
             ))}
-          </select>
+          </select> */}
+          <div className="relative text-xs w-full">
+            <select
+              value={lang}
+              onChange={e => setLang(e.target.value)}
+              className="appearance-none border-none pl-10 py-1 pr-8 focus:outline-none"
+              style={{ background: "none" }}
+            >
+              {languages.map(l => (
+                <option key={l.code} value={l.code}>
+                  {l.label}
+                </option>
+              ))}
+            </select>
+            <div className="pointer-events-none absolute inset-y-0 right-2 flex items-center">
+              <svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
+              </svg>
+            </div>
+            <div className="absolute left-0 top-0 flex items-center h-full pl-2 pointer-events-none">
+              <Image
+                src={`/${languages.find(l => l.code === lang)?.flag || 'us.svg'}`}
+                alt={languages.find(l => l.code === lang)?.label || ''}
+                width={15}
+                height={15}
+                className="inline-block mr-2"
+              />
+            </div>
+          </div>
         </div>
 
         <button 

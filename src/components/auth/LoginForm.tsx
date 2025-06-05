@@ -3,7 +3,6 @@
 import { useState } from "react";
 import { useLogin, useAuth, clientCsrf } from "@/lib/auth/index-client";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import Link from "next/link";
 
 /**
@@ -34,80 +33,78 @@ export default function LoginForm() {
   };
   
   return (
-    <Card className="w-full max-w-md mx-auto">
-      <CardHeader>
-        <CardTitle className="text-2xl text-center">Login to Voxerion</CardTitle>
-      </CardHeader>
-      <CardContent>
-        <form onSubmit={handleSubmit} className="space-y-4">
-          {/* CSRF Protection */}
-          {clientCsrf.hiddenField()}
-          
-          {/* Email Field */}
-          <div className="space-y-2">
-            <label htmlFor="email" className="block text-sm font-medium">
-              Email Address
-            </label>
-            <input
-              id="email"
-              type="email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              required
-              className="w-full px-3 py-2 border rounded-md"
-              placeholder="youremail@example.com"
-            />
-          </div>
-          
-          {/* Password Field */}
-          <div className="space-y-2">
-            <label htmlFor="password" className="block text-sm font-medium">
-              Password
-            </label>
-            <input
-              id="password"
-              type="password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              required
-              className="w-full px-3 py-2 border rounded-md"
-            />
-          </div>
-          
-          {/* Remember Me Checkbox */}
-          <div className="flex items-center">
-            <input
-              id="remember-me"
-              type="checkbox"
-              checked={rememberMe}
-              onChange={(e) => setRememberMe(e.target.checked)}
-              className="h-4 w-4 rounded border-gray-300"
-            />
-            <label htmlFor="remember-me" className="ml-2 block text-sm">
-              Remember me
-            </label>
-          </div>
-          
-          {/* Error Message */}
-          {error && (
-            <div className="text-red-500 text-sm py-2">{error}</div>
-          )}
-          
-          {/* Submit Button */}
-          <Button
-            type="submit"
-            className="w-full"
-            disabled={loginInProgress}
-          >
-            {loginInProgress ? "Signing in..." : "Sign in"}
-          </Button>
-        </form>
-      </CardContent>
-      <CardFooter className="flex justify-center text-sm">
-        <Link href="/forgot-password" className="text-blue-600 hover:underline">
-          Forgot your password?
-        </Link>
-      </CardFooter>
-    </Card>
+    <form 
+      onSubmit={handleSubmit} 
+      className="space-y-4 p-8 border-none rounded-lg"
+    >
+      {/* CSRF Protection */}
+      {clientCsrf.hiddenField()}
+      
+      {error && <p className="text-red-500 text-sm font-semibold">{error}</p>}
+      
+      <div>
+        <label 
+          htmlFor="email" 
+          className="block text-sm font-medium text-gray-700"
+        >
+          Email
+        </label>
+        <input
+          type="text"
+          id="email"
+          value={email}
+          onChange={(e) => setEmail(e.target.value)}
+          className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
+          required
+          placeholder='Enter your email'
+        />
+      </div>
+      <div>
+        <label 
+          htmlFor="password" 
+          className="block text-sm font-medium text-gray-700"
+        >
+          Password
+        </label>
+        <input
+          type="password"
+          id="password"
+          value={password}
+          onChange={(e) => setPassword(e.target.value)}
+          className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
+          required
+          placeholder='********'
+        />
+      </div>
+      <div className='flex justify-between gap-4'>
+        <div>
+          <label className="inline-flex items-center">
+              <input
+                type="checkbox"
+                className="form-checkbox h-4 w-4 text-indigo-600 transition duration-150 ease-in-out"
+                onChange={(e) => setRememberMe(e.target.checked)}
+              />
+              <span className="ml-2 text-sm font-semibold text-[#344054]">
+                Remember for 30 days
+              </span>
+          </label>
+        </div>
+        <div>
+          <Link
+              href="/forgot-password"
+              className="font-semibold text-[#E62E05] hover:underline"
+            >
+              Forgot password?
+            </Link>
+        </div>
+      </div>
+      <Button
+        type="submit"
+        className="w-full"
+        disabled={loginInProgress}
+      >
+        {loginInProgress ? "Signing in..." : "Sign in"}
+      </Button>
+    </form>
   );
 }

@@ -7,8 +7,8 @@
 
 import { NextRequest, NextResponse } from 'next/server';
 import { dbConnect } from '@/lib/mongodb/connect';
-import { verifyToken, isTokenValid } from '@/lib/mongodb/utils/jwt-utils';
-import { getRequestCookie } from '@/lib/auth/cookies';
+import { verifyToken, getRequestCookie } from '@/lib/auth/index-server';
+import { isTokenValid } from '@/lib/mongodb/utils/jwt-utils';
 import { AUTH_TOKEN_NAME } from '@/lib/auth/constants';
 import User from '@/lib/mongodb/models/user.model';
 
@@ -61,11 +61,11 @@ export async function GET(req: NextRequest) {
       success: true,
       message: 'Token is valid',
       user: {
-        id: user.id,
-        email: user.email,
-        name: user.name,
-        role: user.role,
-        company_id: user.company_id
+        id: String(user.id),
+        email: String(user.email),
+        name: user.name ? String(user.name) : undefined,
+        role: String(user.role),
+        company_id: user.company_id ? String(user.company_id) : undefined
       }
     });
   } catch (error) {
