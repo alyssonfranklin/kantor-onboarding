@@ -3,6 +3,7 @@ import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import { getBaseUrl } from "@/lib/environment";
 import { StructuredData } from "@/components/ui/structured-data";
+import SessionProvider from "@/lib/auth";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -129,8 +130,10 @@ export default function RootLayout({
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
-        <StructuredData />
-        {children}
+        <SessionProvider>
+          <StructuredData />
+          {children}
+        </SessionProvider>
       </body>
     </html>
   );
