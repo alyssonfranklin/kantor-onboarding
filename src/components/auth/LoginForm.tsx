@@ -5,6 +5,8 @@ import { useLogin, useAuth, clientCsrf } from "@/lib/auth/index-client";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import Link from "next/link";
+// Import this for debugging
+import { AUTH_URLS } from "@/lib/auth/constants";
 
 /**
  * Login Form Component
