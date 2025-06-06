@@ -49,6 +49,8 @@ export function useLogin() {
         'Content-Type': 'application/json'
       });
       
+      console.log('Attempting login with URL:', AUTH_URLS.LOGIN);
+      
       const response = await fetch(AUTH_URLS.LOGIN, {
         method: 'POST',
         headers,

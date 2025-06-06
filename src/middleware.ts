@@ -41,9 +41,19 @@ export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
   const response = NextResponse.next();
   
-  // Skip version prefixing for health check endpoints
-  if (pathname === '/api/health') {
+  // Skip version prefixing for special endpoints
+  if (pathname === '/api/health' || 
+      pathname.startsWith('/api/admin/') || 
+      pathname === '/api/verify-password') {
     return response;
+  }
+  
+  // Special handling for login route
+  if (pathname === '/api/users/login') {
+    // Redirect to the auth login endpoint
+    const url = request.nextUrl.clone();
+    url.pathname = '/api/v1/auth/login';
+    return NextResponse.rewrite(url);
   }
   
   // 1. Handle API versioning 
