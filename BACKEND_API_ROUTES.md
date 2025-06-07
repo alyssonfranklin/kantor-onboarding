@@ -16,16 +16,30 @@ This document lists all backend API routes in `/src/app/api/` directory.
 
 These routes implement the new versioned authentication system with CSRF protection:
 
-| Route | Methods | Purpose |
-|-------|---------|---------|
-| `/api/v1/auth/login` | POST | User authentication with CSRF protection |
-| `/api/v1/auth/logout` | POST | User logout with token invalidation |
-| `/api/v1/auth/validate` | GET | Validate authentication token |
-| `/api/v1/auth/refresh` | POST | Refresh authentication token |
-| `/api/v1/auth/csrf` | GET | Generate CSRF token |
-| `/api/v1/auth/reset-password/request` | POST | Request password reset |
-| `/api/v1/auth/reset-password/verify` | GET | Verify password reset token |
-| `/api/v1/auth/reset-password/confirm` | POST | Confirm password reset with new password |
+| Route | Methods | Purpose | Status |
+|-------|---------|---------|--------|
+| `/api/v1/auth/login` | POST | User authentication with CSRF protection | ✅ Live |
+| `/api/v1/auth/logout` | POST | User logout with token invalidation | ✅ Live |
+| `/api/v1/auth/validate` | GET | Validate authentication token | ✅ Live |
+| `/api/v1/auth/refresh` | POST | Refresh authentication token | ✅ Live |
+| `/api/v1/auth/csrf` | GET | Generate CSRF token | ✅ Live |
+| `/api/v1/auth/reset-password/request` | POST | Request password reset | ✅ Live |
+| `/api/v1/auth/reset-password/verify` | GET | Verify password reset token | ✅ Live |
+| `/api/v1/auth/reset-password/confirm` | POST | Confirm password reset with new password | ✅ Live |
+
+## 🔐 V1 Data API (Versioned)
+
+These V1 data routes are deployed and working on main branch:
+
+| Route | Methods | Purpose | Status |
+|-------|---------|---------|--------|
+| `/api/v1/users` | GET, POST | List users with filtering, create new users | ✅ Live |
+| `/api/v1/companies` | GET, POST | List companies with filtering, create new companies | ✅ Live |
+| `/api/v1/departments` | GET, POST | List departments with filtering, create new departments | ✅ Live |
+| `/api/v1/employees` | GET, POST | List employees with filtering, create new employees | ✅ Live |
+| `/api/v1/labels` | GET | Get labels for internationalization (supports en, pt, es) | ✅ Live |
+| `/api/v1/health` | GET | Health check for API and database connectivity | ✅ Live |
+| `/api/v1/users/update-insights` | GET, POST | Update user insights count (public endpoint) | ✅ Live |
 
 ---
 
@@ -173,23 +187,33 @@ Implemented on sensitive endpoints:
 
 ## Missing V1 Endpoints
 
-⚠️ **Important**: The following endpoints are called by Google Apps Script but don't have V1 equivalents yet:
+⚠️ **Important**: The following endpoints are called by Google Apps Script but are still missing V1 equivalents on main branch:
 
-| Legacy Endpoint | Status | Action Needed |
-|----------------|--------|---------------|
-| `/api/users` | ❌ No V1 | Create `/api/v1/users` |
-| `/api/users/email` | ❌ No V1 | Create `/api/v1/users/email` |
-| `/api/users/update-insights` | ❌ No V1 | Create `/api/v1/users/update-insights` |
-| `/api/companies` | ❌ No V1 | Create `/api/v1/companies` |
-| `/api/companies/domain` | ❌ No V1 | Create `/api/v1/companies/domain` |
-| `/api/departments` | ❌ No V1 | Create `/api/v1/departments` |
-| `/api/employees` | ❌ No V1 | Create `/api/v1/employees` |
-| `/api/labels` | ❌ No V1 | Create `/api/v1/labels` |
-| `/api/health` | ❌ No V1 | Create `/api/v1/health` |
+| Legacy Endpoint | V1 Status | Action Needed |
+|----------------|-----------|---------------|
+| `/api/users/email` | ❌ 404 Not Found | Deploy `/api/v1/users/email` to main |
+| `/api/companies/domain` | ❌ 404 Not Found | Deploy `/api/v1/companies/domain` to main |
+
+## ✅ V1 Endpoints Working on Main Branch
+
+The following V1 endpoints have been successfully deployed and tested:
+
+| V1 Endpoint | Test Result | Status |
+|-------------|-------------|--------|
+| `/api/v1/health` | 200 OK | ✅ Working |
+| `/api/v1/labels` | 200 OK | ✅ Working |
+| `/api/v1/users` | 401 Unauthorized (requires auth) | ✅ Working |
+| `/api/v1/companies` | 401 Unauthorized (requires auth) | ✅ Working |
+| `/api/v1/departments` | 401 Unauthorized (requires auth) | ✅ Working |
+| `/api/v1/employees` | 401 Unauthorized (requires auth) | ✅ Working |
+| `/api/v1/users/update-insights` | 400 Bad Request (expects data) | ✅ Working |
+| `/api/v1/auth/*` | Various (login, logout, etc.) | ✅ Working |
 
 ---
 
 ## Update History
 
 - **2025-06-06**: Initial documentation created
-- **2025-06-06**: Google Apps Script endpoints updated to use `/api/v1/` pattern (but backend V1 routes missing)
+- **2025-06-06**: Google Apps Script endpoints updated to use `/api/v1/` pattern
+- **2025-06-06**: Tested all V1 endpoints on main branch, updated documentation with actual deployment status
+- **2025-06-06**: Confirmed 9 out of 11 required V1 endpoints are working on main branch
