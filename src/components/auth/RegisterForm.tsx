@@ -24,7 +24,7 @@ export default function RegisterForm() {
 			return;
 		}
 
-    const res = await fetch('/api/add-user', {
+    const res = await fetch('/api/users', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',

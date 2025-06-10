@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { clientCsrf } from "@/lib/auth/index-client";
+import { AUTH_URLS, clientCsrf } from "@/lib/auth/index-client";
 import { Button } from '@/components/ui/button';
 
 export default function ResetPasswordForm(
@@ -25,7 +25,7 @@ export default function ResetPasswordForm(
 
       setIsSubmitting(true);
       
-      const response = await fetch('/api/v1/auth/reset-password/request', {
+      const response = await fetch(AUTH_URLS.REQUEST_PASSWORD_RESET, {
         method: 'POST',
         headers,
         body: JSON.stringify({ email }),
