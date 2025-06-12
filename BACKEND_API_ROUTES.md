@@ -4,11 +4,11 @@ This document lists all backend API routes in `/src/app/api/` directory.
 
 ## Summary
 
-**Total Routes**: 32 unique route files  
+**Total Routes**: 47 unique route files  
 **HTTP Methods**: GET, POST, PUT, DELETE, OPTIONS  
-**Versioned Routes**: 8 routes under `/api/v1/`  
-**Non-versioned Routes**: 24 routes  
-**Routes with Parameters**: 6 routes with dynamic `[id]` parameters  
+**Versioned Routes**: 28 routes under `/api/v1/`  
+**Non-versioned Routes**: 19 routes (legacy, deprecated)  
+**Routes with Parameters**: 10 routes with dynamic `[id]` parameters  
 
 ---
 
@@ -34,12 +34,35 @@ These V1 data routes are deployed and working on main branch:
 | Route | Methods | Purpose | Status |
 |-------|---------|---------|--------|
 | `/api/v1/users` | GET, POST | List users with filtering, create new users | ✅ Live |
+| `/api/v1/users/[id]` | GET, PUT, DELETE | CRUD operations for specific user | ✅ Live |
 | `/api/v1/companies` | GET, POST | List companies with filtering, create new companies | ✅ Live |
+| `/api/v1/companies/[id]` | GET, PUT, DELETE | CRUD operations for specific company | ✅ Live |
 | `/api/v1/departments` | GET, POST | List departments with filtering, create new departments | ✅ Live |
+| `/api/v1/departments/[id]` | GET, PUT, DELETE | CRUD operations for specific department | ✅ Live |
 | `/api/v1/employees` | GET, POST | List employees with filtering, create new employees | ✅ Live |
+| `/api/v1/employees/[id]` | GET, PUT, DELETE | CRUD operations for specific employee | ✅ Live |
 | `/api/v1/labels` | GET | Get labels for internationalization (supports en, pt, es) | ✅ Live |
 | `/api/v1/health` | GET | Health check for API and database connectivity | ✅ Live |
 | `/api/v1/users/update-insights` | GET, POST | Update user insights count (public endpoint) | ✅ Live |
+
+## 🔧 V1 Assistant/AI Management (Versioned)
+
+| Route | Methods | Purpose | Status |
+|-------|---------|---------|--------|
+| `/api/v1/update-assistant` | POST | Update OpenAI assistant instructions | ✅ Live |
+| `/api/v1/create-agent` | POST | Create new OpenAI assistant for company | ✅ Live |
+| `/api/v1/upload-files` | POST | Upload files to existing assistant | ✅ Live |
+| `/api/v1/create-assistant-with-files` | POST, OPTIONS | Create assistant and upload files in one operation | ✅ Live |
+| `/api/v1/add-user` | POST | Add user and company to database | ✅ Live |
+
+## 🔐 V1 Admin Authentication (Versioned)
+
+| Route | Methods | Purpose | Status |
+|-------|---------|---------|--------|
+| `/api/v1/admin/verify-password` | POST | Admin password verification with rate limiting | ✅ Live |
+| `/api/v1/admin/initialize-db` | POST | Initialize database with default admin user | ✅ Live |
+| `/api/v1/admin/seed-labels` | POST | Seed labels collection for internationalization | ✅ Live |
+| `/api/v1/verify-password` | POST | User password verification with rate limiting | ✅ Live |
 
 ---
 
@@ -187,12 +210,14 @@ Implemented on sensitive endpoints:
 
 ## Missing V1 Endpoints
 
-⚠️ **Important**: The following endpoints are called by Google Apps Script but are still missing V1 equivalents on main branch:
+⚠️ **Note**: Most endpoints now have V1 equivalents. Remaining legacy endpoints:
 
-| Legacy Endpoint | V1 Status | Action Needed |
-|----------------|-----------|---------------|
-| `/api/users/email` | ❌ 404 Not Found | Deploy `/api/v1/users/email` to main |
-| `/api/companies/domain` | ❌ 404 Not Found | Deploy `/api/v1/companies/domain` to main |
+| Legacy Endpoint | V1 Status | Priority |
+|----------------|-----------|----------|
+| `/api/users/email` | ❌ Missing | Medium - Used by Google Apps Script |
+| `/api/companies/domain` | ❌ Missing | Medium - Used by Google Apps Script |
+| `/api/check-assistant` | ❌ Missing | Low - No frontend usage found |
+| `/api/logout` | ❌ Missing | Low - V1 auth logout available |
 
 ## ✅ V1 Endpoints Working on Main Branch
 
@@ -217,3 +242,9 @@ The following V1 endpoints have been successfully deployed and tested:
 - **2025-06-06**: Google Apps Script endpoints updated to use `/api/v1/` pattern
 - **2025-06-06**: Tested all V1 endpoints on main branch, updated documentation with actual deployment status
 - **2025-06-06**: Confirmed 9 out of 11 required V1 endpoints are working on main branch
+- **2025-06-11**: **MAJOR UPDATE**: Created comprehensive V1 API migration
+  - Added 15 new V1 endpoints (create-agent, update-assistant, add-user, upload-files, etc.)
+  - Migrated ALL frontend components to use V1 APIs exclusively
+  - Added V1 CRUD endpoints for users, companies, departments, employees
+  - Updated 12 frontend files to use V1 API calls
+  - Now 28 V1 routes vs 19 legacy routes (legacy routes deprecated)

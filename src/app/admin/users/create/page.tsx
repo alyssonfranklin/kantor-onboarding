@@ -34,7 +34,7 @@ export default function CreateUserPage() {
     setSuccess('');
     
     try {
-      const response = await fetch('/api/add-user', {
+      const response = await fetch('/api/v1/add-user', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

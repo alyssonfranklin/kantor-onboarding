@@ -26,7 +26,7 @@ export default function AdminDashboardPage() {
       try {
         // First try to initialize the database if it's not already initialized
         console.log('Attempting to initialize database...');
-        const initResponse = await fetch('/api/admin/initialize-db', {
+        const initResponse = await fetch('/api/v1/admin/initialize-db', {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
@@ -38,7 +38,7 @@ export default function AdminDashboardPage() {
         
         // Now try to login with admin credentials
         console.log('Attempting to login...');
-        const loginResponse = await fetch('/api/verify-password', {
+        const loginResponse = await fetch('/api/v1/verify-password', {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
@@ -88,7 +88,7 @@ export default function AdminDashboardPage() {
         
         switch (activeTab) {
           case 'users':
-            url = '/api/users';
+            url = '/api/v1/users';
             console.log(`Dashboard - Fetching users from ${url}`);
             
             response = await fetch(url, {
@@ -110,7 +110,7 @@ export default function AdminDashboardPage() {
             break;
             
           case 'companies':
-            url = '/api/companies';
+            url = '/api/v1/companies';
             console.log(`Dashboard - Fetching companies from ${url}`);
             
             response = await fetch(url, {
@@ -132,7 +132,7 @@ export default function AdminDashboardPage() {
             break;
             
           case 'departments':
-            url = '/api/departments';
+            url = '/api/v1/departments';
             console.log(`Dashboard - Fetching departments from ${url}`);
             
             response = await fetch(url, {
@@ -154,7 +154,7 @@ export default function AdminDashboardPage() {
             break;
             
           case 'employees':
-            url = '/api/employees';
+            url = '/api/v1/employees';
             console.log(`Dashboard - Fetching employees from ${url}`);
             
             response = await fetch(url, {

@@ -19,19 +19,19 @@ export const updateEntity = async (
   // Define the endpoints and ID field names for each entity type
   const endpoints: Record<string, { url: string; method: string }> = {
     users: { 
-      url: `/api/users/${id}`, 
+      url: `/api/v1/users/${id}`, 
       method: 'PUT'
     },
     companies: { 
-      url: `/api/companies/${id}`, 
+      url: `/api/v1/companies/${id}`, 
       method: 'PUT'
     },
     departments: { 
-      url: `/api/departments/${id}`, 
+      url: `/api/v1/departments/${id}`, 
       method: 'PUT'
     },
     employees: { 
-      url: `/api/employees/${id}`, 
+      url: `/api/v1/employees/${id}`, 
       method: 'PUT'
     },
   };
@@ -74,10 +74,10 @@ export const deleteEntity = async (
 ): Promise<void> => {
   // Define the endpoints for each entity type
   const endpoints: Record<string, { url: string }> = {
-    users: { url: `/api/users/${id}` },
-    companies: { url: `/api/companies/${id}` },
-    departments: { url: `/api/departments/${id}` },
-    employees: { url: `/api/employees/${id}` },
+    users: { url: `/api/v1/users/${id}` },
+    companies: { url: `/api/v1/companies/${id}` },
+    departments: { url: `/api/v1/departments/${id}` },
+    employees: { url: `/api/v1/employees/${id}` },
     tokens: { url: `/api/logout` }, // For logging out/invalidating tokens
   };
   

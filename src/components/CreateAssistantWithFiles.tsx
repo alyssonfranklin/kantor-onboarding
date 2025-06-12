@@ -195,7 +195,7 @@ const CreateAssistantWithFiles = () => {
       const controller = new AbortController();
       const timeoutId = setTimeout(() => controller.abort(), 60000); // 60 second timeout
       
-      const response = await fetch('/api/create-assistant-with-files', {
+      const response = await fetch('/api/v1/create-assistant-with-files', {
         method: 'POST',
         body: formData,
         signal: controller.signal,

@@ -167,7 +167,7 @@ const UploadAssessment = () => {
       
       console.log(`Uploading ${files.length} files to assistant: ${assistantId}`);
       
-      const response = await fetch('/api/upload-files', {
+      const response = await fetch('/api/v1/upload-files', {
         method: 'POST',
         body: formData,
       });

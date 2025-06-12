@@ -63,7 +63,7 @@ export default function CreateEmployeePage() {
     
     try {
       // This would be a real API call in production
-      const response = await fetch('/api/employees', {
+      const response = await fetch('/api/v1/employees', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

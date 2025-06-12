@@ -75,7 +75,7 @@ const AgentOrgAdminCreation = () => {
 
     try {
       // Create OpenAI agent
-      const agentResponse = await fetch('/api/create-agent', {
+      const agentResponse = await fetch('/api/v1/create-agent', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

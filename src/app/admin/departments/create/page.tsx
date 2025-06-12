@@ -63,7 +63,7 @@ export default function CreateDepartmentPage() {
     
     try {
       // This would be a real API call in production
-      const response = await fetch('/api/departments', {
+      const response = await fetch('/api/v1/departments', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
