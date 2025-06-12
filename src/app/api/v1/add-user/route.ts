@@ -1,11 +1,10 @@
 // src/app/api/v1/add-user/route.ts
 import { NextRequest, NextResponse } from 'next/server';
 import { dbConnect } from '@/lib/mongodb/connect';
-import { User } from '@/lib/mongodb/models/user.model';
-import { Company } from '@/lib/mongodb/models/company.model';
-import { Department } from '@/lib/mongodb/models/department.model';
-import { generateUniqueId } from '@/lib/mongodb/utils/id-generator';
-import bcrypt from 'bcryptjs';
+import User from '@/lib/mongodb/models/user.model';
+import Company from '@/lib/mongodb/models/company.model';
+import Department from '@/lib/mongodb/models/department.model';
+import { generateId } from '@/lib/mongodb/utils/id-generator';
 
 export async function POST(request: NextRequest) {
   try {
@@ -31,65 +30,76 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Hash password
-    const saltRounds = 12;
-    const hashedPassword = await bcrypt.hash(password, saltRounds);
 
     // Check if company exists
-    let company = await Company.findOne({ name: companyName });
-    let companyWasExisting = true;
-
-    if (!company) {
-      // Create new company
-      const companyId = generateUniqueId();
-      company = new Company({
-        companyId,
+    const timestamp = new Date();
+    const existingCompany = await Company.findOne({ name: companyName });
+    let companyId;
+    
+    if (existingCompany) {
+      // Company exists - use its ID
+      companyId = existingCompany.company_id;
+      
+      // Update assistant ID if different
+      if (existingCompany.assistant_id !== assistantId) {
+        await Company.findOneAndUpdate(
+          { company_id: companyId },
+          { 
+            assistant_id: assistantId,
+            updated_at: timestamp
+          }
+        );
+      }
+    } else {
+      // Company doesn't exist - create a new one
+      companyId = await generateId('COMP');
+      
+      await Company.create({
+        company_id: companyId,
         name: companyName,
-        version: version || 'Free',
-        assistantId: assistantId || null,
-        createdAt: new Date(),
-        updatedAt: new Date()
+        assistant_id: assistantId,
+        status: 'active',
+        created_at: timestamp,
+        updated_at: timestamp
       });
-      await company.save();
-      companyWasExisting = false;
-
+      
       // Create default Management department if requested
       if (createDefaultDepartment) {
-        const departmentId = generateUniqueId();
-        const department = new Department({
-          departmentId,
-          name: 'Management',
-          companyId: company.companyId,
-          createdBy: 'system',
-          createdAt: new Date(),
-          updatedAt: new Date()
+        await Department.create({
+          company_id: companyId,
+          department_name: 'Management',
+          department_desc: 'Company management department',
+          user_head: null // Will be updated after user creation
         });
-        await department.save();
       }
     }
 
     // Create user
-    const userId = generateUniqueId();
-    const user = new User({
-      userId,
-      email,
-      name,
-      password: hashedPassword,
-      companyId: company.companyId,
+    const userId = await generateId('USER');
+
+    await User.create({
+      id: userId,
+      email: email,
+      name: name,
+      company_id: companyId,
       role: role || 'orgadmin',
-      createdAt: new Date(),
-      updatedAt: new Date()
+      created_at: timestamp,
+      department: 'Management',
+      company_role: 'leader',
+      password: password // Password will be hashed by the pre-save hook
     });
 
-    await user.save();
-
     // Return response without sensitive data
+    const wasExistingCompany = !!existingCompany;
+    
     return NextResponse.json({
       success: true,
-      userId: user.userId,
-      companyId: company.companyId,
-      companyWasExisting,
-      message: 'User and company created successfully'
+      message: wasExistingCompany 
+        ? 'User added to existing company successfully' 
+        : 'Company and user added to database successfully',
+      companyId,
+      userId,
+      companyWasExisting: wasExistingCompany
     });
 
   } catch (error) {
