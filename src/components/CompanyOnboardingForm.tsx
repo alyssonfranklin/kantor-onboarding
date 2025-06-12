@@ -149,7 +149,7 @@ const CompanyOnboardingForm = () => {
       instructions += `[O QUE VENDE O CLIENTE]\n${formData.products}\n\n`;
       instructions += `[BRANDING E PROMESSAS DE MARCA]\n${formData.branding}`;
       
-      const response = await fetch('/api/update-assistant', {
+      const response = await fetch('/api/v1/update-assistant', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
