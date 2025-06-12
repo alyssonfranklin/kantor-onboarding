@@ -94,7 +94,7 @@ const AgentOrgAdminCreation = () => {
       const assistantId = agentData.assistantId;
 
       // Add user and company to database
-      const spreadsheetResponse = await fetch('/api/add-user', {
+      const spreadsheetResponse = await fetch('/api/v1/users', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
