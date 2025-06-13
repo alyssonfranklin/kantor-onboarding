@@ -6,14 +6,11 @@ import Identity from "@/components/client/setup/Identity";
 import Pillars from "@/components/client/setup/Pillars";
 import SetupConfirmation from "@/components/client/setup/SetupConfirmation";
 import SideSteps from "@/components/client/SideSteps";
-import { useAuth } from "@/lib/auth/index-client";
 import { useState } from "react";
 
 const TOTAL_STEPS = 3;
 
 export default function LoginPage() {
-
-  const { user } = useAuth();
 
   const [showConfirmation, setShowConfirmation] = useState(false);
   const [currentStep, setCurrentStep] = useState(1);
@@ -27,6 +24,36 @@ export default function LoginPage() {
     practices: '',
     initiatives: ''
   });
+
+  const steps = [
+  { 
+      id: 1,
+      active: false,
+      name: "Organizational Pillars", 
+      description: 'Vision, Mission and Core Values', 
+      icon: '/images/icons/pillars.svg',
+      width: 40,
+      height: 20
+    },
+    { 
+      id: 2,
+      active: false,
+      name: "Corporate Identity", 
+      description: 'History of your company, what it does, and brand identity', 
+      icon: '/images/icons/identity.svg',
+      width: 80,
+      height: 60
+    },
+    { 
+      id: 3,
+      active: false,
+      name: "Cultural Cornerstones", 
+      description: 'Corporate cultural aspects and social responsibility', 
+      icon: '/images/icons/cornerstones.svg',
+      width: 20,
+      height: 20
+    }
+  ];
 
   const handleNext = () => {
     setCurrentStep((prevStep) => Math.min(prevStep + 1, TOTAL_STEPS));
@@ -44,31 +71,6 @@ export default function LoginPage() {
 
   const handleSubmit = async () => {
     setShowConfirmation(true);
-
-    // const dataToSend = { ...setupData, userId: user?.id };
-
-    // try {
-    //   const response = await fetch('/api/submit-setup', {
-    //     method: 'POST',
-    //     headers: {
-    //       'Content-Type': 'application/json',
-    //     },
-    //     body: JSON.stringify(dataToSend),
-    //   });
-
-    //   if (response.ok) {
-    //     const result = await response.json();
-    //     console.log('Setup successful!', result);
-    //     // Redirect or show success message
-    //   } else {
-    //     const errorData = await response.json();
-    //     console.error('Setup failed:', errorData.message || 'Unknown error');
-    //     // Handle error, show error message to user
-    //   }
-    // } catch (error) {
-    //   console.error('Error submitting setup:', error);
-    //   // Handle network errors
-    // }
   };
   
   return (
@@ -80,10 +82,10 @@ export default function LoginPage() {
           <div className="hidden md:block md:w-4/12">
             <SideSteps 
               currentStep={currentStep}
+              steps={steps}
             />
           </div>
           <div className="w-full md:w-8/12 flex flex-col items-center justify-center m-0 p-0">
-            <h1>Step: { currentStep }</h1>
             <div className="w-full min-h-screen flex justify-center pt-0 lg:pt-8">
 
               {

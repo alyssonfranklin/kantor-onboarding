@@ -5,38 +5,8 @@ import React from "react";
 import { Button } from "../ui/button";
 import { useRouter } from "next/navigation";
 
-const steps = [
-  { 
-    id: 1,
-    active: false,
-    name: "Organizational Pillars", 
-    description: 'Vision, Mission and Core Values', 
-    icon: '/images/icons/pillars.svg',
-    width: 40,
-    height: 20
-  },
-  { 
-    id: 2,
-    active: false,
-    name: "Corporate Identity", 
-    description: 'History of your company, what it does, and brand identity', 
-    icon: '/images/icons/identity.svg',
-    width: 80,
-    height: 60
-  },
-  { 
-    id: 3,
-    active: false,
-    name: "Cultural Cornerstones", 
-    description: 'Corporate cultural aspects and social responsibility', 
-    icon: '/images/icons/cornerstones.svg',
-    width: 20,
-    height: 20
-  }
-];
-
 export default function SideSteps(
-  { currentStep }
+  { currentStep, steps }
 ) {
 
   const router = useRouter();

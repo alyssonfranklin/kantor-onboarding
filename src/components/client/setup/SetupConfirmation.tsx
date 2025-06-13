@@ -4,20 +4,13 @@ import { useRouter } from "next/navigation";
 import Image from "next/image";
 import { Button } from "@/components/ui/button";
 
-/**
- * Login Page
- * 
- * The main login page that uses the auth system.
- * Redirects to dashboard if already authenticated.
- */
 export default function SetupConfirmation() {
   const router = useRouter();
 
   const goToDashboard = () => {
-    router.push('/dashboard');
+    router.push('/dashboard/onboarding-users');
   };
-  
-  // If not authenticated, show login form
+
   return (
     <div className="min-h-screen flex flex-col items-center justify-center m-0 p-0">
       <div className="w-full min-h-screen flex justify-center pt-4 md:pt-10">

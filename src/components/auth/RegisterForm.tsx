@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { clientCsrf } from "@/lib/auth/index-client";
+import { AUTH_URLS, clientCsrf } from "@/lib/auth/index-client";
 import { Button } from '@/components/ui/button';
 
 export default function RegisterForm() {
@@ -24,7 +24,7 @@ export default function RegisterForm() {
 			return;
 		}
 
-    const res = await fetch('/api/users', {
+    const res = await fetch(AUTH_URLS.ADD_USER, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -43,11 +43,10 @@ export default function RegisterForm() {
     });
 
     if (res.ok) {
-      router.push('/pages'); // Or /admin based on role
+      router.push('/dashboard'); // Or /admin based on role
       router.refresh(); // To re-evaluate middleware and layouts
     } else {
       const data = await res.json();
-			console.log('data: ', data);
       setError(data.error || 'Register failed');
     }
   };

@@ -63,7 +63,6 @@ export default function SideMenu() {
     // Ensure window is defined (for SSR environments)
     if (typeof window !== 'undefined') {
       const mediaQueryList = window.matchMedia('(max-width: 768px)');
-      console.log('mediaQueryList: ', mediaQueryList.matches);
       if (!mediaQueryList.matches) {
         setShowMobileMenu(true);
       }

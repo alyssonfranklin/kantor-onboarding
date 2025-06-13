@@ -25,7 +25,7 @@ export default function Pillars(
   };
 
   return (
-    <nav className="bg-white border-gray-200">
+    <div className="bg-white border-gray-200">
       <div className="max-w-screen-xl flex flex-wrap justify-center mx-auto px-4">
         <div className="w-2/3">
           <div className="flex justify-center">
@@ -98,6 +98,6 @@ export default function Pillars(
 
         </div>
       </div>
-    </nav>
+    </div>
   );
 }
