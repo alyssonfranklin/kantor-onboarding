@@ -3,10 +3,10 @@
 import { useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/lib/auth/index-client";
-import { LoginForm } from "@/components/auth";
 import NavBar from "@/components/client/NavBar";
 import Image from "next/image";
 import Link from "next/link";
+import RegisterForm from "@/components/auth/RegisterForm";
 
 /**
  * Login Page
@@ -20,7 +20,6 @@ export default function LoginPage() {
   
   // Redirect to dashboard if already logged in
   useEffect(() => {
-    console.log('isAuthenticated: ', isAuthenticated);
     if (!loading && isAuthenticated) {
       router.push("/dashboard");
     }
@@ -37,7 +36,7 @@ export default function LoginPage() {
   
   // If not authenticated, show login form
   return (
-    <div className="min-h-screen flex flex-col items-center justify-center m-0 p-0">
+    <div className="min-h-screen flex flex-col items-center justify-center m-0 p-0 ">
       <div className="w-full">
         <NavBar />
       </div>
@@ -54,22 +53,22 @@ export default function LoginPage() {
 
           <div className='text-center'>
             <h2 className="text-2xl font-bold my-2">
-              Log in to your account
+              Create an account
             </h2>
             <div className='text-gray-600 pt-0 mt-0'>
-              Welcome back! Please enter your details.
+              Fill the information below.
             </div>
           </div>
             
-          <LoginForm />
+          <RegisterForm />
 
-          <p className="mt-2 text-center text-sm text-gray-600">
-            Don&apos;t have an account?{'  '}
+          <p className="text-center text-sm text-gray-600 py-4">
+            Already have an account?{'  '}
             <Link
-              href="/signup"
+              href="/login"
               className="font-semibold text-[#E62E05] hover:underline"
             >
-              Sign up
+              Log in
             </Link>
           </p>
         </div>
