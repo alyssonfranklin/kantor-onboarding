@@ -81,7 +81,7 @@ export async function POST(req: NextRequest) {
       );
     }
     
-    // Return user info (excluding password)
+    // Return token and user info (excluding password)
     const userObj = user.toObject();
     delete userObj.password;
     

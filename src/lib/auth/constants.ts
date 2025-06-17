@@ -72,6 +72,8 @@ export const AUTH_URLS = {
   REFRESH: '/api/v1/auth/refresh',
   VALIDATE: '/api/v1/auth/validate',
   CSRF: '/api/v1/auth/csrf',
+  REQUEST_PASSWORD_RESET: '/api/v1/auth/reset-password/request',
+  ADD_USER: '/api/v1/add-user'
 };
 
 // Local Storage Keys
