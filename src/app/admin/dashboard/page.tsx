@@ -6,6 +6,7 @@ import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
 import EditModal from './components/EditModal';
 import DeleteConfirmation from './components/DeleteConfirmation';
+import UpdatePasswordModal from './components/UpdatePasswordModal';
 import { updateEntity, deleteEntity } from './utils/api';
 
 export default function AdminDashboardPage() {
@@ -18,6 +19,7 @@ export default function AdminDashboardPage() {
   // Edit and delete modals state
   const [editModalOpen, setEditModalOpen] = useState(false);
   const [deleteModalOpen, setDeleteModalOpen] = useState(false);
+  const [passwordModalOpen, setPasswordModalOpen] = useState(false);
   const [selectedItem, setSelectedItem] = useState<any>(null);
 
   // Initialize database and login to get a JWT token
@@ -229,6 +231,12 @@ export default function AdminDashboardPage() {
     setSelectedItem(item);
     setDeleteModalOpen(true);
   };
+
+  // Handle update password button click
+  const handleUpdatePassword = (item: any) => {
+    setSelectedItem(item);
+    setPasswordModalOpen(true);
+  };
   
   // Handle save after edit
   const handleSaveEdit = async (updatedData: any) => {
@@ -322,6 +330,35 @@ export default function AdminDashboardPage() {
     }
   };
 
+  // Handle password update
+  const handleUpdatePasswordSubmit = async (newPassword: string) => {
+    if (!selectedItem) return;
+    
+    try {
+      const response = await fetch(`/api/v1/users/${selectedItem.id}/update-password`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({ newPassword })
+      });
+
+      const result = await response.json();
+      
+      if (!response.ok) {
+        throw new Error(result.message || 'Failed to update password');
+      }
+
+      // Success - password updated
+      setPasswordModalOpen(false);
+      setSelectedItem(null);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to update password');
+      throw err; // Re-throw to be caught by the modal
+    }
+  };
+
   // Render table rows based on active tab
   const renderTableRows = () => {
     return data.map((item, index) => {
@@ -342,6 +379,14 @@ export default function AdminDashboardPage() {
                   onClick={() => handleEdit(item)}
                 >
                   Edit
+                </Button>
+                <Button 
+                  variant="outline" 
+                  size="sm" 
+                  className="mr-2"
+                  onClick={() => handleUpdatePassword(item)}
+                >
+                  Update Password
                 </Button>
                 <Button 
                   variant="destructive" 
@@ -581,6 +626,20 @@ export default function AdminDashboardPage() {
                     ? selectedItem.employee_name
                     : 'this item'
           }
+        />
+      )}
+      
+      {/* Update Password Modal */}
+      {selectedItem && activeTab === 'users' && (
+        <UpdatePasswordModal
+          isOpen={passwordModalOpen}
+          onClose={() => setPasswordModalOpen(false)}
+          onUpdatePassword={handleUpdatePasswordSubmit}
+          user={{
+            id: selectedItem.id,
+            name: selectedItem.name,
+            email: selectedItem.email
+          }}
         />
       )}
     </div>
