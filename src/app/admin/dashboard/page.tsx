@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
+import { Edit, Trash2, KeyRound } from 'lucide-react';
 import EditModal from './components/EditModal';
 import DeleteConfirmation from './components/DeleteConfirmation';
 import UpdatePasswordModal from './components/UpdatePasswordModal';
@@ -373,27 +374,30 @@ export default function AdminDashboardPage() {
               <td className="p-3">{item.company_id}</td>
               <td className="p-3">
                 <Button 
-                  variant="destructive" 
+                  variant="outline" 
                   size="sm" 
                   className="mr-2"
                   onClick={() => handleEdit(item)}
+                  title="Edit user"
                 >
-                  Edit
+                  <Edit className="h-4 w-4" />
                 </Button>
                 <Button 
                   variant="outline" 
                   size="sm" 
                   className="mr-2"
                   onClick={() => handleUpdatePassword(item)}
+                  title="Update password"
                 >
-                  Update Password
+                  <KeyRound className="h-4 w-4" />
                 </Button>
                 <Button 
                   variant="destructive" 
                   size="sm"
                   onClick={() => handleDelete(item)}
+                  title="Delete user"
                 >
-                  Delete
+                  <Trash2 className="h-4 w-4" />
                 </Button>
               </td>
             </tr>
@@ -408,19 +412,21 @@ export default function AdminDashboardPage() {
               <td className="p-3">{item.created_at}</td>
               <td className="p-3">
                 <Button 
-                  variant="destructive" 
+                  variant="outline" 
                   size="sm" 
                   className="mr-2"
                   onClick={() => handleEdit(item)}
+                  title="Edit"
                 >
-                  Edit
+                  <Edit className="h-4 w-4" />
                 </Button>
                 <Button 
                   variant="destructive" 
                   size="sm"
                   onClick={() => handleDelete(item)}
+                  title="Delete"
                 >
-                  Delete
+                  <Trash2 className="h-4 w-4" />
                 </Button>
               </td>
             </tr>
@@ -505,8 +511,9 @@ export default function AdminDashboardPage() {
                   variant="destructive" 
                   size="sm"
                   onClick={() => handleDelete(item)}
+                  title="Revoke token"
                 >
-                  Revoke
+                  <Trash2 className="h-4 w-4" />
                 </Button>
               </td>
             </tr>
