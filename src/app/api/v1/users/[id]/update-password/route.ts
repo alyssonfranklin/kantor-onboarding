@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { dbConnect } from '@/lib/mongodb/connect';
 import User from '@/lib/mongodb/models/user.model';
 import { withAuth } from '@/lib/middleware/auth';
+import bcrypt from 'bcryptjs';
 
 /**
  * Update user password
@@ -49,24 +50,34 @@ export async function PUT(
         );
       }
       
-      // Find the user
-      const user = await User.findOne({ id: params.id });
-      if (!user) {
+      // Hash the password first
+      const salt = await bcrypt.genSalt(10);
+      const hashedPassword = await bcrypt.hash(body.newPassword, salt);
+      
+      // Update only the password field using MongoDB's updateOne to avoid validation
+      const timeoutPromise = new Promise((_, reject) => {
+        setTimeout(() => reject(new Error('Update operation timeout')), 10000);
+      });
+      
+      const updateOperation = User.updateOne(
+        { id: params.id },
+        { 
+          $set: { 
+            password: hashedPassword,
+            updated_at: new Date()
+          }
+        }
+      );
+      
+      const result = await Promise.race([updateOperation, timeoutPromise]);
+      
+      // Check if the user was found and updated
+      if (result.matchedCount === 0) {
         return NextResponse.json(
           { success: false, message: 'User not found' },
           { status: 404 }
         );
       }
-
-      // Update the password (the pre-save hook will hash it automatically)
-      user.password = body.newPassword;
-      
-      // Add timeout to save operation
-      const timeoutPromise = new Promise((_, reject) => {
-        setTimeout(() => reject(new Error('Save operation timeout')), 10000);
-      });
-      
-      await Promise.race([user.save(), timeoutPromise]);
       
       return NextResponse.json({
         success: true,
