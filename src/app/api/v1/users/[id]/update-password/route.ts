@@ -12,7 +12,15 @@ export async function PUT(
   { params }: { params: { id: string } }
 ) {
   return withAuth(req, async (req, authUser) => {
-    await dbConnect();
+    try {
+      await dbConnect();
+    } catch (error) {
+      console.error('Database connection failed:', error);
+      return NextResponse.json(
+        { success: false, message: 'Database connection failed' },
+        { status: 503 }
+      );
+    }
     
     try {
       const body = await req.json();
@@ -52,7 +60,13 @@ export async function PUT(
 
       // Update the password (the pre-save hook will hash it automatically)
       user.password = body.newPassword;
-      await user.save();
+      
+      // Add timeout to save operation
+      const timeoutPromise = new Promise((_, reject) => {
+        setTimeout(() => reject(new Error('Save operation timeout')), 10000);
+      });
+      
+      await Promise.race([user.save(), timeoutPromise]);
       
       return NextResponse.json({
         success: true,

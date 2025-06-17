@@ -101,6 +101,15 @@ export default function AdminDashboardPage() {
             });
             
             console.log(`Dashboard - Users API response status:`, response.status);
+            
+            // Check if response is JSON
+            const contentType = response.headers.get('content-type');
+            if (!contentType || !contentType.includes('application/json')) {
+              const text = await response.text();
+              console.error('Dashboard - Non-JSON response received:', text.substring(0, 200));
+              throw new Error(`Server returned ${response.status}: ${response.statusText}`);
+            }
+            
             result = await response.json();
             console.log('Dashboard - Users API response body:', result);
             
@@ -336,14 +345,21 @@ export default function AdminDashboardPage() {
     if (!selectedItem) return;
     
     try {
+      // Add timeout to the fetch request
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 15000); // 15 second timeout
+      
       const response = await fetch(`/api/v1/users/${selectedItem.id}/update-password`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${token}`
         },
-        body: JSON.stringify({ newPassword })
+        body: JSON.stringify({ newPassword }),
+        signal: controller.signal
       });
+      
+      clearTimeout(timeoutId);
 
       const result = await response.json();
       
@@ -355,7 +371,11 @@ export default function AdminDashboardPage() {
       setPasswordModalOpen(false);
       setSelectedItem(null);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to update password');
+      if (err instanceof Error && err.name === 'AbortError') {
+        setError('Request timed out. Please try again.');
+      } else {
+        setError(err instanceof Error ? err.message : 'Failed to update password');
+      }
       throw err; // Re-throw to be caught by the modal
     }
   };

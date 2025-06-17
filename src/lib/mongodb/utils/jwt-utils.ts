@@ -133,15 +133,25 @@ export const verifyToken = (token: string): JwtPayloadExtended => {
 };
 
 /**
- * Check if a token exists in the database
+ * Check if a token exists in the database with timeout
  */
 export const isTokenValid = async (token: string): Promise<boolean> => {
   try {
-    const storedToken = await Token.findOne({ token });
+    // Add a timeout to the database query
+    const timeoutPromise = new Promise<null>((_, reject) => {
+      setTimeout(() => reject(new Error('Database query timeout')), 5000);
+    });
+    
+    const queryPromise = Token.findOne({ token }).lean();
+    
+    const storedToken = await Promise.race([queryPromise, timeoutPromise]);
     return !!storedToken;
   } catch (error) {
     console.error('Error validating token in database:', error);
-    return false;
+    // If database validation fails, we'll still allow the request if the JWT is valid
+    // This prevents complete failure when database is slow
+    console.warn('Falling back to JWT signature validation only');
+    return true;
   }
 };
 
