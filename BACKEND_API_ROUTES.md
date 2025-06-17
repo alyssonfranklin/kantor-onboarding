@@ -4,11 +4,11 @@ This document lists all backend API routes in `/src/app/api/` directory.
 
 ## Summary
 
-**Total Routes**: 47 unique route files  
+**Total Routes**: 57 unique route files  
 **HTTP Methods**: GET, POST, PUT, DELETE, OPTIONS  
-**Versioned Routes**: 28 routes under `/api/v1/`  
-**Non-versioned Routes**: 19 routes (legacy, deprecated)  
-**Routes with Parameters**: 10 routes with dynamic `[id]` parameters  
+**Versioned Routes**: 31 routes under `/api/v1/`  
+**Non-versioned Routes**: 26 routes (legacy, deprecated)  
+**Routes with Parameters**: 11 routes with dynamic `[id]` parameters  
 
 ---
 
@@ -35,6 +35,7 @@ These V1 data routes are deployed and working on main branch:
 |-------|---------|---------|--------|
 | `/api/v1/users` | GET, POST | List users with filtering, create new users | ✅ Live |
 | `/api/v1/users/[id]` | GET, PUT, DELETE | CRUD operations for specific user | ✅ Live |
+| `/api/v1/users/[id]/update-password` | PUT | Update user password (admin only) | ✅ Live |
 | `/api/v1/companies` | GET, POST | List companies with filtering, create new companies | ✅ Live |
 | `/api/v1/companies/[id]` | GET, PUT, DELETE | CRUD operations for specific company | ✅ Live |
 | `/api/v1/departments` | GET, POST | List departments with filtering, create new departments | ✅ Live |
@@ -44,6 +45,26 @@ These V1 data routes are deployed and working on main branch:
 | `/api/v1/labels` | GET | Get labels for internationalization (supports en, pt, es) | ✅ Live |
 | `/api/v1/health` | GET | Health check for API and database connectivity | ✅ Live |
 | `/api/v1/users/update-insights` | GET, POST | Update user insights count (public endpoint) | ✅ Live |
+
+### 🔐 Password Management
+
+| Route | Methods | Purpose | Authentication |
+|-------|---------|---------|---------------|
+| `/api/v1/users/[id]/update-password` | PUT | Update user password | Admin only |
+
+**Request Body for Password Update**:
+```json
+{
+  "newPassword": "new_password_here"
+}
+```
+
+**Features**:
+- ✅ Admin-only access control
+- ✅ Password strength validation (minimum 6 characters)
+- ✅ Automatic bcrypt hashing
+- ✅ Direct database update (bypasses Mongoose validation)
+- ✅ Timeout protection (10 seconds)
 
 ## 🔧 V1 Assistant/AI Management (Versioned)
 
@@ -93,7 +114,7 @@ These V1 data routes are deployed and working on main branch:
 
 | Route | Methods | Parameters | Purpose |
 |-------|---------|------------|---------|
-| `/api/departments` | POST | None | Create new department |
+| `/api/departments` | GET, POST | None | List departments with filtering, create new department |
 | `/api/departments/[id]` | GET, PUT, DELETE | `[id]` - Department ID or name | CRUD operations for specific department |
 
 ---
@@ -228,6 +249,7 @@ The following V1 endpoints have been successfully deployed and tested:
 | `/api/v1/health` | 200 OK | ✅ Working |
 | `/api/v1/labels` | 200 OK | ✅ Working |
 | `/api/v1/users` | 401 Unauthorized (requires auth) | ✅ Working |
+| `/api/v1/users/[id]/update-password` | 401 Unauthorized (requires admin auth) | ✅ Working |
 | `/api/v1/companies` | 401 Unauthorized (requires auth) | ✅ Working |
 | `/api/v1/departments` | 401 Unauthorized (requires auth) | ✅ Working |
 | `/api/v1/employees` | 401 Unauthorized (requires auth) | ✅ Working |
@@ -248,3 +270,8 @@ The following V1 endpoints have been successfully deployed and tested:
   - Added V1 CRUD endpoints for users, companies, departments, employees
   - Updated 12 frontend files to use V1 API calls
   - Now 28 V1 routes vs 19 legacy routes (legacy routes deprecated)
+- **2025-06-17**: Added password update functionality
+  - Added `/api/v1/users/[id]/update-password` endpoint for admin password updates
+  - Updated admin dashboard with password update feature using icons
+  - Enhanced departments create page with real API integration
+  - Total routes now: 57 (31 V1 + 26 legacy)

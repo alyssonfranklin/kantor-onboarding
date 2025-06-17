@@ -13,6 +13,8 @@ export default function CreateDepartmentPage() {
   const [users, setUsers] = useState<any[]>([]);
   const [selectedCompany, setSelectedCompany] = useState('');
   const [isLoadingUsers, setIsLoadingUsers] = useState(false);
+  const [isLoadingCompanies, setIsLoadingCompanies] = useState(true);
+  const [token, setToken] = useState('');
   
   const [formData, setFormData] = useState({
     company_id: '',
@@ -21,38 +23,124 @@ export default function CreateDepartmentPage() {
     user_head: ''
   });
 
+  // Initialize and get authentication token
   useEffect(() => {
-    // In a real implementation, fetch companies from the API
-    // For demo purposes, we're using a placeholder
-    setCompanies([
-      { company_id: 'COMP_0001', name: 'Voxerion Inc.' },
-      { company_id: 'COMP_0002', name: 'Acme Corp' },
-    ]);
+    const initializeAndLogin = async () => {
+      try {
+        // Initialize database
+        const initResponse = await fetch('/api/v1/admin/initialize-db', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          }
+        });
+        
+        // Login to get token
+        const loginResponse = await fetch('/api/v1/verify-password', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            email: 'admin@voxerion.com',
+            password: 'admin123'
+          }),
+        });
+        
+        const loginData = await loginResponse.json();
+        if (loginData.token) {
+          setToken(loginData.token);
+        } else {
+          setError('Failed to authenticate');
+        }
+      } catch (err) {
+        setError('Failed to initialize');
+      }
+    };
+    
+    initializeAndLogin();
   }, []);
 
+  // Fetch companies when token is available
   useEffect(() => {
-    if (selectedCompany) {
+    if (!token) return;
+    
+    const fetchCompanies = async () => {
+      setIsLoadingCompanies(true);
+      try {
+        const response = await fetch('/api/v1/companies', {
+          headers: {
+            'Authorization': `Bearer ${token}`
+          }
+        });
+        
+        if (response.ok) {
+          const result = await response.json();
+          if (result.success) {
+            setCompanies(result.data || []);
+          } else {
+            setError('Failed to fetch companies');
+          }
+        } else {
+          setError('Failed to fetch companies');
+        }
+      } catch (err) {
+        setError('Error fetching companies');
+      } finally {
+        setIsLoadingCompanies(false);
+      }
+    };
+    
+    fetchCompanies();
+  }, [token]);
+
+  // Fetch users when company is selected
+  useEffect(() => {
+    if (selectedCompany && token) {
       setIsLoadingUsers(true);
-      // In a real implementation, fetch users for the selected company
-      // For demo purposes, we're using placeholders
-      setTimeout(() => {
-        setUsers([
-          { id: 'USER_0001', name: 'John Doe', email: 'john@example.com' },
-          { id: 'USER_0002', name: 'Jane Smith', email: 'jane@example.com' },
-        ]);
-        setIsLoadingUsers(false);
-      }, 500);
+      setUsers([]); // Clear previous users
+      
+      const fetchUsers = async () => {
+        try {
+          const response = await fetch(`/api/v1/users?companyId=${selectedCompany}`, {
+            headers: {
+              'Authorization': `Bearer ${token}`
+            }
+          });
+          
+          if (response.ok) {
+            const result = await response.json();
+            if (result.success) {
+              setUsers(result.data || []);
+            } else {
+              setError('Failed to fetch users for selected company');
+            }
+          } else {
+            setError('Failed to fetch users for selected company');
+          }
+        } catch (err) {
+          setError('Error fetching users for selected company');
+        } finally {
+          setIsLoadingUsers(false);
+        }
+      };
+      
+      fetchUsers();
+    } else {
+      setUsers([]);
     }
-  }, [selectedCompany]);
+  }, [selectedCompany, token]);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
     
     if (name === 'company_id') {
       setSelectedCompany(value);
+      // Clear user_head when company changes
+      setFormData(prev => ({ ...prev, [name]: value, user_head: '' }));
+    } else {
+      setFormData(prev => ({ ...prev, [name]: value }));
     }
-    
-    setFormData(prev => ({ ...prev, [name]: value }));
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -62,25 +150,35 @@ export default function CreateDepartmentPage() {
     setSuccess('');
     
     try {
-      // This would be a real API call in production
+      if (!token) {
+        setError('Authentication token not available');
+        setIsLoading(false);
+        return;
+      }
+
       const response = await fetch('/api/v1/departments', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': 'Bearer YOUR_TOKEN_HERE' // In real app, get from auth
+          'Authorization': `Bearer ${token}`
         },
         body: JSON.stringify(formData),
       });
       
-      // Mock successful response for demo
-      setSuccess('Department created successfully!');
-      setFormData({
-        company_id: '',
-        department_name: '',
-        department_desc: '',
-        user_head: ''
-      });
-      setSelectedCompany('');
+      const result = await response.json();
+      
+      if (response.ok && result.success) {
+        setSuccess('Department created successfully!');
+        setFormData({
+          company_id: '',
+          department_name: '',
+          department_desc: '',
+          user_head: ''
+        });
+        setSelectedCompany('');
+      } else {
+        setError(result.message || 'Failed to create department');
+      }
     } catch (err) {
       setError(err instanceof Error ? err.message : 'An unknown error occurred');
     } finally {
@@ -118,8 +216,11 @@ export default function CreateDepartmentPage() {
                 onChange={handleChange}
                 className="w-full p-2 rounded-md border border-gray-700 bg-gray-800"
                 required
+                disabled={isLoadingCompanies}
               >
-                <option value="">Select a company</option>
+                <option value="">
+                  {isLoadingCompanies ? 'Loading companies...' : 'Select a company'}
+                </option>
                 {companies.map(company => (
                   <option key={company.company_id} value={company.company_id}>
                     {company.name}
@@ -157,17 +258,21 @@ export default function CreateDepartmentPage() {
                 value={formData.user_head}
                 onChange={handleChange}
                 className="w-full p-2 rounded-md border border-gray-700 bg-gray-800"
+                disabled={isLoadingUsers || !selectedCompany}
               >
-                <option value="">Select a department head</option>
-                {isLoadingUsers ? (
-                  <option disabled>Loading users...</option>
-                ) : (
-                  users.map(user => (
-                    <option key={user.id} value={user.id}>
-                      {user.name} ({user.email})
-                    </option>
-                  ))
-                )}
+                <option value="">
+                  {isLoadingUsers 
+                    ? 'Loading users...' 
+                    : !selectedCompany 
+                      ? 'Select a company first'
+                      : 'Select a department head'
+                  }
+                </option>
+                {users.map(user => (
+                  <option key={user.id} value={user.id}>
+                    {user.name} ({user.email})
+                  </option>
+                ))}
               </select>
             </div>
             
