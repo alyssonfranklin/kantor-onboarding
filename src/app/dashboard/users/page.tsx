@@ -1,6 +1,7 @@
+"use client";
+
 import UserList from '@/components/client/users/UserList'
 import UsersNavBar from '@/components/client/users/UsersNavBar';
-import { Button } from '@/components/ui/button'
 import React from 'react'
 /**
  *
@@ -18,6 +19,11 @@ export default function UsersPage() {
     { id: 5, name: 'Charlie White', role: 'Member', tags: ['Leadership', 'Assessment', 'Feedback', 'Sales'], assessment: 'Pending', utilization: 40 }
   ];
 
+  const handlePageChange = (page: number) => {
+    console.log(`Page changed to: ${page}`);
+    // Implement your page change logic here
+  };
+
   return (
     <div className='p-4'>
       <div className='mb-4 border-b border-gray-200'>
@@ -33,6 +39,7 @@ export default function UsersPage() {
       <div className='w-full mt-6'>
         <UserList
           users={users}
+          handlePageChange={handlePageChange}
         />
       </div>
 

@@ -7,6 +7,7 @@ import React, { useEffect, useState } from "react";
 import MenuButton from "../ui/menuButton";
 import { useRouter } from "next/navigation";
 import Avatar from "./Avatar";
+import { Button } from "../ui/button";
 
 const menuOptions = [
   { 
@@ -136,6 +137,23 @@ export default function SideMenu() {
                   />
                 ))}
               </div>
+
+              <div className="pl-2 pr-4 py-2 bg-gray-100">
+                <div className="mb-2">
+                  <h3 className="text-lg font-semibold text-gray-800 mb-1">
+                    Improve your insights!
+                  </h3>
+                  <p className="text-sm text-gray-600 mb-3">
+                    Upload your personality assessments, setup Voxerion and start using it.
+                  </p>
+                  <Button
+                    className="w-full"
+                  >
+                    Upload Assessments
+                  </Button>
+                </div>
+              </div>
+
               <div className="flex items-center gap-3 p-2 rounded-lg hover:bg-gray-100 transition">
                 <Avatar
                   name={user?.name || 'Anonymous'}

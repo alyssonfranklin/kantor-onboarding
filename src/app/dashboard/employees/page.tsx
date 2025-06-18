@@ -1,3 +1,5 @@
+"use client";
+
 import EmployeeList from '@/components/client/users/EmployeeList';
 import UsersNavBar from '@/components/client/users/UsersNavBar';
 import Image from 'next/image';
@@ -12,6 +14,11 @@ export default function EmployeesPage() {
     { id: 4, name: 'Bob Brown', role: 'Human Resources', tags: ['Leadership', 'Assessment', 'Feedback', 'Sales'], assessment: 'Active' },
     { id: 5, name: 'Charlie White', role: 'Member', tags: ['Leadership', 'Assessment', 'Feedback', 'Sales'], assessment: 'Pending' }
   ];
+
+  const handlePageChange = (page: number) => {
+    console.log(`Page changed to: ${page}`);
+    // Implement your page change logic here
+  };
 
   return (
     <div className='p-4'>
@@ -74,6 +81,7 @@ export default function EmployeesPage() {
       <div className='w-full overflow-x-auto mt-4'>
         <EmployeeList
           employees={employees}
+          handlePageChange={handlePageChange}
         />
       </div>
 

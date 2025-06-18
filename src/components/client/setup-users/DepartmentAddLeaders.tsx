@@ -2,6 +2,7 @@ import { Button } from '@/components/ui/button';
 import Input from '@/components/ui/input';
 import Image from 'next/image';
 import React, { useEffect, useState } from 'react'
+import { v4 as uuidv4 } from 'uuid';
 
 interface Leader {
   name: string;
@@ -31,7 +32,8 @@ export default function DepartmentAddLeaders(
   };
   
   const addLeader = () => {
-    setLocalLeaders([...localLeaders, { name: '', email: '', role: '' }]);
+    const id = uuidv4();
+    setLocalLeaders([...localLeaders, { id: id, name: '', email: '', role: '' }]);
   };
 
   const handleRemoveLeader = (index: number) => {
@@ -41,7 +43,7 @@ export default function DepartmentAddLeaders(
 
   useEffect(() => {
     onLeadersChange(localLeaders);
-  }, [localLeaders, onLeadersChange]);
+  }, [localLeaders]);
 
   return (
     <div className="bg-white border-gray-200">

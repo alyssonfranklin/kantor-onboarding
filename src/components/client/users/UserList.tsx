@@ -1,6 +1,7 @@
 import React from "react";
 import Avatar from "../Avatar";
 import ProgressBar from "../ProgressBar";
+import Pagination from "../Pagination";
 
 type User = {
   id: number;
@@ -13,9 +14,11 @@ type User = {
 
 type UserListProps = {
   users: User[];
+  handlePageChange: (page: number) => void;
 };
 
-const UserList: React.FC<UserListProps> = ({ users }) => (
+const UserList: React.FC<UserListProps> = ({ users, handlePageChange }) => (
+
   <div className="overflow-x-auto">
     <table className="min-w-full bg-white border-b border-gray-200 rounded-lg shadow-sm">
       <thead>
@@ -79,6 +82,15 @@ const UserList: React.FC<UserListProps> = ({ users }) => (
         )}
       </tbody>
     </table>
+
+    <div className="w-full mt-4">
+        <Pagination
+          currentPage={2} // Replace with actual current page state
+          totalPages={5} // Replace with actual total pages state
+          onPageChange={handlePageChange} // Replace with actual page change handler
+        />
+    </div>
+  
   </div>
 );
 

@@ -8,6 +8,7 @@ import DepartmentAddLeaders from "@/components/client/setup-users/DepartmentAddL
 import SetupUsersConfirmation from "@/components/client/setup-users/SetupUsersConfirmation";
 import SideSteps from "@/components/client/SideSteps";
 import { useState } from "react";
+import { v4 as uuidv4 } from 'uuid';
 
 const TOTAL_STEPS = 3;
 
@@ -23,6 +24,7 @@ export default function LoginPage() {
   const [leaders, setLeaders] = useState(
     [
       { 
+        id: uuidv4(),
         name: '', 
         email: '', 
         role: '', 
@@ -74,7 +76,7 @@ export default function LoginPage() {
     setContacts(updatedContacts);
   };
 
-  const handleLeadersChange = (updatedLeaders: { name: string; email: string; role: string; }[]) => {
+  const handleLeadersChange = (updatedLeaders: { id: string, name: string; email: string; role: string; }[]) => {
     setLeaders(
       updatedLeaders.map(leader => ({
         ...leader,
@@ -97,9 +99,11 @@ export default function LoginPage() {
     }));
   };
 
-  const onLeaderSelected = (theLeader) => {
-    setLeaderSelected(theLeader);
-    const leaderIndex = leaders.findIndex((lead) => lead === theLeader);
+  const onLeaderSelected = (theLeaderId) => {
+    console.log('theLeader: ', theLeaderId);
+    setLeaderSelected(theLeaderId);
+    const leaderIndex = leaders.findIndex((lead: any) => lead.id === theLeaderId);
+    console.log('leaderIndex: ', leaderIndex);
     if (leaderIndex >= 0) {
       setEmployees(leaders[leaderIndex].employees);
     }
@@ -108,7 +112,7 @@ export default function LoginPage() {
   const addEmployeesToLeader = (theEmployees) => {
     setLeaders((prevLeaders) =>
       prevLeaders.map((leader) =>
-        leader === leaderSelected
+        leader.id === leaderSelected
           ? { ...leader, employees: theEmployees }
           : leader
       )

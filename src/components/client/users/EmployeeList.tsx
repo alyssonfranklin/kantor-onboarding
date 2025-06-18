@@ -1,5 +1,6 @@
 import React from "react";
 import Avatar from "../Avatar";
+import Pagination from "../Pagination";
 
 type Employee = {
   id: number;
@@ -11,9 +12,10 @@ type Employee = {
 
 type EmployeeListProps = {
   employees: Employee[];
+  handlePageChange: (page: number) => void;
 };
 
-const EmployeeList: React.FC<EmployeeListProps> = ({ employees }) => (
+const EmployeeList: React.FC<EmployeeListProps> = ({ employees, handlePageChange }) => (
   <div className="overflow-x-auto">
     <table className="min-w-full bg-white border-b border-gray-200 rounded-lg shadow-sm">
       <thead>
@@ -69,6 +71,15 @@ const EmployeeList: React.FC<EmployeeListProps> = ({ employees }) => (
         )}
       </tbody>
     </table>
+
+    <div className="w-full mt-4">
+        <Pagination
+          currentPage={2} // Replace with actual current page state
+          totalPages={5} // Replace with actual total pages state
+          onPageChange={handlePageChange} // Replace with actual page change handler
+        />
+    </div>
+
   </div>
 );
 

@@ -1,7 +1,15 @@
 import { Button } from '@/components/ui/button'
+import { useRouter } from 'next/navigation';
 import React from 'react'
 
 export default function UsersNavBar() {
+
+  const router = useRouter();
+
+  const goToPage = (page: string) => {
+    router.push(page);
+  }
+
   return (
     <div className='flex justify-between gap-4'>
       <div>
@@ -28,12 +36,14 @@ export default function UsersNavBar() {
           type="button"
           className="w-full font-bold border-[#FF9C66] text-[#E62E05] hover:border-[#FF9C66]/90"
           variant={'outline'}
+          onClick={() => goToPage('users/add')}
         >
           Create User
         </Button>
         <Button 
           type="button" 
           className="w-full font-bold bg-[#E62E05] text-white hover:bg-[#E62E05]/90"
+          onClick={() => goToPage('upload-assessments')}
         >
           Upload Assessments
         </Button>
