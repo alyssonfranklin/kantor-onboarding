@@ -6,6 +6,7 @@ import Image from "next/image";
 import React, { useEffect, useState } from "react";
 import MenuButton from "../ui/menuButton";
 import { useRouter } from "next/navigation";
+import Avatar from "./Avatar";
 
 const menuOptions = [
   { 
@@ -13,6 +14,24 @@ const menuOptions = [
     icon: '/images/icons/dashboard.svg', 
     active: true,
     link: '/dashboard'
+  },
+  { 
+    name: "Billing", 
+    icon: '/images/icons/billing.svg', 
+    active: true,
+    link: '/dashboard/billings'
+  },
+  { 
+    name: "Users", 
+    icon: '/images/icons/user.svg', 
+    active: true,
+    link: '/dashboard/users'
+  },
+  { 
+    name: "Employees", 
+    icon: '/images/icons/user.svg', 
+    active: true,
+    link: '/dashboard/employees'
   }
 ];
 
@@ -118,21 +137,11 @@ export default function SideMenu() {
                 ))}
               </div>
               <div className="flex items-center gap-3 p-2 rounded-lg hover:bg-gray-100 transition">
-                <Image 
-                  src="/images/icons/avatar.svg" 
-                  alt="Avatar"
-                  width={40} 
-                  height={40}
-                  className="rounded-full object-cover"
+                <Avatar
+                  name={user?.name || 'Anonymous'}
+                  description={user.email || ''}
+                  imageUrl={`/images/icons/avatar.svg`} // Assuming images are named by user ID
                 />
-                <div className="flex-1">
-                  <div className="font-medium text-gray-800 text-xs">
-                    {user?.name}
-                    <div className="m-0 p-0 text-gray-400">
-                      {user?.email}
-                    </div>
-                  </div>
-                </div>
                 <Image 
                   src="/images/icons/logout.svg" 
                   alt="Cerrar Sesión"
