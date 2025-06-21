@@ -4,11 +4,11 @@ This document provides a comprehensive analysis of all frontend pages and their 
 
 ## Summary
 
-**Total Pages Analyzed**: 20  
-**Pages with API Calls**: 14  
+**Total Pages Analyzed**: 21  
+**Pages with API Calls**: 15  
 **Pages without API Calls**: 6  
 **Total Unique API Endpoints**: 17  
-**Authentication Protected Pages**: 12  
+**Authentication Protected Pages**: 13  
 
 ---
 
@@ -510,7 +510,7 @@ This document provides a comprehensive analysis of all frontend pages and their 
 
 ---
 
-### 👤 **Admin Create User**
+### 👤 **Admin Create User and Company**
 **URL**: `https://kantor-onboarding-alysson-franklins-projects.vercel.app/admin/users/create`
 
 #### **API Calls**:
@@ -544,6 +544,62 @@ This document provides a comprehensive analysis of all frontend pages and their 
 - ✅ Role-based access control
 - ✅ Company integration
 - ✅ OpenAI assistant linking
+
+---
+
+### 👤 **Admin Add User to Existing Company**
+**URL**: `https://kantor-onboarding-alysson-franklins-projects.vercel.app/admin/users/add`
+
+#### **API Calls**:
+
+**1. Password Protection**
+- **Endpoint**: `POST /api/v1/admin/verify-password`
+- **When**: Admin section access
+- **Purpose**: Admin authentication
+
+**2. Database Initialization**
+- **Endpoint**: `POST /api/v1/admin/initialize-db`
+- **When**: Page load initialization
+- **Purpose**: Ensure database connectivity
+
+**3. Admin Authentication**
+- **Endpoint**: `POST /api/v1/verify-password`
+- **When**: Automatic login for API access
+- **Purpose**: Get JWT token for subsequent requests
+
+**4. Fetch Companies**
+- **Endpoint**: `GET /api/v1/companies`
+- **When**: Page load after authentication
+- **Purpose**: Populate company dropdown
+- **Headers**: `Authorization: Bearer {jwt_token}`
+
+**5. Create User**
+- **Endpoint**: `POST /api/v1/users`
+- **When**: Form submission
+- **Purpose**: Add user to existing company
+- **Headers**: `Authorization: Bearer {jwt_token}`
+- **Payload**:
+  ```json
+  {
+    "email": "user@company.com",
+    "name": "User Full Name",
+    "company_id": "selected_company_id",
+    "password": "user_password",
+    "version": "Free|Basic|Business",
+    "role": "user|orgadmin|admin",
+    "department": "Department Name",
+    "company_role": "Job Title"
+  }
+  ```
+
+#### **Features**:
+- ✅ Company selection dropdown (dynamic loading)
+- ✅ Simplified user creation (no org/agent creation)
+- ✅ Role-based access control
+- ✅ Email validation
+- ✅ Password strength validation
+- ✅ Department and role assignment
+- ✅ Kantor version selection
 
 ---
 
