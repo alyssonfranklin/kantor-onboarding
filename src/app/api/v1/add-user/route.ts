@@ -10,7 +10,7 @@ export async function POST(request: NextRequest) {
   try {
     await dbConnect();
 
-    const { email, name, companyName, password, version, role, assistantId } = await request.json();
+    const { email, name, companyName, password, version, role, assistantId, department, company_role } = await request.json();
     const createDefaultDepartment = request.headers.get('x-create-default-department') === 'true';
 
     // Validate required fields
@@ -84,8 +84,8 @@ export async function POST(request: NextRequest) {
       company_id: companyId,
       role: role || 'orgadmin',
       created_at: timestamp,
-      department: 'Management',
-      company_role: 'leader',
+      department: department || 'Management',
+      company_role: company_role || 'Employee',
       password: password // Password will be hashed by the pre-save hook
     });
 

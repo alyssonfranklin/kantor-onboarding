@@ -19,7 +19,7 @@ export default function CreateUserPage() {
     password: '',
     companyName: '',
     role: 'user',
-    department: 'Management',
+    department: '',
     company_role: 'Employee',
     assistantId: 'default_assistant_id',
     version: '1.0'
@@ -98,7 +98,15 @@ export default function CreateUserPage() {
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
-    setFormData(prev => ({ ...prev, [name]: value }));
+    
+    // If company is selected, automatically set the assistant ID
+    if (name === 'companyName') {
+      const selectedCompany = companies.find(company => company.name === value);
+      const assistantId = selectedCompany?.assistant_id || 'default_assistant_id';
+      setFormData(prev => ({ ...prev, [name]: value, assistantId }));
+    } else {
+      setFormData(prev => ({ ...prev, [name]: value }));
+    }
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -183,7 +191,7 @@ export default function CreateUserPage() {
                   name="email"
                   value={formData.email}
                   onChange={handleChange}
-                  className="w-full p-2 rounded-md border border-gray-700 bg-gray-800"
+                  className="w-full p-2 rounded-md border border-gray-700 bg-gray-800 text-white"
                   required
                 />
               </div>
@@ -195,18 +203,18 @@ export default function CreateUserPage() {
                   name="password"
                   value={formData.password}
                   onChange={handleChange}
-                  className="w-full p-2 rounded-md border border-gray-700 bg-gray-800"
+                  className="w-full p-2 rounded-md border border-gray-700 bg-gray-800 text-white"
                   required
                 />
               </div>
               
               <div>
-                <label className="block mb-1 font-medium">Role</label>
+                <label className="block mb-1 font-medium">Voxerion Role</label>
                 <select
                   name="role"
                   value={formData.role}
                   onChange={handleChange}
-                  className="w-full p-2 rounded-md border border-gray-700 bg-gray-800"
+                  className="w-full p-2 rounded-md border border-gray-700 bg-gray-800 text-white"
                 >
                   <option value="user">User</option>
                   <option value="orgadmin">Organization Admin</option>
@@ -221,7 +229,7 @@ export default function CreateUserPage() {
                   name="department"
                   value={formData.department}
                   onChange={handleChange}
-                  className="w-full p-2 rounded-md border border-gray-700 bg-gray-800"
+                  className="w-full p-2 rounded-md border border-gray-700 bg-gray-800 text-white"
                   required
                 />
               </div>
@@ -233,7 +241,7 @@ export default function CreateUserPage() {
                   name="company_role"
                   value={formData.company_role}
                   onChange={handleChange}
-                  className="w-full p-2 rounded-md border border-gray-700 bg-gray-800"
+                  className="w-full p-2 rounded-md border border-gray-700 bg-gray-800 text-white"
                   required
                 />
               </div>
@@ -244,7 +252,7 @@ export default function CreateUserPage() {
                   name="companyName"
                   value={formData.companyName}
                   onChange={handleChange}
-                  className="w-full p-2 rounded-md border border-gray-700 bg-gray-800"
+                  className="w-full p-2 rounded-md border border-gray-700 bg-gray-800 text-white"
                   required
                   disabled={isLoadingCompanies}
                 >
@@ -259,17 +267,6 @@ export default function CreateUserPage() {
                 </select>
               </div>
               
-              <div className="md:col-span-2">
-                <label className="block mb-1 font-medium">Assistant ID (OpenAI)</label>
-                <input
-                  type="text"
-                  name="assistantId"
-                  value={formData.assistantId}
-                  onChange={handleChange}
-                  className="w-full p-2 rounded-md border border-gray-700 bg-gray-800"
-                  required
-                />
-              </div>
             </div>
             
             <Button 
