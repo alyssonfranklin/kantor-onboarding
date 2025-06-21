@@ -84,7 +84,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Get company subscription details to set user insights
-    let userInsightsLeft = 20; // Default fallback
+    let userInsightsLeft = 1;  // Default fallback
     let userInsightsDay = 1;   // Default fallback
     
     const company = await Company.findOne({ company_id: companyId });
@@ -92,9 +92,10 @@ export async function POST(request: NextRequest) {
       try {
         const insightPlan = await Insight.findOne({ insight_id: company.company_subscription });
         if (insightPlan) {
-          userInsightsLeft = insightPlan.insights_limit || 20;
-          // If the insight has an insights_day field, use it, otherwise default to 1
-          userInsightsDay = insightPlan.insights_day || 1;
+          // Both insightsLeft and insightsDay get the SAME value from insights_day
+          const insightsValue = insightPlan.insights_day || 1;
+          userInsightsLeft = insightsValue;
+          userInsightsDay = insightsValue;
         }
       } catch (error) {
         console.error('Error fetching insight plan:', error);
