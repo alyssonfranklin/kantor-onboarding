@@ -4,11 +4,11 @@ This document provides a comprehensive analysis of all frontend pages and their 
 
 ## Summary
 
-**Total Pages Analyzed**: 21  
-**Pages with API Calls**: 15  
+**Total Pages Analyzed**: 20  
+**Pages with API Calls**: 14  
 **Pages without API Calls**: 6  
 **Total Unique API Endpoints**: 17  
-**Authentication Protected Pages**: 13  
+**Authentication Protected Pages**: 12  
 
 ---
 
@@ -510,45 +510,8 @@ This document provides a comprehensive analysis of all frontend pages and their 
 
 ---
 
-### 👤 **Admin Create User and Company**
+### 👤 **Admin Create User**
 **URL**: `https://kantor-onboarding-alysson-franklins-projects.vercel.app/admin/users/create`
-
-#### **API Calls**:
-
-**1. Password Protection**
-- **Endpoint**: `POST /api/v1/admin/verify-password`
-- **When**: Admin section access
-- **Purpose**: Admin authentication
-
-**2. Create User and Company**
-- **Endpoint**: `POST /api/v1/add-user`
-- **When**: Form submission
-- **Purpose**: Create new user and company
-- **Payload**:
-  ```json
-  {
-    "name": "User Full Name",
-    "email": "user@company.com",
-    "password": "user_password",
-    "companyName": "Company Name",
-    "role": "user|orgadmin|admin",
-    "department": "Department Name",
-    "company_role": "Company Role",
-    "assistantId": "openai_assistant_id",
-    "version": "1.0"
-  }
-  ```
-
-#### **Features**:
-- ✅ Comprehensive user creation form
-- ✅ Role-based access control
-- ✅ Company integration
-- ✅ OpenAI assistant linking
-
----
-
-### 👤 **Admin Add User to Existing Company**
-**URL**: `https://kantor-onboarding-alysson-franklins-projects.vercel.app/admin/users/add`
 
 #### **API Calls**:
 
@@ -573,33 +536,32 @@ This document provides a comprehensive analysis of all frontend pages and their 
 - **Purpose**: Populate company dropdown
 - **Headers**: `Authorization: Bearer {jwt_token}`
 
-**5. Create User**
-- **Endpoint**: `POST /api/v1/users`
+**5. Create User and Company**
+- **Endpoint**: `POST /api/v1/add-user`
 - **When**: Form submission
-- **Purpose**: Add user to existing company
-- **Headers**: `Authorization: Bearer {jwt_token}`
+- **Purpose**: Create new user and company
 - **Payload**:
   ```json
   {
-    "email": "user@company.com",
     "name": "User Full Name",
-    "company_id": "selected_company_id",
+    "email": "user@company.com",
     "password": "user_password",
-    "version": "Free|Basic|Business",
+    "companyName": "Selected Company Name",
     "role": "user|orgadmin|admin",
     "department": "Department Name",
-    "company_role": "Job Title"
+    "company_role": "Company Role",
+    "assistantId": "openai_assistant_id",
+    "version": "1.0"
   }
   ```
 
 #### **Features**:
-- ✅ Company selection dropdown (dynamic loading)
-- ✅ Simplified user creation (no org/agent creation)
+- ✅ Comprehensive user creation form
 - ✅ Role-based access control
-- ✅ Email validation
-- ✅ Password strength validation
-- ✅ Department and role assignment
-- ✅ Kantor version selection
+- ✅ **Company dropdown** (dynamically loaded from API)
+- ✅ OpenAI assistant linking
+- ✅ Loading states for company dropdown
+- ✅ Form validation and error handling
 
 ---
 

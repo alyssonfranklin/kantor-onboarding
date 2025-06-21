@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Alert, AlertDescription } from '@/components/ui/alert';
@@ -9,6 +9,9 @@ export default function CreateUserPage() {
   const [isLoading, setIsLoading] = useState(false);
   const [success, setSuccess] = useState('');
   const [error, setError] = useState('');
+  const [companies, setCompanies] = useState<any[]>([]);
+  const [isLoadingCompanies, setIsLoadingCompanies] = useState(true);
+  const [token, setToken] = useState('');
   
   const [formData, setFormData] = useState({
     name: '',
@@ -21,6 +24,77 @@ export default function CreateUserPage() {
     assistantId: 'default_assistant_id',
     version: '1.0'
   });
+
+  // Initialize and get authentication token
+  useEffect(() => {
+    const initializeAndLogin = async () => {
+      try {
+        // Initialize database
+        const initResponse = await fetch('/api/v1/admin/initialize-db', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          }
+        });
+        
+        // Login to get token
+        const loginResponse = await fetch('/api/v1/verify-password', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            email: 'admin@voxerion.com',
+            password: 'admin123'
+          }),
+        });
+        
+        const loginData = await loginResponse.json();
+        if (loginData.token) {
+          setToken(loginData.token);
+        } else {
+          setError('Failed to authenticate');
+        }
+      } catch (err) {
+        setError('Failed to initialize');
+      }
+    };
+    
+    initializeAndLogin();
+  }, []);
+
+  // Fetch companies when token is available
+  useEffect(() => {
+    if (!token) return;
+    
+    const fetchCompanies = async () => {
+      setIsLoadingCompanies(true);
+      try {
+        const response = await fetch('/api/v1/companies', {
+          headers: {
+            'Authorization': `Bearer ${token}`
+          }
+        });
+        
+        if (response.ok) {
+          const result = await response.json();
+          if (result.success) {
+            setCompanies(result.data || []);
+          } else {
+            setError('Failed to fetch companies');
+          }
+        } else {
+          setError('Failed to fetch companies');
+        }
+      } catch (err) {
+        setError('Error fetching companies');
+      } finally {
+        setIsLoadingCompanies(false);
+      }
+    };
+    
+    fetchCompanies();
+  }, [token]);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
@@ -165,15 +239,24 @@ export default function CreateUserPage() {
               </div>
               
               <div className="md:col-span-2">
-                <label className="block mb-1 font-medium">Company Name</label>
-                <input
-                  type="text"
+                <label className="block mb-1 font-medium">Company</label>
+                <select
                   name="companyName"
                   value={formData.companyName}
                   onChange={handleChange}
                   className="w-full p-2 rounded-md border border-gray-700 bg-gray-800"
                   required
-                />
+                  disabled={isLoadingCompanies}
+                >
+                  <option value="">
+                    {isLoadingCompanies ? 'Loading companies...' : 'Select a company'}
+                  </option>
+                  {companies.map(company => (
+                    <option key={company.company_id} value={company.name}>
+                      {company.name}
+                    </option>
+                  ))}
+                </select>
               </div>
               
               <div className="md:col-span-2">
@@ -192,7 +275,7 @@ export default function CreateUserPage() {
             <Button 
               type="submit" 
               className="mt-6 w-full bg-red-500 hover:bg-red-600"
-              disabled={isLoading}
+              disabled={isLoading || isLoadingCompanies}
             >
               {isLoading ? 'Creating...' : 'Create User and Company'}
             </Button>

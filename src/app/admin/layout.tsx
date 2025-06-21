@@ -20,8 +20,7 @@ export default function AdminLayout({
               <ul className="flex space-x-4">
                 <li><a href="/admin" className="hover:text-red-400">Admin Home</a></li>
                 <li><a href="/admin/dashboard" className="hover:text-red-400">Dashboard</a></li>
-                <li><a href="/admin/users/create" className="hover:text-red-400">Create User</a></li>
-                <li><a href="/admin/users/add" className="hover:text-red-400">Add User</a></li>
+                <li><a href="/admin/users/create" className="hover:text-red-400">Users</a></li>
                 <li><a href="/admin/companies/create" className="hover:text-red-400">Companies</a></li>
                 <li><a href="/admin/departments/create" className="hover:text-red-400">Departments</a></li>
                 <li><a href="/admin/employees/create" className="hover:text-red-400">Employees</a></li>
