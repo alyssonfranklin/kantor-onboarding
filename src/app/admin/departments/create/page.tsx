@@ -214,7 +214,7 @@ export default function CreateDepartmentPage() {
                 name="company_id"
                 value={formData.company_id}
                 onChange={handleChange}
-                className="w-full p-2 rounded-md border border-gray-700 bg-gray-800"
+                className="w-full p-2 rounded-md border border-gray-700 bg-gray-800 text-white"
                 required
                 disabled={isLoadingCompanies}
               >
@@ -247,7 +247,7 @@ export default function CreateDepartmentPage() {
                 name="department_desc"
                 value={formData.department_desc}
                 onChange={handleChange}
-                className="w-full p-2 rounded-md border border-gray-700 bg-gray-800 h-24"
+                className="w-full p-2 rounded-md border border-gray-700 bg-gray-800 h-24 text-white"
               />
             </div>
             

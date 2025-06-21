@@ -95,7 +95,7 @@ export default function CreateCompanyPage() {
                 name="companyName"
                 value={formData.companyName}
                 onChange={handleChange}
-                className="w-full p-2 rounded-md border border-gray-700 bg-gray-800"
+                className="w-full p-2 rounded-md border border-gray-700 bg-gray-800 text-white"
                 required
               />
             </div>

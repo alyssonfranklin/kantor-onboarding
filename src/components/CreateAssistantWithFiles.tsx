@@ -335,7 +335,7 @@ const CreateAssistantWithFiles = () => {
               id="assistantName"
               value={assistantName}
               onChange={(e) => setAssistantName(e.target.value)}
-              className="w-full p-2 border rounded-md mb-4 text-black placeholder:text-gray-400 focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
+              className="w-full p-2 border rounded-md mb-4 text-white placeholder:text-gray-400 focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
               placeholder="Knowledge Assistant"
             />
           </div>

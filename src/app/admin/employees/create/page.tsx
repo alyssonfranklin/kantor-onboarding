@@ -116,7 +116,7 @@ export default function CreateEmployeePage() {
                 name="company_id"
                 value={formData.company_id}
                 onChange={handleChange}
-                className="w-full p-2 rounded-md border border-gray-700 bg-gray-800"
+                className="w-full p-2 rounded-md border border-gray-700 bg-gray-800 text-white"
                 required
               >
                 <option value="">Select a company</option>

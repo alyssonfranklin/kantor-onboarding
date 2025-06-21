@@ -128,7 +128,7 @@ export default function PasswordProtection({ children }: PasswordProtectionProps
                 type="password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                className="w-full p-2 border rounded-md text-black"
+                className="w-full p-2 border rounded-md text-white"
                 required
               />
             </div>

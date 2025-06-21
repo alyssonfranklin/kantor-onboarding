@@ -143,7 +143,7 @@ const AgentOrgAdminCreation = () => {
     }
   };
 
-  const inputClasses = "w-full p-2 border rounded-md mb-4 text-black placeholder:text-gray-400 focus:border-blue-500 focus:ring-1 focus:ring-blue-500";
+  const inputClasses = "w-full p-2 border rounded-md mb-4 text-white placeholder:text-gray-400 focus:border-blue-500 focus:ring-1 focus:ring-blue-500";
   const labelClasses = "block font-bold text-white mb-2";
 
   return (

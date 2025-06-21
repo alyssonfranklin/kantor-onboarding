@@ -207,7 +207,7 @@ const CompanyOnboardingForm = () => {
           name={name}
           value={value}
           onChange={handleTextareaChange}
-          className="w-full p-2 border rounded-md min-h-32 mb-4 text-black placeholder:text-gray-400 focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
+          className="w-full p-2 border rounded-md min-h-32 mb-4 text-white placeholder:text-gray-400 focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
           required
         />
       </div>
@@ -238,7 +238,7 @@ const CompanyOnboardingForm = () => {
               type="text"
               value={assistantId}
               onChange={handleInputChange}
-              className="w-full p-2 border rounded-md mb-4 text-black placeholder:text-gray-400 focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
+              className="w-full p-2 border rounded-md mb-4 text-white placeholder:text-gray-400 focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
               required
               placeholder="Enter OpenAI Assistant ID"
             />

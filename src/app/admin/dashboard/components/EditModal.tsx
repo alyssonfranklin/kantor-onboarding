@@ -57,7 +57,7 @@ const EditModal = ({ isOpen, onClose, onSave, item, entityType }: EditModalProps
                 name="email"
                 value={formData.email || ''}
                 onChange={handleChange}
-                className="w-full p-2 rounded-md border border-gray-700 bg-gray-800"
+                className="w-full p-2 rounded-md border border-gray-700 bg-gray-800 text-white"
               />
             </div>
             <div>

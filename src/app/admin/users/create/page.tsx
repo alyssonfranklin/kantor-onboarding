@@ -171,7 +171,7 @@ export default function CreateUserPage() {
                   name="name"
                   value={formData.name}
                   onChange={handleChange}
-                  className="w-full p-2 rounded-md border border-gray-700 bg-gray-800"
+                  className="w-full p-2 rounded-md border border-gray-700 bg-gray-800 text-white"
                   required
                 />
               </div>
