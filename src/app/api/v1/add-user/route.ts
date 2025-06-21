@@ -87,20 +87,32 @@ export async function POST(request: NextRequest) {
     let userInsightsLeft = 1;  // Default fallback
     let userInsightsDay = 1;   // Default fallback
     
-    const company = await Company.findOne({ company_id: companyId });
-    if (company && company.company_subscription) {
+    // Use existing company object if available, otherwise look up the newly created company
+    let companySubscription = null;
+    if (existingCompany && existingCompany.company_subscription) {
+      companySubscription = existingCompany.company_subscription;
+    } else if (version) {
+      // For new companies, use the version (insight_id) passed in
+      companySubscription = version;
+    }
+    
+    if (companySubscription) {
       try {
-        const insightPlan = await Insight.findOne({ insight_id: company.company_subscription });
+        const insightPlan = await Insight.findOne({ insight_id: companySubscription });
         if (insightPlan) {
           // Both insightsLeft and insightsDay get the SAME value from insights_day
           const insightsValue = insightPlan.insights_day || 1;
           userInsightsLeft = insightsValue;
           userInsightsDay = insightsValue;
+        } else {
+          console.log(`No insight plan found for subscription ID: ${companySubscription}`);
         }
       } catch (error) {
         console.error('Error fetching insight plan:', error);
         // Use defaults if insight lookup fails
       }
+    } else {
+      console.log(`No company subscription found, using defaults`);
     }
 
     // Create user
