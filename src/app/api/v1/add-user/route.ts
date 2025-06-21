@@ -40,14 +40,21 @@ export async function POST(request: NextRequest) {
       // Company exists - use its ID
       companyId = existingCompany.company_id;
       
-      // Update assistant ID if different
+      // Update assistant ID and subscription if different
+      const updateFields: any = { updated_at: timestamp };
+      
       if (existingCompany.assistant_id !== assistantId) {
+        updateFields.assistant_id = assistantId;
+      }
+      
+      if (version && existingCompany.company_subscription !== version) {
+        updateFields.company_subscription = version;
+      }
+      
+      if (Object.keys(updateFields).length > 1) { // More than just updated_at
         await Company.findOneAndUpdate(
           { company_id: companyId },
-          { 
-            assistant_id: assistantId,
-            updated_at: timestamp
-          }
+          updateFields
         );
       }
     } else {
@@ -58,6 +65,7 @@ export async function POST(request: NextRequest) {
         company_id: companyId,
         name: companyName,
         assistant_id: assistantId,
+        company_subscription: version || null,
         status: 'active',
         created_at: timestamp,
         updated_at: timestamp

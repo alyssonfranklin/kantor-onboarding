@@ -1,7 +1,7 @@
 // src/components/AgentOrgAdminCreation.tsx
 "use client";
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Alert, AlertDescription } from '@/components/ui/alert';
@@ -16,25 +16,67 @@ interface FormData {
   createDefaultDepartment: boolean;
 }
 
+interface InsightVersion {
+  insight_id: string;
+  kantor_version: string;
+  insights_limit: number;
+  price_monthly?: number;
+  description?: string;
+}
+
 const AgentOrgAdminCreation = () => {
   const [formData, setFormData] = useState<FormData>({
     email: '',
     name: '',
     companyName: '',
     password: '',
-    version: 'Free',
+    version: '',
     createDefaultDepartment: false
   });
 
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState(false);
+  const [insightVersions, setInsightVersions] = useState<InsightVersion[]>([]);
+  const [isLoadingVersions, setIsLoadingVersions] = useState(true);
   const [createdData, setCreatedData] = useState<{
     companyId?: string;
     userId?: string;
     assistantId?: string;
     companyWasExisting?: boolean;
   }>({});
+
+  // Fetch insight versions on component mount
+  useEffect(() => {
+    const fetchInsightVersions = async () => {
+      try {
+        setIsLoadingVersions(true);
+        const response = await fetch('/api/v1/insights');
+        
+        if (response.ok) {
+          const result = await response.json();
+          if (result.success && result.data) {
+            setInsightVersions(result.data);
+            // Set default version to the first option if available
+            if (result.data.length > 0 && !formData.version) {
+              setFormData(prev => ({ ...prev, version: result.data[0].insight_id }));
+            }
+          } else {
+            setError('Failed to load Kantor versions');
+          }
+        } else {
+          setError('Failed to fetch Kantor versions');
+        }
+      } catch (err) {
+        console.error('Error fetching insight versions:', err);
+        setError('Error loading Kantor versions');
+      } finally {
+        setIsLoadingVersions(false);
+      }
+    };
+
+    fetchInsightVersions();
+  }, []);
 
   const handleChange = (
     e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>
@@ -132,7 +174,7 @@ const AgentOrgAdminCreation = () => {
         name: '',
         companyName: '',
         password: '',
-        version: 'Free',
+        version: insightVersions.length > 0 ? insightVersions[0].insight_id : '',
         createDefaultDepartment: false
       });
     } catch (error: unknown) {
@@ -228,10 +270,18 @@ const AgentOrgAdminCreation = () => {
               onChange={handleChange}
               className={inputClasses}
               required
+              disabled={isLoadingVersions}
             >
-              <option value="Free">Free</option>
-              <option value="Basic">Basic</option>
-              <option value="Business">Business</option>
+              <option value="">
+                {isLoadingVersions ? 'Loading versions...' : 'Select a Kantor version'}
+              </option>
+              {insightVersions.map(version => (
+                <option key={version.insight_id} value={version.insight_id}>
+                  {version.kantor_version}
+                  {version.price_monthly ? ` - $${version.price_monthly}/month` : ' - Free'}
+                  {` (${version.insights_limit} insights/month)`}
+                </option>
+              ))}
             </select>
           </div>
 

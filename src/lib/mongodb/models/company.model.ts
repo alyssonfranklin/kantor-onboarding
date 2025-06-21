@@ -4,6 +4,7 @@ export interface ICompany extends Document {
   company_id: string;
   name: string;
   assistant_id: string;
+  company_subscription?: string;
   status: string;
   created_at: Date;
   updated_at: Date;
@@ -14,6 +15,7 @@ const CompanySchema: Schema = new Schema(
     company_id: { type: String, required: true, unique: true },
     name: { type: String, required: true, unique: true },
     assistant_id: { type: String, required: true },
+    company_subscription: { type: String, trim: true },
     status: { type: String, required: true, enum: ['active', 'inactive', 'pending'], default: 'active' },
     created_at: { type: Date, default: Date.now },
     updated_at: { type: Date, default: Date.now },
