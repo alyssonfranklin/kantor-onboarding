@@ -4,6 +4,7 @@ import { dbConnect } from '@/lib/mongodb/connect';
 import User from '@/lib/mongodb/models/user.model';
 import Company from '@/lib/mongodb/models/company.model';
 import Department from '@/lib/mongodb/models/department.model';
+import Insight from '@/lib/mongodb/models/insight.model';
 import { generateId } from '@/lib/mongodb/utils/id-generator';
 
 export async function POST(request: NextRequest) {
@@ -82,6 +83,25 @@ export async function POST(request: NextRequest) {
       }
     }
 
+    // Get company subscription details to set user insights
+    let userInsightsLeft = 20; // Default fallback
+    let userInsightsDay = 1;   // Default fallback
+    
+    const company = await Company.findOne({ company_id: companyId });
+    if (company && company.company_subscription) {
+      try {
+        const insightPlan = await Insight.findOne({ insight_id: company.company_subscription });
+        if (insightPlan) {
+          userInsightsLeft = insightPlan.insights_limit || 20;
+          // If the insight has an insights_day field, use it, otherwise default to 1
+          userInsightsDay = insightPlan.insights_day || 1;
+        }
+      } catch (error) {
+        console.error('Error fetching insight plan:', error);
+        // Use defaults if insight lookup fails
+      }
+    }
+
     // Create user
     const userId = await generateId('USER');
 
@@ -94,6 +114,8 @@ export async function POST(request: NextRequest) {
       created_at: timestamp,
       department: department || 'Management',
       company_role: company_role || 'Employee',
+      insightsLeft: userInsightsLeft,
+      insightsDay: userInsightsDay,
       password: password // Password will be hashed by the pre-save hook
     });
 

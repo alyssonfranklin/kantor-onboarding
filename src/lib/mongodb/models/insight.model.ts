@@ -5,6 +5,7 @@ export interface IInsight extends Document {
   insight_id: string;
   kantor_version: string;
   insights_limit: number;
+  insights_day?: number;
   price_monthly?: number;
   description?: string;
   features?: string[];
@@ -28,6 +29,10 @@ const InsightSchema: Schema = new Schema({
     type: Number,
     required: true,
     default: 20
+  },
+  insights_day: {
+    type: Number,
+    default: 1
   },
   price_monthly: {
     type: Number,

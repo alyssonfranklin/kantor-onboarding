@@ -278,8 +278,6 @@ const AgentOrgAdminCreation = () => {
               {insightVersions.map(version => (
                 <option key={version.insight_id} value={version.insight_id}>
                   {version.kantor_version}
-                  {version.price_monthly ? ` - $${version.price_monthly}/month` : ' - Free'}
-                  {` (${version.insights_limit} insights/month)`}
                 </option>
               ))}
             </select>
