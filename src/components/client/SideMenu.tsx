@@ -148,6 +148,7 @@ export default function SideMenu() {
                   </p>
                   <Button
                     className="w-full"
+                    onClick={() => goToPage('upload-assessments')}
                   >
                     Upload Assessments
                   </Button>

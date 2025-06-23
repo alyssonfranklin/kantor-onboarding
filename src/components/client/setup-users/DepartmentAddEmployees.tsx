@@ -45,15 +45,6 @@ export default function DepartmentAddEmployees(
                   role={leader.role}
                   onLeaderSelected={onLeaderSelected}
                 />
-                // <div 
-                //   key={index} 
-                //   className="cursor-pointer bg-gray-50 rounded-lg shadow p-4 m-2 flex flex-col items-start border border-gray-200"
-                //   onClick={() => onLeaderSelected(leader)}
-                // >
-                //   <div className="font-semibold text-lg text-[#101828]">{leader.name}</div>
-                //   <div className="text-[#475467] text-sm mt-1">{leader.email}</div>
-                //   <div className="text-[#475467] text-sm mt-2 py-1 uppercase">{leader.role}</div>
-                // </div>
             ))}
           </div>
 

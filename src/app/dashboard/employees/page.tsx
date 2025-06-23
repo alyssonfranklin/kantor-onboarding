@@ -1,11 +1,14 @@
 "use client";
 
+import CalendarRangePicker from '@/components/client/CalendarRangePicker';
 import EmployeeList from '@/components/client/users/EmployeeList';
 import UsersNavBar from '@/components/client/users/UsersNavBar';
 import Image from 'next/image';
-import React from 'react'
+import React, { useState } from 'react'
 
 export default function EmployeesPage() {
+
+  const [showDatePicker, setShowDatePicker] = useState(false);
 
   const employees = [
     { id: 1, name: 'Phoenix Baker', role: 'Sales', tags: ['Leadership', 'Assessment', 'Feedback', 'Sales'], assessment: 'Active' },
@@ -18,6 +21,22 @@ export default function EmployeesPage() {
   const handlePageChange = (page: number) => {
     console.log(`Page changed to: ${page}`);
     // Implement your page change logic here
+  };
+
+  const handleShowDatePicker = () => {
+    console.log('handleShowDatePicker');
+    setShowDatePicker(true);
+  };
+
+  const handleSetDates = (range) => {
+    const start = range.startDate ? range.startDate.toISOString().slice(0, 10) : '';
+    const end = range.endDate ? range.endDate.toISOString().slice(0, 10) : '';
+    console.log('Formatted start date:', start);
+    console.log('Formatted end date:', end);
+  };
+
+  const handleOnConfirmDates = () => {
+    setShowDatePicker(false);
   };
 
   return (
@@ -50,16 +69,30 @@ export default function EmployeesPage() {
             </button>
           </div>
           <div className='flex gap-4'>
-            <button className="flex gap-2 items-center px-4 py-2 border border-gray-300 rounded-md bg-white text-black hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-orange-500">
-              <Image
-                src="/images/icons/calendar.svg"
-                alt="Calendar Icon"
-                width={20} 
-                height={20}
-                className="rounded-full object-cover"
-              />
-              Select Dates
-            </button>
+            <div className='relative'>
+              <button 
+                className="flex gap-2 items-center px-4 py-2 border border-gray-300 rounded-md bg-white text-black hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-orange-500"
+                onClick={handleShowDatePicker}
+              >
+                <Image
+                  src="/images/icons/calendar.svg"
+                  alt="Calendar Icon"
+                  width={20} 
+                  height={20}
+                  className="rounded-full object-cover"
+                />
+                Select Dates
+              </button>
+              {
+                showDatePicker &&
+                <div className='absolute top-11 right-0 border border-gray-300 rounded-md'>
+                  <CalendarRangePicker 
+                    onChange={handleSetDates}
+                    onConfirm={handleOnConfirmDates}
+                  />
+                </div>
+              }
+            </div>
             <button className="flex gap-2 items-center px-4 py-2 border border-gray-300 rounded-md bg-white text-black hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-orange-500">
               <Image
                 src="/images/icons/filter-lines.svg"

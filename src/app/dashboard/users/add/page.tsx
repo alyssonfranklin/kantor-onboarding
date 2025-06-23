@@ -2,12 +2,16 @@
 
 import CardUserAdd from '@/components/client/users/CardUserAdd'
 import Image from 'next/image'
+import { useRouter } from 'next/navigation';
 import React from 'react'
 
 export default function UsersAddPage() {
 
+  const router = useRouter();
+
   const handleButtonClick = (userType: string) => {
     console.log(`Creating ${userType}`);
+    router.push(`/dashboard/users/add-department?userType=${encodeURIComponent(userType)}`);
   };
 
   return (

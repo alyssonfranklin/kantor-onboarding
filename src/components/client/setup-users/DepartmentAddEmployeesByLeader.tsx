@@ -1,6 +1,7 @@
 import { Button } from '@/components/ui/button';
 import Input from '@/components/ui/input';
 import Image from 'next/image'
+import Link from 'next/link';
 import React, { useState } from 'react'
 
 interface Employee {
@@ -68,13 +69,12 @@ export default function DepartmentAddEmployeesByLeader(
             </h2>
               <div className='text-gray-600 pt-0 mt-0'>
                 Now it&apos;s time to add the employees to your department. You can accelerate this step by using our{' '}
-                <a
-                  href="/files/batch-template.xlsx"
-                  download
-                  className="text-[#E62E05] underline"
+                <Link
+                  href="/dashboard/batch-processing"
+                  className="text-[#E62E05] underline font-semibold"
                 >
                   template for batch processing
-                </a>.
+                </Link>.
               </div>
           </div>
           

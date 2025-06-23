@@ -73,7 +73,8 @@ export const AUTH_URLS = {
   VALIDATE: '/api/v1/auth/validate',
   CSRF: '/api/v1/auth/csrf',
   REQUEST_PASSWORD_RESET: '/api/v1/auth/reset-password/request',
-  ADD_USER: '/api/v1/add-user'
+  ADD_USER: '/api/v1/add-user',
+  CREATE_AGENT: '/api/v1/create-agent'
 };
 
 // Local Storage Keys

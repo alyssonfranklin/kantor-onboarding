@@ -40,7 +40,7 @@ export default function SideSteps(
       <nav className="flex-1 px-4 py-6 space-y-2" style={{width: '300px'}} >
         <ul className="space-y-0">
           {steps.map((step, idx) => (
-            <li key={step.name} className="flex items-start gap-4 group">
+            <li key={idx} className="flex items-start gap-4 group">
               <div className="flex flex-col items-center">
                 <div className="border border-gray-200 p-4 rounded-lg shadow-lg">
                   <span 
