@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Alert, AlertDescription } from '@/components/ui/alert';
@@ -9,6 +9,7 @@ import NavBar from "@/components/client/NavBar";
 import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import Script from "next/script";
 
 interface FormData {
   email: string;
@@ -29,6 +30,10 @@ interface InsightVersion {
 
 export default function WelcomePage() {
   const router = useRouter();
+  const recaptchaRef = useRef<any>(null);
+  const [recaptchaLoaded, setRecaptchaLoaded] = useState(false);
+  const [recaptchaToken, setRecaptchaToken] = useState<string | null>(null);
+  
   const [formData, setFormData] = useState<FormData>({
     email: '',
     name: '',
@@ -82,6 +87,26 @@ export default function WelcomePage() {
     fetchInsightVersions();
   }, []);
 
+  // reCAPTCHA callback functions
+  const onRecaptchaLoad = () => {
+    setRecaptchaLoaded(true);
+    // Set up global callback function
+    (window as any).onRecaptchaSuccess = (token: string) => {
+      setRecaptchaToken(token);
+    };
+  };
+
+  const onRecaptchaChange = (token: string | null) => {
+    setRecaptchaToken(token);
+  };
+
+  const resetRecaptcha = () => {
+    if (recaptchaRef.current && (window as any).grecaptcha) {
+      (window as any).grecaptcha.reset();
+      setRecaptchaToken(null);
+    }
+  };
+
   const handleChange = (
     e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>
   ) => {
@@ -112,6 +137,12 @@ export default function WelcomePage() {
     // Validate email
     if (!validateEmail(formData.email)) {
       setError('Please enter a valid corporate email');
+      return;
+    }
+
+    // Validate reCAPTCHA
+    if (!recaptchaToken) {
+      setError('Please complete the reCAPTCHA verification');
       return;
     }
     
@@ -176,6 +207,7 @@ export default function WelcomePage() {
     } catch (error: unknown) {
       const err = error as Error;
       setError(err.message);
+      resetRecaptcha(); // Reset reCAPTCHA on error
     } finally {
       setIsSubmitting(false);
     }
@@ -185,10 +217,15 @@ export default function WelcomePage() {
   const labelClasses = "block text-sm font-medium text-gray-700 mb-1";
 
   return (
-    <div className="min-h-screen flex flex-col items-center justify-center m-0 p-0">
-      <div className="w-full">
-        <NavBar />
-      </div>
+    <>
+      <Script
+        src="https://www.google.com/recaptcha/api.js"
+        onLoad={onRecaptchaLoad}
+      />
+      <div className="min-h-screen flex flex-col items-center justify-center m-0 p-0">
+        <div className="w-full">
+          <NavBar />
+        </div>
       <div className="w-full min-h-screen flex justify-center pt-4 md:pt-10">
         <div className='w-11/12 md:w-2/5'>
           <div className='flex justify-center'>
@@ -304,6 +341,24 @@ export default function WelcomePage() {
                   </select>
                 </div>
 
+                <div>
+                  <label className={labelClasses}>
+                    Verification
+                  </label>
+                  {recaptchaLoaded && (
+                    <div 
+                      className="g-recaptcha" 
+                      data-sitekey={process.env.NEXT_PUBLIC_RECAPTCHA_SITE_KEY}
+                      data-callback="onRecaptchaSuccess"
+                      ref={recaptchaRef}
+                    ></div>
+                  )}
+                  {!recaptchaLoaded && (
+                    <div className="p-4 border border-gray-300 rounded-md bg-gray-50 text-center text-gray-500">
+                      Loading reCAPTCHA...
+                    </div>
+                  )}
+                </div>
 
                 {error && (
                   <Alert variant="destructive">
@@ -362,5 +417,6 @@ export default function WelcomePage() {
         </div>
       </div>
     </div>
+    </>
   );
 }
