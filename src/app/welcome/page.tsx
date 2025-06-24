@@ -8,6 +8,7 @@ import { Loader2 } from 'lucide-react';
 import NavBar from "@/components/client/NavBar";
 import Image from "next/image";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 
 interface FormData {
   email: string;
@@ -27,6 +28,7 @@ interface InsightVersion {
 }
 
 export default function WelcomePage() {
+  const router = useRouter();
   const [formData, setFormData] = useState<FormData>({
     email: '',
     name: '',
@@ -170,15 +172,11 @@ export default function WelcomePage() {
       });
 
       setSuccess(true);
-      // Reset form
-      setFormData({
-        email: '',
-        name: '',
-        companyName: '',
-        password: '',
-        version: insightVersions.length > 0 ? insightVersions[0].insight_id : '',
-        createDefaultDepartment: false
-      });
+      
+      // Redirect to thank you page
+      setTimeout(() => {
+        router.push('/thankyou');
+      }, 2000);
     } catch (error: unknown) {
       const err = error as Error;
       setError(err.message);
@@ -310,19 +308,6 @@ export default function WelcomePage() {
                   </select>
                 </div>
 
-                <div className="flex items-center">
-                  <input
-                    type="checkbox"
-                    id="createDefaultDepartment"
-                    name="createDefaultDepartment"
-                    checked={formData.createDefaultDepartment}
-                    onChange={handleChange}
-                    className="h-4 w-4 text-orange-600 focus:ring-orange-500 border-gray-300 rounded"
-                  />
-                  <label htmlFor="createDefaultDepartment" className="ml-2 block text-sm text-gray-700">
-                    Create default Management department
-                  </label>
-                </div>
 
                 {error && (
                   <Alert variant="destructive">
