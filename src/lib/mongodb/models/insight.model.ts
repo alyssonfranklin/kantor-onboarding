@@ -59,7 +59,7 @@ const InsightSchema: Schema = new Schema({
 });
 
 // Create indexes for better performance
-InsightSchema.index({ insight_id: 1 });
+// Note: insight_id already has unique index from schema definition
 InsightSchema.index({ kantor_version: 1 });
 
 const Insight = models.Insight || model<IInsight>('Insight', InsightSchema);
