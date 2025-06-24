@@ -94,6 +94,20 @@ export default function WelcomePage() {
     (window as any).onRecaptchaSuccess = (token: string) => {
       setRecaptchaToken(token);
     };
+    
+    // Render reCAPTCHA programmatically
+    if (recaptchaRef.current && (window as any).grecaptcha) {
+      setTimeout(() => {
+        try {
+          (window as any).grecaptcha.render(recaptchaRef.current, {
+            'sitekey': '6Ld6fWsrAAAAAII_1UcAmpNG1xrImLqKW4sEOPfI',
+            'callback': (token: string) => setRecaptchaToken(token)
+          });
+        } catch (error) {
+          console.error('Error rendering reCAPTCHA:', error);
+        }
+      }, 100);
+    }
   };
 
   const onRecaptchaChange = (token: string | null) => {
@@ -345,14 +359,10 @@ export default function WelcomePage() {
                   <label className={labelClasses}>
                     Verification
                   </label>
-                  {recaptchaLoaded && (
-                    <div 
-                      className="g-recaptcha" 
-                      data-sitekey={process.env.NEXT_PUBLIC_RECAPTCHA_SITE_KEY}
-                      data-callback="onRecaptchaSuccess"
-                      ref={recaptchaRef}
-                    ></div>
-                  )}
+                  <div 
+                    ref={recaptchaRef}
+                    className="mb-4"
+                  ></div>
                   {!recaptchaLoaded && (
                     <div className="p-4 border border-gray-300 rounded-md bg-gray-50 text-center text-gray-500">
                       Loading reCAPTCHA...
