@@ -89,6 +89,7 @@ export default function WelcomePage() {
 
   // reCAPTCHA v3 callback functions
   const onRecaptchaLoad = () => {
+    console.log('✅ reCAPTCHA v3 script loaded');
     setRecaptchaLoaded(true);
   };
 
@@ -99,13 +100,17 @@ export default function WelcomePage() {
           (window as any).grecaptcha.execute('6Ld6fWsrAAAAAII_1UcAmpNG1xrImLqKW4sEOPfI', {
             action: 'submit'
           }).then((token: string) => {
+            console.log('✅ reCAPTCHA v3 token received:', token);
+            console.log('✅ Token length:', token.length);
             resolve(token);
-          }).catch(() => {
+          }).catch((error: any) => {
+            console.error('❌ reCAPTCHA v3 error:', error);
             resolve(null);
           });
         });
       });
     }
+    console.warn('⚠️ reCAPTCHA v3 not loaded');
     return null;
   };
 
@@ -354,14 +359,6 @@ export default function WelcomePage() {
                   </select>
                 </div>
 
-                {/* reCAPTCHA v3 runs in background - no visible widget */}
-                {!recaptchaLoaded && (
-                  <div className="mb-4">
-                    <div className="p-3 border border-gray-300 rounded-md bg-gray-50 text-center text-gray-500 text-sm">
-                      🤖 Loading security verification...
-                    </div>
-                  </div>
-                )}
 
                 {error && (
                   <Alert variant="destructive">
