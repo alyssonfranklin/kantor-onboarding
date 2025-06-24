@@ -72,5 +72,41 @@
 
   "debug_title": "Informações de Depuração",
   "debug_error": "Erro ao gerar informações de depuração: ",
-  "debug_success": "Informações de depuração geradas com sucesso"
+  "debug_success": "Informações de depuração geradas com sucesso",
+
+  "welcome_page_title": "Bem-vindo ao Voxerion",
+  "welcome_page_subtitle": "Crie sua conta de administrador da organização para começar",
+  "welcome_page_description": "Crie sua conta de administrador da organização para começar com o Voxerion. Isso configurará seu perfil da empresa e assistente de IA. Entre em contato conosco se tiver alguma dúvida",
+  "contact_us": "Entre em Contato",
+  "create_organization_admin": "Criar Administrador da Organização",
+  "corporate_email": "E-mail Corporativo",
+  "your_name": "Seu Nome",
+  "your_company_name": "Nome da Sua Empresa",
+  "password": "Senha",
+  "kantor_version": "Versão Kantor",
+  "loading_versions": "Carregando versões...",
+  "select_kantor_version": "Selecione uma versão Kantor",
+  "recaptcha_verification_failed": "Verificação reCAPTCHA falhou. Tente novamente.",
+  "please_enter_valid_email": "Por favor, insira um e-mail corporativo válido",
+  "create_account": "Criar Conta",
+  "creating_account": "Criando Conta...",
+  "already_have_account": "Já tem uma conta?",
+  "log_in": "Entrar",
+
+  "thankyou_title": "Bem-vindo ao Voxerion!",
+  "thankyou_subtitle": "Sua conta foi criada com sucesso",
+  "onboarding_complete": "Integração Completa!",
+  "thankyou_message": "Sua organização foi configurada com sucesso. Verifique seu e-mail para obter um link de ativação para concluir a configuração do seu usuário e começar a usar o Voxerion.",
+  "whats_next": "Próximos passos?",
+  "check_email": "Verifique seu e-mail para o link de ativação",
+  "click_activation_link": "Clique no link para ativar sua conta",
+  "start_exploring": "Comece a explorar os recursos do Voxerion",
+  "go_to_login": "Ir para Login",
+  "didnt_receive_email": "Não recebeu o e-mail?",
+  "contact_support": "Contatar Suporte",
+
+  "login_page_title": "Faça login em sua conta",
+  "login_page_subtitle": "Bem-vindo de volta! Digite seus dados.",
+  "dont_have_account": "Não tem uma conta?",
+  "sign_up": "Cadastre-se"
 }

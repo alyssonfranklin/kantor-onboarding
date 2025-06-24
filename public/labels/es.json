@@ -72,5 +72,41 @@
 
   "debug_title": "Información de Depuración",
   "debug_error": "Error al generar información de depuración: ",
-  "debug_success": "Información de depuración generada con éxito"
+  "debug_success": "Información de depuración generada con éxito",
+
+  "welcome_page_title": "Bienvenido a Voxerion",
+  "welcome_page_subtitle": "Crea tu cuenta de administrador de organización para comenzar",
+  "welcome_page_description": "Crea tu cuenta de administrador de organización para comenzar con Voxerion. Esto configurará tu perfil de empresa y asistente de IA. Contáctanos si tienes alguna pregunta",
+  "contact_us": "Contáctanos",
+  "create_organization_admin": "Crear Administrador de Organización",
+  "corporate_email": "Correo Corporativo",
+  "your_name": "Tu Nombre",
+  "your_company_name": "Nombre de Tu Empresa",
+  "password": "Contraseña",
+  "kantor_version": "Versión Kantor",
+  "loading_versions": "Cargando versiones...",
+  "select_kantor_version": "Selecciona una versión Kantor",
+  "recaptcha_verification_failed": "La verificación reCAPTCHA falló. Inténtalo de nuevo.",
+  "please_enter_valid_email": "Por favor, ingresa un correo corporativo válido",
+  "create_account": "Crear Cuenta",
+  "creating_account": "Creando Cuenta...",
+  "already_have_account": "¿Ya tienes una cuenta?",
+  "log_in": "Iniciar Sesión",
+
+  "thankyou_title": "¡Bienvenido a Voxerion!",
+  "thankyou_subtitle": "Tu cuenta ha sido creada exitosamente",
+  "onboarding_complete": "¡Incorporación Completa!",
+  "thankyou_message": "Tu organización ha sido configurada exitosamente. Revisa tu correo electrónico para obtener un enlace de activación para completar la configuración de tu usuario y comenzar a usar Voxerion.",
+  "whats_next": "¿Qué sigue?",
+  "check_email": "Revisa tu correo electrónico para el enlace de activación",
+  "click_activation_link": "Haz clic en el enlace para activar tu cuenta",
+  "start_exploring": "Comienza a explorar las características de Voxerion",
+  "go_to_login": "Ir al Login",
+  "didnt_receive_email": "¿No recibiste el correo?",
+  "contact_support": "Contactar Soporte",
+
+  "login_page_title": "Inicia sesión en tu cuenta",
+  "login_page_subtitle": "¡Bienvenido de vuelta! Por favor ingresa tus datos.",
+  "dont_have_account": "¿No tienes una cuenta?",
+  "sign_up": "Registrarse"
 }

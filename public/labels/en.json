@@ -72,5 +72,41 @@
 
   "debug_title": "Debug Information",
   "debug_error": "Error generating debug information: ",
-  "debug_success": "Debug information generated successfully"
+  "debug_success": "Debug information generated successfully",
+
+  "welcome_page_title": "Welcome to Voxerion",
+  "welcome_page_subtitle": "Create your organization admin account to get started",
+  "welcome_page_description": "Create your organization admin account to get started with Voxerion. This will set up your company profile and AI assistant. Contact Us if you have any questions",
+  "contact_us": "Contact Us",
+  "create_organization_admin": "Create Organization Admin",
+  "corporate_email": "Corporate Email",
+  "your_name": "Your Name",
+  "your_company_name": "Your Company Name",
+  "password": "Password",
+  "kantor_version": "Kantor Version",
+  "loading_versions": "Loading versions...",
+  "select_kantor_version": "Select a Kantor version",
+  "recaptcha_verification_failed": "reCAPTCHA verification failed. Please try again.",
+  "please_enter_valid_email": "Please enter a valid corporate email",
+  "create_account": "Create Account",
+  "creating_account": "Creating Account...",
+  "already_have_account": "Already have an account?",
+  "log_in": "Log in",
+
+  "thankyou_title": "Welcome to Voxerion!",
+  "thankyou_subtitle": "Your account has been successfully created",
+  "onboarding_complete": "Onboarding Complete!",
+  "thankyou_message": "Your organization has been successfully set up. Please check your email for an activation link to complete your user setup and start using Voxerion.",
+  "whats_next": "What's next?",
+  "check_email": "Check your email for the activation link",
+  "click_activation_link": "Click the link to activate your account",
+  "start_exploring": "Start exploring Voxerion's features",
+  "go_to_login": "Go to Login",
+  "didnt_receive_email": "Didn't receive the email?",
+  "contact_support": "Contact Support",
+
+  "login_page_title": "Log in to your account",
+  "login_page_subtitle": "Welcome back! Please enter your details.",
+  "dont_have_account": "Don't have an account?",
+  "sign_up": "Sign up"
 }
