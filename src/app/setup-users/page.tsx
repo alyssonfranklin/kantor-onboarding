@@ -1,5 +1,6 @@
 "use client";
 
+import BatchProcessing from "@/components/client/BatchProcessing";
 import NavBar from "@/components/client/NavBar";
 import DepartmentAddDetails from "@/components/client/setup-users/DepartmentAddDetails";
 import DepartmentAddEmployees from "@/components/client/setup-users/DepartmentAddEmployees";
@@ -7,22 +8,28 @@ import DepartmentAddEmployeesByLeader from "@/components/client/setup-users/Depa
 import DepartmentAddLeaders from "@/components/client/setup-users/DepartmentAddLeaders";
 import SetupUsersConfirmation from "@/components/client/setup-users/SetupUsersConfirmation";
 import SideSteps from "@/components/client/SideSteps";
+import EmployeesConfirmation from "@/components/client/users/EmployeesConfirmation";
 import { useState } from "react";
+import { v4 as uuidv4 } from 'uuid';
 
 const TOTAL_STEPS = 3;
 
 export default function LoginPage() {
 
   const [showConfirmation, setShowConfirmation] = useState(false);
+  const [showConfirmationBatch, setShowConfirmationBatch] = useState(false);
   const [currentStep, setCurrentStep] = useState(1);
   const [setupData, setSetupData] = useState({
     departmentName: '',
     departmentRole: ''
   });
+  const [showBatchProcessing, setShowBatchProcessing] = useState(false);
   const [contacts, setContacts] = useState([{ name: '', email: '' }]);
+  const [finishByUpload, setFinishByUpload] = useState(false);
   const [leaders, setLeaders] = useState(
     [
       { 
+        id: uuidv4(),
         name: '', 
         email: '', 
         role: '', 
@@ -74,7 +81,7 @@ export default function LoginPage() {
     setContacts(updatedContacts);
   };
 
-  const handleLeadersChange = (updatedLeaders: { name: string; email: string; role: string; }[]) => {
+  const handleLeadersChange = (updatedLeaders: { id: string, name: string; email: string; role: string; }[]) => {
     setLeaders(
       updatedLeaders.map(leader => ({
         ...leader,
@@ -97,9 +104,11 @@ export default function LoginPage() {
     }));
   };
 
-  const onLeaderSelected = (theLeader) => {
-    setLeaderSelected(theLeader);
-    const leaderIndex = leaders.findIndex((lead) => lead === theLeader);
+  const onLeaderSelected = (theLeaderId) => {
+    console.log('theLeader: ', theLeaderId);
+    setLeaderSelected(theLeaderId);
+    const leaderIndex = leaders.findIndex((lead: any) => lead.id === theLeaderId);
+    console.log('leaderIndex: ', leaderIndex);
     if (leaderIndex >= 0) {
       setEmployees(leaders[leaderIndex].employees);
     }
@@ -108,7 +117,7 @@ export default function LoginPage() {
   const addEmployeesToLeader = (theEmployees) => {
     setLeaders((prevLeaders) =>
       prevLeaders.map((leader) =>
-        leader === leaderSelected
+        leader.id === leaderSelected
           ? { ...leader, employees: theEmployees }
           : leader
       )
@@ -119,6 +128,16 @@ export default function LoginPage() {
 
   const handleSubmit = async () => {
     setShowConfirmation(true);
+  };
+
+  const handleBatchProcessingClick = () => {
+    setShowBatchProcessing(true);
+  };
+
+  const onUploadSuccess = () => {
+    setFinishByUpload(true);
+    setCurrentStep(3);
+    setShowConfirmationBatch(true);
   };
   
   return (
@@ -133,49 +152,66 @@ export default function LoginPage() {
               steps={steps}
             />
           </div>
-          <div className="w-full md:w-9/12 flex flex-col items-center justify-center m-0 p-0">
-            <div className="w-full min-h-screen flex justify-center pt-0 lg:pt-8">
+          {
+            !showConfirmationBatch &&
+            <div className="w-full md:w-9/12 flex flex-col items-center justify-center m-0 p-0">
+              <div className="w-full min-h-screen flex justify-center pt-0 lg:pt-8">
 
-              {
-                currentStep === 1 &&
-                <DepartmentAddDetails 
-                  setupData={setupData}
-                  updateSetupData={updateSetupData}
-                  onNext={handleNext}
-                  contacts={contacts} 
-                  onContactsChange={handleContactsChange}
-                />
-              }
+                {
+                  currentStep === 1 &&
+                  <DepartmentAddDetails 
+                    setupData={setupData}
+                    updateSetupData={updateSetupData}
+                    onNext={handleNext}
+                    contacts={contacts} 
+                    onContactsChange={handleContactsChange}
+                  />
+                }
 
-              {
-                currentStep === 2 &&
-                <DepartmentAddLeaders 
-                  onNext={handleNext}
-                  leaders={leaders} 
-                  onLeadersChange={handleLeadersChange}
-                />
-              }
+                {
+                  currentStep === 2 && !showBatchProcessing &&
+                  <DepartmentAddLeaders 
+                    title="Department/Area Leaders"
+                    onNext={handleNext}
+                    leaders={leaders} 
+                    onLeadersChange={handleLeadersChange}
+                    handleBatchProcessingClick={handleBatchProcessingClick}
+                  />
+                }
 
-              {
-                currentStep === 3 && !leaderSelected &&
-                <DepartmentAddEmployees 
-                  onNext={handleNext}
-                  leaders={leaders}
-                  onLeaderSelected={onLeaderSelected}
-                />
-              }
+                {
+                  currentStep === 2 && showBatchProcessing &&
+                  <BatchProcessing 
+                    onUploadSuccess={onUploadSuccess}
+                  />
+                }
 
-              {
-                currentStep === 3 && leaderSelected &&
-                <DepartmentAddEmployeesByLeader 
-                  leader={leaderSelected}
-                  employees={employees}
-                  addEmployeesToLeader={addEmployeesToLeader}
-                />
-              }
-              
+                {
+                  currentStep === 3 && !leaderSelected && !finishByUpload &&
+                  <DepartmentAddEmployees 
+                    onNext={handleNext}
+                    leaders={leaders}
+                    onLeaderSelected={onLeaderSelected}
+                  />
+                }
+
+                {
+                  currentStep === 3 && leaderSelected && !finishByUpload &&
+                  <DepartmentAddEmployeesByLeader 
+                    leader={leaderSelected}
+                    employees={employees}
+                    addEmployeesToLeader={addEmployeesToLeader}
+                  />
+                }
+                
+              </div>
             </div>
-          </div>
+          }
+
+          {
+            showConfirmationBatch &&
+            <EmployeesConfirmation />
+          }
         </div>
       }
 

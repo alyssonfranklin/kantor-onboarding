@@ -1,6 +1,7 @@
 import { Button } from '@/components/ui/button';
 import Image from 'next/image';
 import React, { useState } from 'react'
+import CardLeader from '../users/CardLeader';
 
 export default function DepartmentAddEmployees(
   { leaders, onNext, onLeaderSelected }
@@ -33,24 +34,17 @@ export default function DepartmentAddEmployees(
             </div>
           </div>
 
-          {error && (
-            <div className="bg-transparent border border-red-400 text-red-700 px-4 py-1 rounded relative my-2 text-center" role="alert">
-              <span className="block sm:inline">{error}</span>
-            </div>
-          )}
-
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3">
             {
               leaders.map((leader, index) => (
-                <div 
-                  key={index} 
-                  className="cursor-pointer bg-gray-50 rounded-lg shadow p-4 m-2 flex flex-col items-start border border-gray-200"
-                  onClick={() => onLeaderSelected(leader)}
-                >
-                  <div className="font-semibold text-lg text-[#101828]">{leader.name}</div>
-                  <div className="text-[#475467] text-sm mt-1">{leader.email}</div>
-                  <div className="text-[#475467] text-sm mt-2 py-1 uppercase">{leader.role}</div>
-                </div>
+                <CardLeader
+                  key={index}
+                  id={leader.id}
+                  name={leader.name}
+                  email={leader.email}
+                  role={leader.role}
+                  onLeaderSelected={onLeaderSelected}
+                />
             ))}
           </div>
 

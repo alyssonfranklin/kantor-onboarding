@@ -24,6 +24,27 @@ export default function RegisterForm() {
 			return;
 		}
 
+    const response = await fetch(AUTH_URLS.CREATE_AGENT, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(
+				{
+					name: companyName
+				}
+      ),
+      credentials: 'include'
+    });
+
+    const data = await response.json();
+    console.log('response data: ', data);
+
+    if (!response.ok) {
+      setError(data.error || 'Create agent failed');
+      return;
+    }
+
     const res = await fetch(AUTH_URLS.ADD_USER, {
       method: 'POST',
       headers: {
@@ -35,8 +56,8 @@ export default function RegisterForm() {
 					email,
 					companyName,
 					password,
-					version: '1.0',
-					assistantId: 1
+					version: 'Free',
+					assistantId: data.id
 				}
       ),
       credentials: 'include'

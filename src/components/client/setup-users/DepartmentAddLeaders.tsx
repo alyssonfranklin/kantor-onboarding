@@ -1,7 +1,9 @@
 import { Button } from '@/components/ui/button';
 import Input from '@/components/ui/input';
 import Image from 'next/image';
+import Link from 'next/link';
 import React, { useEffect, useState } from 'react'
+import { v4 as uuidv4 } from 'uuid';
 
 interface Leader {
   name: string;
@@ -10,7 +12,7 @@ interface Leader {
 }
 
 export default function DepartmentAddLeaders(
-  { leaders, onLeadersChange, onNext }
+  { leaders, onLeadersChange, onNext, title, handleBatchProcessingClick }
 ) {
 
   const [error, setError] = useState('');
@@ -31,7 +33,8 @@ export default function DepartmentAddLeaders(
   };
   
   const addLeader = () => {
-    setLocalLeaders([...localLeaders, { name: '', email: '', role: '' }]);
+    const id = uuidv4();
+    setLocalLeaders([...localLeaders, { id: id, name: '', email: '', role: '' }]);
   };
 
   const handleRemoveLeader = (index: number) => {
@@ -41,7 +44,7 @@ export default function DepartmentAddLeaders(
 
   useEffect(() => {
     onLeadersChange(localLeaders);
-  }, [localLeaders, onLeadersChange]);
+  }, [localLeaders]);
 
   return (
     <div className="bg-white border-gray-200">
@@ -59,10 +62,16 @@ export default function DepartmentAddLeaders(
 
           <div className='text-center'>
             <h2 className="text-2xl font-bold my-2">
-              Department/Area Leaders
+              { title }
             </h2>
             <div className='text-gray-600 pt-0 mt-0'>
-              Leaders are the power users of Voxerion. They take advantage of the insights for better communication, leadership advice, and more. You can accelerate this step by using our template for batch processing.
+              Leaders are the power users of Voxerion. They take advantage of the insights for better communication, leadership advice, and more. You can accelerate this step by using our {' '}
+                <span
+                  onClick={handleBatchProcessingClick}
+                  className="text-[#E62E05] underline font-semibold cursor-pointer"
+                >
+                  template for batch processing
+                </span>.
             </div>
           </div>
 

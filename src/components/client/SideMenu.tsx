@@ -6,6 +6,8 @@ import Image from "next/image";
 import React, { useEffect, useState } from "react";
 import MenuButton from "../ui/menuButton";
 import { useRouter } from "next/navigation";
+import Avatar from "./Avatar";
+import { Button } from "../ui/button";
 
 const menuOptions = [
   { 
@@ -13,6 +15,24 @@ const menuOptions = [
     icon: '/images/icons/dashboard.svg', 
     active: true,
     link: '/dashboard'
+  },
+  { 
+    name: "Billing", 
+    icon: '/images/icons/billing.svg', 
+    active: true,
+    link: '/dashboard/billings'
+  },
+  { 
+    name: "Users", 
+    icon: '/images/icons/user.svg', 
+    active: true,
+    link: '/dashboard/users'
+  },
+  { 
+    name: "Employees", 
+    icon: '/images/icons/user.svg', 
+    active: true,
+    link: '/dashboard/employees'
   }
 ];
 
@@ -117,22 +137,30 @@ export default function SideMenu() {
                   />
                 ))}
               </div>
-              <div className="flex items-center gap-3 p-2 rounded-lg hover:bg-gray-100 transition">
-                <Image 
-                  src="/images/icons/avatar.svg" 
-                  alt="Avatar"
-                  width={40} 
-                  height={40}
-                  className="rounded-full object-cover"
-                />
-                <div className="flex-1">
-                  <div className="font-medium text-gray-800 text-xs">
-                    {user?.name}
-                    <div className="m-0 p-0 text-gray-400">
-                      {user?.email}
-                    </div>
-                  </div>
+
+              <div className="pl-2 pr-4 py-2 bg-gray-100">
+                <div className="mb-2">
+                  <h3 className="text-lg font-semibold text-gray-800 mb-1">
+                    Improve your insights!
+                  </h3>
+                  <p className="text-sm text-gray-600 mb-3">
+                    Upload your personality assessments, setup Voxerion and start using it.
+                  </p>
+                  <Button
+                    className="w-full"
+                    onClick={() => goToPage('upload-assessments')}
+                  >
+                    Upload Assessments
+                  </Button>
                 </div>
+              </div>
+
+              <div className="flex items-center gap-3 p-2 rounded-lg hover:bg-gray-100 transition">
+                <Avatar
+                  name={user?.name || 'Anonymous'}
+                  description={user.email || ''}
+                  imageUrl={`/images/icons/avatar.svg`} // Assuming images are named by user ID
+                />
                 <Image 
                   src="/images/icons/logout.svg" 
                   alt="Cerrar Sesión"
