@@ -87,27 +87,26 @@ export default function WelcomePage() {
     fetchInsightVersions();
   }, []);
 
-  // reCAPTCHA callback functions
+  // reCAPTCHA v3 callback functions
   const onRecaptchaLoad = () => {
     setRecaptchaLoaded(true);
-    // Set up global callback function
-    (window as any).onRecaptchaSuccess = (token: string) => {
-      setRecaptchaToken(token);
-    };
-    
-    // Render reCAPTCHA programmatically
-    if (recaptchaRef.current && (window as any).grecaptcha) {
-      setTimeout(() => {
-        try {
-          (window as any).grecaptcha.render(recaptchaRef.current, {
-            'sitekey': '6Ld6fWsrAAAAAII_1UcAmpNG1xrImLqKW4sEOPfI',
-            'callback': (token: string) => setRecaptchaToken(token)
+  };
+
+  const executeRecaptcha = async (): Promise<string | null> => {
+    if ((window as any).grecaptcha && (window as any).grecaptcha.ready) {
+      return new Promise((resolve) => {
+        (window as any).grecaptcha.ready(() => {
+          (window as any).grecaptcha.execute('6Ld6fWsrAAAAAII_1UcAmpNG1xrImLqKW4sEOPfI', {
+            action: 'submit'
+          }).then((token: string) => {
+            resolve(token);
+          }).catch(() => {
+            resolve(null);
           });
-        } catch (error) {
-          console.error('Error rendering reCAPTCHA:', error);
-        }
-      }, 100);
+        });
+      });
     }
+    return null;
   };
 
   const onRecaptchaChange = (token: string | null) => {
@@ -115,10 +114,8 @@ export default function WelcomePage() {
   };
 
   const resetRecaptcha = () => {
-    if (recaptchaRef.current && (window as any).grecaptcha) {
-      (window as any).grecaptcha.reset();
-      setRecaptchaToken(null);
-    }
+    // reCAPTCHA v3 doesn't need manual reset
+    setRecaptchaToken(null);
   };
 
   const handleChange = (
@@ -154,11 +151,13 @@ export default function WelcomePage() {
       return;
     }
 
-    // Validate reCAPTCHA
-    if (!recaptchaToken) {
-      setError('Please complete the reCAPTCHA verification');
+    // Execute reCAPTCHA v3
+    const recaptchaTokenResult = await executeRecaptcha();
+    if (!recaptchaTokenResult) {
+      setError('reCAPTCHA verification failed. Please try again.');
       return;
     }
+    setRecaptchaToken(recaptchaTokenResult);
     
     setIsSubmitting(true);
     setError('');
@@ -355,20 +354,14 @@ export default function WelcomePage() {
                   </select>
                 </div>
 
-                <div>
-                  <label className={labelClasses}>
-                    Verification
-                  </label>
-                  <div 
-                    ref={recaptchaRef}
-                    className="mb-4"
-                  ></div>
-                  {!recaptchaLoaded && (
-                    <div className="p-4 border border-gray-300 rounded-md bg-gray-50 text-center text-gray-500">
-                      Loading reCAPTCHA...
+                {/* reCAPTCHA v3 runs in background - no visible widget */}
+                {!recaptchaLoaded && (
+                  <div className="mb-4">
+                    <div className="p-3 border border-gray-300 rounded-md bg-gray-50 text-center text-gray-500 text-sm">
+                      🤖 Loading security verification...
                     </div>
-                  )}
-                </div>
+                  </div>
+                )}
 
                 {error && (
                   <Alert variant="destructive">
