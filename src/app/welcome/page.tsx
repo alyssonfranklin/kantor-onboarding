@@ -171,12 +171,8 @@ export default function WelcomePage() {
         companyWasExisting: spreadsheetData.companyWasExisting
       });
 
-      setSuccess(true);
-      
-      // Redirect to thank you page
-      setTimeout(() => {
-        router.push('/thankyou');
-      }, 2000);
+      // Redirect to thank you page immediately without showing success message
+      router.push('/thankyou');
     } catch (error: unknown) {
       const err = error as Error;
       setError(err.message);
