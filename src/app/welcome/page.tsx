@@ -1,247 +1,384 @@
 "use client";
 
-import { useState } from "react";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
+import React, { useState, useEffect } from 'react';
+import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { Alert, AlertDescription } from '@/components/ui/alert';
+import { Loader2 } from 'lucide-react';
+import NavBar from "@/components/client/NavBar";
+import Image from "next/image";
 import Link from "next/link";
 
-/**
- * Welcome/Onboarding Page
- * 
- * A placeholder for the user onboarding process.
- * This will be expanded in the future.
- */
+interface FormData {
+  email: string;
+  name: string;
+  companyName: string;
+  password: string;
+  version: string;
+  createDefaultDepartment: boolean;
+}
+
+interface InsightVersion {
+  insight_id: string;
+  kantor_version: string;
+  insights_limit: number;
+  price_monthly?: number;
+  description?: string;
+}
+
 export default function WelcomePage() {
-  const [step, setStep] = useState(1);
-  const totalSteps = 3;
-  
-  const nextStep = () => {
-    if (step < totalSteps) {
-      setStep(step + 1);
-    }
-  };
-  
-  const prevStep = () => {
-    if (step > 1) {
-      setStep(step - 1);
-    }
-  };
-  
-  return (
-    <div className="min-h-screen flex flex-col items-center justify-center p-4 bg-gray-50">
-      <div className="w-full max-w-2xl">
-        <div className="mb-8 text-center">
-          <h1 className="text-3xl font-bold">Welcome to Voxerion</h1>
-          <p className="text-gray-600 mt-2">Let's get you set up with an account</p>
-          
-          {/* Progress indicator */}
-          <div className="flex justify-center mt-6">
-            {Array.from({ length: totalSteps }).map((_, index) => (
-              <div 
-                key={index}
-                className={`h-2 w-16 mx-1 rounded-full ${
-                  index + 1 <= step ? 'bg-blue-600' : 'bg-gray-300'
-                }`}
-              />
-            ))}
-          </div>
-        </div>
+  const [formData, setFormData] = useState<FormData>({
+    email: '',
+    name: '',
+    companyName: '',
+    password: '',
+    version: '',
+    createDefaultDepartment: false
+  });
+
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [error, setError] = useState('');
+  const [success, setSuccess] = useState(false);
+  const [insightVersions, setInsightVersions] = useState<InsightVersion[]>([]);
+  const [isLoadingVersions, setIsLoadingVersions] = useState(true);
+  const [createdData, setCreatedData] = useState<{
+    companyId?: string;
+    userId?: string;
+    assistantId?: string;
+    companyWasExisting?: boolean;
+  }>({});
+
+  // Fetch insight versions on component mount
+  useEffect(() => {
+    const fetchInsightVersions = async () => {
+      try {
+        setIsLoadingVersions(true);
+        const response = await fetch('/api/v1/insights');
         
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-2xl">
-              {step === 1 && "Tell us about yourself"}
-              {step === 2 && "Company information"}
-              {step === 3 && "Set up your workspace"}
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            {step === 1 && (
-              <div className="space-y-4">
-                <p className="text-gray-600 mb-4">
-                  We'll use this information to set up your personal profile.
-                </p>
-                
-                <div className="space-y-2">
-                  <label htmlFor="fullName" className="block text-sm font-medium">
-                    Full Name
+        if (response.ok) {
+          const result = await response.json();
+          if (result.success && result.data) {
+            setInsightVersions(result.data);
+            // Set default version to the first option if available
+            if (result.data.length > 0 && !formData.version) {
+              setFormData(prev => ({ ...prev, version: result.data[0].insight_id }));
+            }
+          } else {
+            setError('Failed to load Kantor versions');
+          }
+        } else {
+          setError('Failed to fetch Kantor versions');
+        }
+      } catch (err) {
+        console.error('Error fetching insight versions:', err);
+        setError('Error loading Kantor versions');
+      } finally {
+        setIsLoadingVersions(false);
+      }
+    };
+
+    fetchInsightVersions();
+  }, []);
+
+  const handleChange = (
+    e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>
+  ) => {
+    const { name, value, type } = e.target;
+    
+    if (type === 'checkbox') {
+      const checkbox = e.target as HTMLInputElement;
+      setFormData(prev => ({
+        ...prev,
+        [name]: checkbox.checked
+      }));
+    } else {
+      setFormData(prev => ({
+        ...prev,
+        [name]: value
+      }));
+    }
+  };
+
+  const validateEmail = (email: string): boolean => {
+    const regex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
+    return regex.test(email);
+  };
+
+  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    
+    // Validate email
+    if (!validateEmail(formData.email)) {
+      setError('Please enter a valid corporate email');
+      return;
+    }
+    
+    setIsSubmitting(true);
+    setError('');
+    setSuccess(false);
+
+    try {
+      // Create OpenAI agent
+      const agentResponse = await fetch('/api/v1/create-agent', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          name: formData.companyName
+        })
+      });
+
+      if (!agentResponse.ok) {
+        const agentData = await agentResponse.json();
+        throw new Error(agentData.error || 'Failed to create agent');
+      }
+
+      const agentData = await agentResponse.json();
+      const assistantId = agentData.assistantId;
+
+      // Add user and company to database
+      const spreadsheetResponse = await fetch('/api/v1/add-user', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          // Set header for department creation based on checkbox
+          'x-create-default-department': formData.createDefaultDepartment ? 'true' : 'false',
+        },
+        body: JSON.stringify({
+          email: formData.email,
+          name: formData.name,
+          companyName: formData.companyName,
+          password: formData.password,
+          version: formData.version,
+          assistantId
+        })
+      });
+
+      if (!spreadsheetResponse.ok) {
+        const spreadsheetData = await spreadsheetResponse.json();
+        throw new Error(spreadsheetData.error || 'Failed to add to database');
+      }
+
+      const spreadsheetData = await spreadsheetResponse.json();
+      
+      setCreatedData({
+        companyId: spreadsheetData.companyId,
+        userId: spreadsheetData.userId,
+        assistantId,
+        companyWasExisting: spreadsheetData.companyWasExisting
+      });
+
+      setSuccess(true);
+      // Reset form
+      setFormData({
+        email: '',
+        name: '',
+        companyName: '',
+        password: '',
+        version: insightVersions.length > 0 ? insightVersions[0].insight_id : '',
+        createDefaultDepartment: false
+      });
+    } catch (error: unknown) {
+      const err = error as Error;
+      setError(err.message);
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const inputClasses = "w-full p-3 border border-gray-300 rounded-md text-gray-900 placeholder:text-gray-400 focus:border-orange-500 focus:ring-1 focus:ring-orange-500 bg-white";
+  const labelClasses = "block text-sm font-medium text-gray-700 mb-1";
+
+  return (
+    <div className="min-h-screen flex flex-col items-center justify-center m-0 p-0">
+      <div className="w-full">
+        <NavBar />
+      </div>
+      <div className="w-full min-h-screen flex justify-center pt-4 md:pt-10">
+        <div className='w-11/12 md:w-2/5'>
+          <div className='flex justify-center'>
+            <Image
+              src="/voxerion-logo.png" 
+              alt="Voxerion Logo" 
+              width={32} 
+              height={32} 
+            />
+          </div>
+
+          <div className='text-center'>
+            <h2 className="text-2xl font-bold my-2">
+              Welcome to Voxerion
+            </h2>
+            <div className='text-gray-600 pt-0 mt-0'>
+              Create your organization admin account to get started
+            </div>
+          </div>
+            
+          <Card className="mt-6 bg-white border border-gray-200">
+            <CardHeader>
+              <CardTitle className="text-gray-900">Create Organization Admin</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <form onSubmit={handleSubmit} className="space-y-4">
+                <div>
+                  <label htmlFor="email" className={labelClasses}>
+                    Corporate Email
                   </label>
                   <input
-                    id="fullName"
+                    type="email"
+                    id="email"
+                    name="email"
+                    value={formData.email}
+                    onChange={handleChange}
+                    className={inputClasses}
+                    required
+                    placeholder="youremail@company.com"
+                  />
+                </div>
+
+                <div>
+                  <label htmlFor="name" className={labelClasses}>
+                    Your Name
+                  </label>
+                  <input
                     type="text"
-                    className="w-full px-3 py-2 border rounded-md"
+                    id="name"
+                    name="name"
+                    value={formData.name}
+                    onChange={handleChange}
+                    className={inputClasses}
+                    required
                     placeholder="John Doe"
                   />
                 </div>
-                
-                <div className="space-y-2">
-                  <label htmlFor="email" className="block text-sm font-medium">
-                    Work Email
+
+                <div>
+                  <label htmlFor="companyName" className={labelClasses}>
+                    Your Company Name
                   </label>
                   <input
-                    id="email"
-                    type="email"
-                    className="w-full px-3 py-2 border rounded-md"
-                    placeholder="you@company.com"
-                  />
-                </div>
-                
-                <div className="space-y-2">
-                  <label htmlFor="password" className="block text-sm font-medium">
-                    Create Password
-                  </label>
-                  <input
-                    id="password"
-                    type="password"
-                    className="w-full px-3 py-2 border rounded-md"
-                  />
-                  <p className="text-xs text-gray-500">
-                    Must be at least 8 characters with a number and special character
-                  </p>
-                </div>
-              </div>
-            )}
-            
-            {step === 2 && (
-              <div className="space-y-4">
-                <p className="text-gray-600 mb-4">
-                  Tell us about your company to help personalize your experience.
-                </p>
-                
-                <div className="space-y-2">
-                  <label htmlFor="companyName" className="block text-sm font-medium">
-                    Company Name
-                  </label>
-                  <input
+                    type="text"
                     id="companyName"
-                    type="text"
-                    className="w-full px-3 py-2 border rounded-md"
-                    placeholder="Acme Inc."
+                    name="companyName"
+                    value={formData.companyName}
+                    onChange={handleChange}
+                    className={inputClasses}
+                    required
+                    placeholder="Acme Corp"
                   />
                 </div>
-                
-                <div className="space-y-2">
-                  <label htmlFor="companySize" className="block text-sm font-medium">
-                    Company Size
-                  </label>
-                  <select
-                    id="companySize"
-                    className="w-full px-3 py-2 border rounded-md"
-                  >
-                    <option value="">Select company size</option>
-                    <option value="1-10">1-10 employees</option>
-                    <option value="11-50">11-50 employees</option>
-                    <option value="51-200">51-200 employees</option>
-                    <option value="201-500">201-500 employees</option>
-                    <option value="501+">501+ employees</option>
-                  </select>
-                </div>
-                
-                <div className="space-y-2">
-                  <label htmlFor="industry" className="block text-sm font-medium">
-                    Industry
-                  </label>
-                  <select
-                    id="industry"
-                    className="w-full px-3 py-2 border rounded-md"
-                  >
-                    <option value="">Select industry</option>
-                    <option value="technology">Technology</option>
-                    <option value="healthcare">Healthcare</option>
-                    <option value="finance">Finance</option>
-                    <option value="education">Education</option>
-                    <option value="retail">Retail</option>
-                    <option value="other">Other</option>
-                  </select>
-                </div>
-              </div>
-            )}
-            
-            {step === 3 && (
-              <div className="space-y-4">
-                <p className="text-gray-600 mb-4">
-                  Let's set up your workspace to match your team's needs.
-                </p>
-                
-                <div className="space-y-2">
-                  <label htmlFor="workspaceName" className="block text-sm font-medium">
-                    Workspace Name
+
+                <div>
+                  <label htmlFor="password" className={labelClasses}>
+                    Password
                   </label>
                   <input
-                    id="workspaceName"
-                    type="text"
-                    className="w-full px-3 py-2 border rounded-md"
-                    placeholder="My Team's Workspace"
+                    type="password"
+                    id="password"
+                    name="password"
+                    value={formData.password}
+                    onChange={handleChange}
+                    className={inputClasses}
+                    required
+                    minLength={8}
+                    placeholder="Create a secure password"
                   />
                 </div>
-                
-                <div className="space-y-2">
-                  <p className="block text-sm font-medium mb-2">
-                    What will you use Voxerion for?
-                  </p>
-                  <div className="space-y-2">
-                    <label className="flex items-center">
-                      <input type="checkbox" className="mr-2" />
-                      Team collaboration
-                    </label>
-                    <label className="flex items-center">
-                      <input type="checkbox" className="mr-2" />
-                      Project management
-                    </label>
-                    <label className="flex items-center">
-                      <input type="checkbox" className="mr-2" />
-                      Document sharing
-                    </label>
-                    <label className="flex items-center">
-                      <input type="checkbox" className="mr-2" />
-                      Customer support
-                    </label>
-                  </div>
-                </div>
-                
-                <div className="space-y-2">
-                  <label htmlFor="teamMembers" className="block text-sm font-medium">
-                    Invite Team Members (Optional)
+
+                <div>
+                  <label htmlFor="version" className={labelClasses}>
+                    Kantor Version
                   </label>
-                  <textarea
-                    id="teamMembers"
-                    className="w-full px-3 py-2 border rounded-md"
-                    placeholder="Enter email addresses separated by commas"
-                    rows={3}
-                  />
-                  <p className="text-xs text-gray-500">
-                    You can also invite team members later
-                  </p>
+                  <select
+                    id="version"
+                    name="version"
+                    value={formData.version}
+                    onChange={handleChange}
+                    className={inputClasses}
+                    required
+                    disabled={isLoadingVersions}
+                  >
+                    <option value="">
+                      {isLoadingVersions ? 'Loading versions...' : 'Select a Kantor version'}
+                    </option>
+                    {insightVersions.map(version => (
+                      <option key={version.insight_id} value={version.insight_id}>
+                        {version.kantor_version}
+                      </option>
+                    ))}
+                  </select>
                 </div>
-              </div>
-            )}
-          </CardContent>
-          <CardFooter className="flex justify-between">
-            {step > 1 ? (
-              <Button variant="outline" onClick={prevStep}>
-                Back
-              </Button>
-            ) : (
-              <Link href="/login">
-                <Button variant="outline">
-                  I already have an account
+
+                <div className="flex items-center">
+                  <input
+                    type="checkbox"
+                    id="createDefaultDepartment"
+                    name="createDefaultDepartment"
+                    checked={formData.createDefaultDepartment}
+                    onChange={handleChange}
+                    className="h-4 w-4 text-orange-600 focus:ring-orange-500 border-gray-300 rounded"
+                  />
+                  <label htmlFor="createDefaultDepartment" className="ml-2 block text-sm text-gray-700">
+                    Create default Management department
+                  </label>
+                </div>
+
+                {error && (
+                  <Alert variant="destructive">
+                    <AlertDescription>{error}</AlertDescription>
+                  </Alert>
+                )}
+
+                {success && (
+                  <Alert className="border-green-200 bg-green-50">
+                    <AlertDescription className="text-green-800">
+                      {createdData.companyWasExisting ? (
+                        <p>New user added to existing company successfully!</p>
+                      ) : (
+                        <p>Company and admin user created successfully!</p>
+                      )}
+                      {createdData.assistantId && (
+                        <p className="mt-2 text-sm">Assistant ID: {createdData.assistantId}</p>
+                      )}
+                      {createdData.companyId && (
+                        <p className="text-sm">Company ID: {createdData.companyId} {createdData.companyWasExisting && '(existing)'}</p>
+                      )}
+                      {createdData.userId && (
+                        <p className="text-sm">User ID: {createdData.userId}</p>
+                      )}
+                    </AlertDescription>
+                  </Alert>
+                )}
+
+                <Button 
+                  type="submit" 
+                  className="w-full font-semibold bg-[#E62E05] hover:bg-[#E62E05]/90 text-white py-3"
+                  disabled={isSubmitting || isLoadingVersions}
+                >
+                  {isSubmitting ? (
+                    <>
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      Creating Account...
+                    </>
+                  ) : (
+                    'Create Account'
+                  )}
                 </Button>
-              </Link>
-            )}
-            
-            {step < totalSteps ? (
-              <Button onClick={nextStep}>
-                Continue
-              </Button>
-            ) : (
-              <Link href="/dashboard">
-                <Button>
-                  Complete Setup
-                </Button>
-              </Link>
-            )}
-          </CardFooter>
-        </Card>
+              </form>
+            </CardContent>
+          </Card>
+
+          <p className="mt-4 text-center text-sm text-gray-600">
+            Already have an account?{' '}
+            <Link
+              href="/login"
+              className="font-semibold text-[#E62E05] hover:underline"
+            >
+              Log in
+            </Link>
+          </p>
+        </div>
       </div>
     </div>
   );
