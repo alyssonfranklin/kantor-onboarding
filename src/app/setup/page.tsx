@@ -8,11 +8,14 @@ import Pillars from "@/components/client/setup/Pillars";
 import SetupConfirmation from "@/components/client/setup/SetupConfirmation";
 import SideSteps from "@/components/client/SideSteps";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { useCallback, useState } from "react";
+import { useAuth } from "@/lib/auth/hooks";
+import { useCallback, useEffect, useState } from "react";
 
 const TOTAL_STEPS = 3;
 
 export default function LoginPage() {
+
+  const user = useAuth();
 
   const [showConfirmation, setShowConfirmation] = useState(false);
   const [currentStep, setCurrentStep] = useState(1);
@@ -29,7 +32,7 @@ export default function LoginPage() {
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState('');
-  const [assistantId, setAssistantId] = useState(1);
+  const [company, setCompany] = useState(null);
 
   const steps = [
   { 
@@ -61,6 +64,32 @@ export default function LoginPage() {
     }
   ];
 
+  const getCompany = useCallback(
+    async () => {
+      const response = await fetch('/api/v1/companies', {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+        }
+      });
+      console.log('response: ', response);
+
+      const responseData = await response.json();
+
+      if (!response.ok) {
+        setError(responseData.error || 'No se encontró la información de la compañía');
+        return;
+      }
+
+      console.log('responseData: ', responseData);
+
+      setCompany(responseData);
+
+    },
+    [],
+  )
+  
+
   const handleNext = () => {
     setCurrentStep((prevStep) => Math.min(prevStep + 1, TOTAL_STEPS));
     if (currentStep === TOTAL_STEPS) {
@@ -91,25 +120,24 @@ export default function LoginPage() {
 
         console.log('instructions: ', instructions);
         
-        // const response = await fetch('/api/v1/update-assistant', {
-        //   method: 'POST',
-        //   headers: {
-        //     'Content-Type': 'application/json',
-        //   },
-        //   body: JSON.stringify({
-        //     instructions,
-        //     assistantId: 1
-        //   })
-        // });
+        const response = await fetch('/api/v1/update-assistant', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            instructions
+          })
+        });
 
-        // setIsSubmitting(false);
+        setIsSubmitting(false);
 
-        // const responseData = await response.json();
+        const responseData = await response.json();
 
-        // if (!response.ok) {
-        //   setError(responseData.error || 'Ocurrió un error al guardar la información');
-        //   return;
-        // }
+        if (!response.ok) {
+          setError(responseData.error || 'Ocurrió un error al guardar la información');
+          return;
+        }
 
         setIsSubmitting(false);
         setShowConfirmation(true);
@@ -128,6 +156,16 @@ export default function LoginPage() {
     },
     [setupData]
   );
+
+  // useEffect(() => {
+  //   console.log('useEffect user: ', user);
+  //   if (!company) {
+  //     getCompany();
+  //   }
+  //   return () => {
+      
+  //   };
+  // }, [company, getCompany, user]);
 
   return (
     <>
