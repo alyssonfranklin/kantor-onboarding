@@ -94,10 +94,17 @@ export default function WelcomePage() {
   };
 
   const executeRecaptcha = async (): Promise<string | null> => {
+    const siteKey = process.env.NEXT_PUBLIC_RECAPTCHA_SITE_KEY;
+    
+    if (!siteKey) {
+      console.error('❌ reCAPTCHA site key not configured');
+      return null;
+    }
+    
     if ((window as any).grecaptcha && (window as any).grecaptcha.ready) {
       return new Promise((resolve) => {
         (window as any).grecaptcha.ready(() => {
-          (window as any).grecaptcha.execute('6Ld6fWsrAAAAAII_1UcAmpNG1xrImLqKW4sEOPfI', {
+          (window as any).grecaptcha.execute(siteKey, {
             action: 'submit'
           }).then((token: string) => {
             console.log('✅ reCAPTCHA v3 token received:', token);
@@ -237,7 +244,7 @@ export default function WelcomePage() {
   return (
     <>
       <Script
-        src="https://www.google.com/recaptcha/api.js"
+        src={`https://www.google.com/recaptcha/api.js?render=${process.env.NEXT_PUBLIC_RECAPTCHA_SITE_KEY}`}
         onLoad={onRecaptchaLoad}
       />
       <div className="min-h-screen flex flex-col items-center justify-center m-0 p-0">
