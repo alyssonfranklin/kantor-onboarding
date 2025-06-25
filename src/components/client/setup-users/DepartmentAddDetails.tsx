@@ -1,8 +1,11 @@
 import { Button } from '@/components/ui/button';
 import Input from '@/components/ui/input';
 import TextArea from '@/components/ui/textArea';
+import { useAuth } from '@/lib/auth/hooks';
 import Image from 'next/image';
 import React, { useEffect, useState } from 'react'
+import ModalLoader from '../ModalLoader';
+import { Alert, AlertDescription } from '@/components/ui/alert';
 
 interface Contact {
   name: string;
@@ -13,17 +16,49 @@ export default function DepartmentAddDetails(
   { setupData, updateSetupData, onNext, contacts, onContactsChange }
 ) {
 
-  const [error, setError] = useState('');
+  const { user } = useAuth();
+
   const [localContacts, setLocalContacts] = useState(contacts);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [error, setError] = useState('');
   
   const handleChange = (e) => {
     const { name, value } = e.target;
     updateSetupData({ [name]: value });
   };
 
-  const handleNextClick = () => {
+  const handleNextClick = async () => {
+    console.log('user: ', user);
     if (!setupData.departmentName || !setupData.departmentRole || localContacts.length === 0) {
       setError('All fields are required!');
+      return;
+    }
+
+    const data = {
+      company_id: user?.company_id,
+      department_name: setupData.departmentName,
+      department_desc: setupData.departmentRole,
+      user_head: ''
+    };
+    console.log('data: ', data);
+    const response = await fetch('/api/v1/departments', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        data
+      })
+    });
+
+    setIsSubmitting(false);
+
+    const responseData = await response.json();
+
+    console.log('responseData: ', responseData);
+
+    if (!response.ok) {
+      setError(responseData.error || 'Ocurrió un error al guardar la información');
       return;
     }
     onNext();
@@ -50,6 +85,20 @@ export default function DepartmentAddDetails(
 
   return (
     <div className="bg-white border-gray-200">
+
+      {
+        isSubmitting &&
+        <ModalLoader
+          message="Guardando"
+        />
+      }
+
+      {error && (
+        <Alert variant="destructive">
+          <AlertDescription>{error}</AlertDescription>
+        </Alert>
+      )}
+
       <div className="max-w-screen-xl flex flex-wrap justify-center mx-auto px-4">
         <div className="w-full">
           <div className="flex justify-center">
@@ -71,18 +120,12 @@ export default function DepartmentAddDetails(
             </div>
           </div>
 
-          {error && (
-            <div className="bg-transparent border border-red-400 text-red-700 px-4 py-1 rounded relative my-2 text-center" role="alert">
-              <span className="block sm:inline">{error}</span>
-            </div>
-          )}
-
           <div className="mt-4">
             <Input
               placeholder="Enter the department name"
               value={setupData.departmentName}
               onChange={handleChange}
-              className="border-[#D0D5DD] placeholder:text-[#667085] bg-white"
+              className="border-[#D0D5DD] placeholder:text-[#667085] bg-white text-black"
               required={true}
               name="departmentName"
             />
@@ -114,7 +157,7 @@ export default function DepartmentAddDetails(
                   placeholder="Name"
                   value={contact.name}
                   onChange={(e) => handleChangeContact(index, 'name', e.target.value)}
-                  className="border-[#D0D5DD] placeholder:text-[#667085] bg-white flex-1"
+                  className="border-[#D0D5DD] placeholder:text-[#667085] bg-white text-black flex-1"
                   required={true}
                   name="departmentHeadName"
                 />
@@ -132,7 +175,7 @@ export default function DepartmentAddDetails(
                     placeholder="you@mycompany.com"
                     value={contact.email}
                     onChange={(e) => handleChangeContact(index, 'email', e.target.value)}
-                    className="border-[#D0D5DD] placeholder:text-[#667085] bg-white pl-10 w-full"
+                    className="border-[#D0D5DD] placeholder:text-[#667085] bg-white text-black pl-10 w-full"
                     required={true}
                     name="departmentHeadEmail"
                     type="email"

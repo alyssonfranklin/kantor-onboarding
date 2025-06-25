@@ -14,19 +14,19 @@ export default function ThankYouPage() {
         <NavBar />
       </div>
       <div className="w-full min-h-screen flex justify-center pt-4 md:pt-10">
-        <div className='w-11/12 md:w-2/5'>
-          <div className='flex justify-center'>
+        <div className='w-11/12 md:w-3/5'>
+          {/* <div className='flex justify-center'>
             <Image
               src="/voxerion-logo.png" 
               alt="Voxerion Logo" 
               width={32} 
               height={32} 
             />
-          </div>
+          </div> */}
 
-          <div className='text-center'>
+          <div className='text-center mt-6'>
             <div className="flex justify-center mb-4">
-              <CheckCircle className="h-16 w-16 text-green-500" />
+              <CheckCircle className="h-10 w-10 text-green-500" />
             </div>
             <h2 className="text-2xl font-bold my-2">
               Welcome to Voxerion!
@@ -46,7 +46,7 @@ export default function ThankYouPage() {
               </p>
               <div className="space-y-3">
                 <p className="text-sm text-gray-500">
-                  <strong>What's next?</strong>
+                  <strong>What&apos;s next?</strong>
                 </p>
                 <ul className="text-sm text-gray-600 space-y-2">
                   <li>• Check your email for the activation link</li>

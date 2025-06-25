@@ -195,7 +195,7 @@ export default function BatchProcessing(
                     ref={inputRef}
                     type="file"
                     multiple
-                    className="hidden"
+                    className="hidden text-black"
                     onChange={handleInputChange}
                   />
                   <h3 className="font-semibold mb-2 text-center">

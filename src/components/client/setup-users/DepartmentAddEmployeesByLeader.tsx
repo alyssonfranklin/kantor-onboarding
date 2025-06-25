@@ -96,7 +96,7 @@ export default function DepartmentAddEmployeesByLeader(
                   placeholder="Name"
                   value={employee.name}
                   onChange={(e) => handleChangeEmployee(index, 'name', e.target.value)}
-                  className="border-[#D0D5DD] placeholder:text-[#667085] bg-white flex-1"
+                  className="border-[#D0D5DD] placeholder:text-[#667085] bg-white text-black flex-1"
                   required={true}
                   name="name"
                 />
@@ -114,7 +114,7 @@ export default function DepartmentAddEmployeesByLeader(
                     placeholder="you@mycompany.com"
                     value={employee.email}
                     onChange={(e) => handleChangeEmployee(index, 'email', e.target.value)}
-                    className="border-[#D0D5DD] placeholder:text-[#667085] bg-white pl-10 w-full"
+                    className="border-[#D0D5DD] placeholder:text-[#667085] bg-white text-black pl-10 w-full"
                     required={true}
                     name="leaderEmail"
                     type="email"
@@ -124,7 +124,7 @@ export default function DepartmentAddEmployeesByLeader(
                   placeholder="Role"
                   value={employee.role}
                   onChange={(e) => handleChangeEmployee(index, 'role', e.target.value)}
-                  className="border-[#D0D5DD] placeholder:text-[#667085] bg-white flex-1"
+                  className="border-[#D0D5DD] placeholder:text-[#667085] bg-white text-black flex-1"
                   required={true}
                   name="role"
                 />

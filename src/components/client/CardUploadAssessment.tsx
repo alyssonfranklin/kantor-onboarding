@@ -105,7 +105,7 @@ const CardUploadAssessment: React.FC<CardUploadAssessmentProps> = ({
             ref={inputRef}
             type="file"
             multiple
-            className="hidden"
+            className="hidden text-black"
             onChange={handleInputChange}
           />
           <h3 className="font-semibold mb-2 text-center">

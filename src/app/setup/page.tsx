@@ -1,5 +1,6 @@
 "use client";
 
+import ModalLoader from "@/components/client/ModalLoader";
 import NavBar from "@/components/client/NavBar";
 import CornerStones from "@/components/client/setup/CornerStones";
 import Identity from "@/components/client/setup/Identity";
@@ -16,7 +17,7 @@ export default function LoginPage() {
   const [showConfirmation, setShowConfirmation] = useState(false);
   const [currentStep, setCurrentStep] = useState(1);
   const [setupData, setSetupData] = useState({
-    standardPrompt: 'ESR Default',
+    standardPrompt: 'onboarding company',
     mission: '',
     vision: '',
     coreValues: '',
@@ -87,38 +88,55 @@ export default function LoginPage() {
         instructions += `[HISTORIA DO CLIENTE]\n${setupData.companyHistory}\n\n`;
         instructions += `[O QUE VENDE O CLIENTE]\n${setupData.sell}\n\n`;
         instructions += `[BRANDING E PROMESSAS DE MARCA]\n${setupData.brand}`;
+
+        console.log('instructions: ', instructions);
         
-        const response = await fetch('/api/v1/update-assistant', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            instructions,
-            assistantId
-          })
-        });
+        // const response = await fetch('/api/v1/update-assistant', {
+        //   method: 'POST',
+        //   headers: {
+        //     'Content-Type': 'application/json',
+        //   },
+        //   body: JSON.stringify({
+        //     instructions,
+        //     assistantId: 1
+        //   })
+        // });
+
+        // setIsSubmitting(false);
+
+        // const responseData = await response.json();
+
+        // if (!response.ok) {
+        //   setError(responseData.error || 'Ocurrió un error al guardar la información');
+        //   return;
+        // }
+
+        setIsSubmitting(false);
+        setShowConfirmation(true);
       } catch (error) {
-        console.log('error: ', error);
+        let errorMessage = 'Ocurrió un error al guardar la información';
+        if (error instanceof Error) {
+          errorMessage = error.message;
+        } else if (typeof error === 'string') {
+          errorMessage = error;
+        } else if (typeof error === 'object' && error !== null && 'toString' in error) {
+          errorMessage = error.toString();
+        }
+        setError(errorMessage);
+        setIsSubmitting(false);
       }
     },
-    [setupData, assistantId]
+    [setupData]
   );
 
   return (
     <>
 
-      {error && (
-        <Alert variant="destructive">
-          <AlertDescription>{error}</AlertDescription>
-        </Alert>
-      )}
-
       {
         isSubmitting &&
-        <p>
-          Guardando...
-        </p>
+        <ModalLoader
+          message="Guardando"
+        />
       }
 
       {
@@ -131,6 +149,12 @@ export default function LoginPage() {
             />
           </div>
           <div className="w-full md:w-8/12 flex flex-col items-center justify-center m-0 p-0">
+
+            {error && (
+              <Alert variant="destructive">
+                <AlertDescription>{error}</AlertDescription>
+              </Alert>
+            )}
             <div className="w-full min-h-screen flex justify-center pt-0 lg:pt-8">
 
               {
