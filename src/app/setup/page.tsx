@@ -10,6 +10,7 @@ import SideSteps from "@/components/client/SideSteps";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { clientCsrf } from "@/lib/auth/csrf-client";
 import { useAuth } from "@/lib/auth/hooks";
+import { Assistant } from "next/font/google";
 import { useCallback, useEffect, useState } from "react";
 
 const TOTAL_STEPS = 3;
@@ -33,7 +34,7 @@ export default function LoginPage() {
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState('');
-  const [company, setCompany] = useState(null);
+  const [company, setCompany] = useState({assistant_id: ''});
 
   const steps = [
   { 
@@ -73,22 +74,24 @@ export default function LoginPage() {
 
       console.log('getCompany headers: ', headers);
 
-      const response = await fetch('/api/v1/companies', {
+      const response = await fetch(`/api/v1/companies/${user?.company_id}`, {
         method: 'GET',
         headers
       });
 
       const responseData = await response.json();
 
+      console.log('responseData: ', responseData);
+
       if (!response.ok) {
         setError(responseData.error || 'No se encontró la información de la compañía');
         return;
       }
 
-      setCompany(responseData);
+      setCompany(responseData.data);
 
     },
-    [],
+    [user?.company_id],
   );
   
 
@@ -119,6 +122,8 @@ export default function LoginPage() {
         instructions += `[HISTORIA DO CLIENTE]\n${setupData.companyHistory}\n\n`;
         instructions += `[O QUE VENDE O CLIENTE]\n${setupData.sell}\n\n`;
         instructions += `[BRANDING E PROMESSAS DE MARCA]\n${setupData.brand}`;
+
+        console.log('company: ', company);
         
         const response = await fetch('/api/v1/update-assistant', {
           method: 'POST',
@@ -126,7 +131,8 @@ export default function LoginPage() {
             'Content-Type': 'application/json',
           },
           body: JSON.stringify({
-            instructions
+            instructions,
+            assistantId: company?.assistant_id
           })
         });
 
@@ -154,15 +160,19 @@ export default function LoginPage() {
         setIsSubmitting(false);
       }
     },
-    [setupData]
+    [company, setupData]
   );
 
   useEffect(() => {
     console.log('user: ', user);
+    console.log('company: ', company);
+    if (company.assistant_id === '') {
+      getCompany();
+    }
     return () => {
       
     };
-  }, [user]);
+  }, [company, getCompany, user]);
 
   return (
     <>
