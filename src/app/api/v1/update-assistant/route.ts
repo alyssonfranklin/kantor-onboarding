@@ -10,9 +10,9 @@ export async function POST(req: Request) {
   try {
     const { instructions, assistantId } = await req.json();
     
-    if (!instructions || !assistantId) {
+    if (!instructions) {
       return NextResponse.json(
-        { error: 'Instructions and assistantId are required' },
+        { error: 'Instructions are required' },
         { status: 400 }
       );
     }
