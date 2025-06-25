@@ -8,6 +8,7 @@ import Pillars from "@/components/client/setup/Pillars";
 import SetupConfirmation from "@/components/client/setup/SetupConfirmation";
 import SideSteps from "@/components/client/SideSteps";
 import { Alert, AlertDescription } from "@/components/ui/alert";
+import { clientCsrf } from "@/lib/auth/csrf-client";
 import { useAuth } from "@/lib/auth/hooks";
 import { useCallback, useEffect, useState } from "react";
 
@@ -15,7 +16,7 @@ const TOTAL_STEPS = 3;
 
 export default function LoginPage() {
 
-  const user = useAuth();
+  const { user } = useAuth();
 
   const [showConfirmation, setShowConfirmation] = useState(false);
   const [currentStep, setCurrentStep] = useState(1);
@@ -66,13 +67,16 @@ export default function LoginPage() {
 
   const getCompany = useCallback(
     async () => {
+      const headers = clientCsrf.addToHeaders({
+        'Content-Type': 'application/json'
+      });
+
+      console.log('getCompany headers: ', headers);
+
       const response = await fetch('/api/v1/companies', {
         method: 'GET',
-        headers: {
-          'Content-Type': 'application/json',
-        }
+        headers
       });
-      console.log('response: ', response);
 
       const responseData = await response.json();
 
@@ -81,13 +85,11 @@ export default function LoginPage() {
         return;
       }
 
-      console.log('responseData: ', responseData);
-
       setCompany(responseData);
 
     },
     [],
-  )
+  );
   
 
   const handleNext = () => {
@@ -117,8 +119,6 @@ export default function LoginPage() {
         instructions += `[HISTORIA DO CLIENTE]\n${setupData.companyHistory}\n\n`;
         instructions += `[O QUE VENDE O CLIENTE]\n${setupData.sell}\n\n`;
         instructions += `[BRANDING E PROMESSAS DE MARCA]\n${setupData.brand}`;
-
-        console.log('instructions: ', instructions);
         
         const response = await fetch('/api/v1/update-assistant', {
           method: 'POST',
@@ -157,15 +157,12 @@ export default function LoginPage() {
     [setupData]
   );
 
-  // useEffect(() => {
-  //   console.log('useEffect user: ', user);
-  //   if (!company) {
-  //     getCompany();
-  //   }
-  //   return () => {
+  useEffect(() => {
+    console.log('user: ', user);
+    return () => {
       
-  //   };
-  // }, [company, getCompany, user]);
+    };
+  }, [user]);
 
   return (
     <>
