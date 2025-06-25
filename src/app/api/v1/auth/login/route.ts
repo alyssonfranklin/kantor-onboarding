@@ -9,11 +9,11 @@ import { NextRequest, NextResponse } from 'next/server';
 import { dbConnect } from '@/lib/mongodb/connect';
 import User from '@/lib/mongodb/models/user.model';
 import { 
-  generateToken, 
   setAuthCookie, 
   setRefreshCookie, 
   withCsrfProtection 
 } from '@/lib/auth/index-server';
+import { generateToken } from '@/lib/mongodb/utils/jwt-utils';
 
 export async function POST(req: NextRequest) {
   try {
@@ -97,7 +97,7 @@ export async function POST(req: NextRequest) {
     // Debug payload
     console.log('Token payload:', JSON.stringify(tokenPayload));
     
-    const token = generateToken(tokenPayload);
+    const token = await generateToken(user);
     
     // Create response
     const response = NextResponse.json({
