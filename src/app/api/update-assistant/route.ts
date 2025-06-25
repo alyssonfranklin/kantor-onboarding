@@ -22,6 +22,13 @@ export async function POST(req: Request) {
         { status: 400 }
       );
     }
+    
+    if (!assistantId || assistantId === 'undefined') {
+      return NextResponse.json(
+        { error: 'Valid assistantId is required' },
+        { status: 400 }
+      );
+    }
 
     // Update the assistant with new instructions
     const assistant = await openai.beta.assistants.update(
