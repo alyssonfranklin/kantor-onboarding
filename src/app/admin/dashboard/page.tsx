@@ -218,7 +218,7 @@ export default function AdminDashboardPage() {
       case 'users':
         return ['ID', 'Email', 'Name', 'Role', 'Company ID', 'Actions'];
       case 'companies':
-        return ['Company ID', 'Name', 'Status', 'Created At', 'Actions'];
+        return ['Company ID', 'Name', 'Assistant ID', 'Status', 'Created At', 'Actions'];
       case 'departments':
         return ['Company ID', 'Department Name', 'Description', 'Department Head', 'Actions'];
       case 'employees':
@@ -428,6 +428,20 @@ export default function AdminDashboardPage() {
             <tr key={index} className="border-b border-gray-700">
               <td className="p-3">{item.company_id}</td>
               <td className="p-3">{item.name}</td>
+              <td className="p-3">
+                <div className="flex items-center">
+                  <span className="font-mono text-xs mr-2">{item.assistant_id || 'N/A'}</span>
+                  {item.assistant_id && (
+                    <button 
+                      className="text-gray-400 hover:text-white text-xs"
+                      onClick={() => navigator.clipboard.writeText(item.assistant_id)}
+                      title="Copy assistant ID"
+                    >
+                      Copy
+                    </button>
+                  )}
+                </div>
+              </td>
               <td className="p-3">{item.status}</td>
               <td className="p-3">{item.created_at}</td>
               <td className="p-3">
