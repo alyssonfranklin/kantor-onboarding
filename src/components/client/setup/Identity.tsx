@@ -58,7 +58,7 @@ export default function Identity(
               placeholder="What is the history of your company? is there any important milestones that Voxerion need to know?"
               value={setupData.companyHistory}
               onChange={handleChange}
-              className="border-[#D0D5DD] placeholder:text-[#667085] bg-white"
+              className="text-black border-[#D0D5DD] placeholder:text-[#667085] bg-white"
               required={true}
               name="companyHistory"
             />
@@ -69,7 +69,7 @@ export default function Identity(
               placeholder="What does your company sell? It is a physical product, or a service? "
               value={setupData.sell}
               onChange={handleChange}
-              className="border-[#D0D5DD] placeholder:text-[#667085] bg-white"
+              className="text-black border-[#D0D5DD] placeholder:text-[#667085] bg-white"
               required={true}
               name="sell"
             />
@@ -80,7 +80,7 @@ export default function Identity(
               placeholder="How is your brand? What are the promises that your brand delivers? What is the perception for your customers?"
               value={setupData.brand}
               onChange={handleChange}
-              className="border-[#D0D5DD] placeholder:text-[#667085] bg-white"
+              className="text-black border-[#D0D5DD] placeholder:text-[#667085] bg-white"
               required={true}
               name="brand"
             />

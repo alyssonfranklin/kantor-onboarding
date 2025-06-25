@@ -6,7 +6,8 @@ import Identity from "@/components/client/setup/Identity";
 import Pillars from "@/components/client/setup/Pillars";
 import SetupConfirmation from "@/components/client/setup/SetupConfirmation";
 import SideSteps from "@/components/client/SideSteps";
-import { useState } from "react";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { useCallback, useState } from "react";
 
 const TOTAL_STEPS = 3;
 
@@ -15,6 +16,7 @@ export default function LoginPage() {
   const [showConfirmation, setShowConfirmation] = useState(false);
   const [currentStep, setCurrentStep] = useState(1);
   const [setupData, setSetupData] = useState({
+    standardPrompt: 'ESR Default',
     mission: '',
     vision: '',
     coreValues: '',
@@ -24,6 +26,9 @@ export default function LoginPage() {
     practices: '',
     initiatives: ''
   });
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [error, setError] = useState('');
+  const [assistantId, setAssistantId] = useState(1);
 
   const steps = [
   { 
@@ -69,12 +74,52 @@ export default function LoginPage() {
     }));
   };
 
-  const handleSubmit = async () => {
-    setShowConfirmation(true);
-  };
-  
+  const handleSubmit = useCallback( async () => {
+      setIsSubmitting(true);
+      setError('');
+      setShowConfirmation(false);
+      try {
+        let instructions = '';
+        instructions += `[PROPÓSITO DO AGENTE]\n${setupData.standardPrompt}\n\n`;
+        instructions += `[MISSAO DO CLIENTE]\n${setupData.mission}\n\n`;
+        instructions += `[VISAO DO CLIENTE]\n${setupData.vision}\n\n`;
+        instructions += `[VALORES FUNDAMENTAIS DO CLIENTE]\n${setupData.coreValues}\n\n`;
+        instructions += `[HISTORIA DO CLIENTE]\n${setupData.companyHistory}\n\n`;
+        instructions += `[O QUE VENDE O CLIENTE]\n${setupData.sell}\n\n`;
+        instructions += `[BRANDING E PROMESSAS DE MARCA]\n${setupData.brand}`;
+        
+        const response = await fetch('/api/v1/update-assistant', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            instructions,
+            assistantId
+          })
+        });
+      } catch (error) {
+        console.log('error: ', error);
+      }
+    },
+    [setupData, assistantId]
+  );
+
   return (
     <>
+
+      {error && (
+        <Alert variant="destructive">
+          <AlertDescription>{error}</AlertDescription>
+        </Alert>
+      )}
+
+      {
+        isSubmitting &&
+        <p>
+          Guardando...
+        </p>
+      }
 
       {
         !showConfirmation &&

@@ -58,7 +58,7 @@ export default function CornerStones(
               placeholder="What values, behaviors, and practices define your corporate culture, and how do they influence your team?"
               value={setupData.practices}
               onChange={handleChange}
-              className="border-[#D0D5DD] placeholder:text-[#667085] bg-white"
+              className="text-black border-[#D0D5DD] placeholder:text-[#667085] bg-white"
               required={true}
               name="practices"
             />
@@ -69,7 +69,7 @@ export default function CornerStones(
               placeholder="How does your company approach social responsibility, and what initiatives or practices demonstrate your commitment to making a positive impact on society and the environment?"
               value={setupData.initiatives}
               onChange={handleChange}
-              className="border-[#D0D5DD] placeholder:text-[#667085] bg-white"
+              className="text-black border-[#D0D5DD] placeholder:text-[#667085] bg-white"
               required={true}
               name="initiatives"
             />

@@ -23,7 +23,7 @@ const TextArea: React.FC<TextAreaProps> = ({
 }) => {
     return (
         <textarea
-            className={`w-full p-3 border rounded-md focus:outline-none focus:ring-1 focus:ring-[#FF9C66] transition text-white ${className}`}
+            className={`w-full p-3 border rounded-md focus:outline-none focus:ring-1 focus:ring-[#FF9C66] transition ${className}`}
             placeholder={placeholder}
             value={value}
             onChange={(e) => onChange(e)}
