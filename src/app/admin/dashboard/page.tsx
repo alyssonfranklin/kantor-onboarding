@@ -474,7 +474,7 @@ export default function AdminDashboardPage() {
               </td>
               <td className="p-3">{item.company_id}</td>
               <td className="p-3">{item.department_name}</td>
-              <td className="p-3">{item.department_lead || 'None'}</td>
+              <td className="p-3">{item.department_lead_name || 'None'}</td>
               <td className="p-3">{item.createdAt ? new Date(item.createdAt).toLocaleDateString() : 'N/A'}</td>
               <td className="p-3">
                 <Button 
@@ -651,6 +651,7 @@ export default function AdminDashboardPage() {
           onSave={handleSaveEdit}
           item={selectedItem}
           entityType={activeTab}
+          token={token}
         />
       )}
       

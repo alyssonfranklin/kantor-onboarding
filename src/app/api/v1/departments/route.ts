@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { dbConnect } from '@/lib/mongodb/connect';
 import Department from '@/lib/mongodb/models/department.model';
+import User from '@/lib/mongodb/models/user.model';
 import { withAuth } from '@/lib/middleware/auth';
 
 /**
@@ -35,11 +36,32 @@ export async function GET(req: NextRequest) {
         .skip(skip)
         .sort({ department_name: 1 });
         
+      // Populate department_lead with user names
+      const departmentsWithLeadNames = await Promise.all(
+        departments.map(async (dept) => {
+          const deptObj = dept.toObject();
+          if (deptObj.department_lead) {
+            try {
+              const leadUser = await User.findById(deptObj.department_lead);
+              deptObj.department_lead_name = leadUser ? leadUser.name : 'Unknown User';
+              deptObj.department_lead_id = deptObj.department_lead; // Keep original ID for editing
+            } catch (error) {
+              deptObj.department_lead_name = 'Unknown User';
+              deptObj.department_lead_id = deptObj.department_lead;
+            }
+          } else {
+            deptObj.department_lead_name = null;
+            deptObj.department_lead_id = null;
+          }
+          return deptObj;
+        })
+      );
+        
       const total = await Department.countDocuments(query);
       
       return NextResponse.json({
         success: true,
-        data: departments,
+        data: departmentsWithLeadNames,
         meta: {
           total,
           limit,

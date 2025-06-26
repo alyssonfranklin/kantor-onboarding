@@ -10,18 +10,56 @@ interface EditModalProps {
   onSave: (data: any) => Promise<void>;
   item: any;
   entityType: string;
+  token?: string;
 }
 
-const EditModal = ({ isOpen, onClose, onSave, item, entityType }: EditModalProps) => {
+const EditModal = ({ isOpen, onClose, onSave, item, entityType, token }: EditModalProps) => {
   const [formData, setFormData] = useState<any>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState('');
+  const [users, setUsers] = useState<any[]>([]);
+  const [isLoadingUsers, setIsLoadingUsers] = useState(false);
   
   useEffect(() => {
     if (item) {
-      setFormData({ ...item });
+      // For departments, use department_lead_id for editing
+      const formDataToSet = { ...item };
+      if (entityType === 'departments' && item.department_lead_id) {
+        formDataToSet.department_lead = item.department_lead_id;
+      }
+      setFormData(formDataToSet);
     }
-  }, [item]);
+  }, [item, entityType]);
+
+  // Fetch users when editing departments
+  useEffect(() => {
+    if (isOpen && entityType === 'departments' && item?.company_id) {
+      fetchUsers(item.company_id);
+    }
+  }, [isOpen, entityType, item]);
+
+  const fetchUsers = async (companyId: string) => {
+    setIsLoadingUsers(true);
+    try {
+      if (!token) return;
+      const response = await fetch(`/api/v1/users?companyId=${companyId}`, {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+      
+      if (response.ok) {
+        const result = await response.json();
+        if (result.success) {
+          setUsers(result.data || []);
+        }
+      }
+    } catch (err) {
+      console.error('Error fetching users:', err);
+    } finally {
+      setIsLoadingUsers(false);
+    }
+  };
   
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
@@ -129,14 +167,23 @@ const EditModal = ({ isOpen, onClose, onSave, item, entityType }: EditModalProps
             </div>
             <div>
               <label className="block mb-1 font-medium">Department Lead</label>
-              <input
-                type="text"
+              <select
                 name="department_lead"
                 value={formData.department_lead || ''}
                 onChange={handleChange}
                 className="w-full p-2 rounded-md border border-gray-700 bg-gray-800"
-                placeholder="User ID or name (optional)"
-              />
+                disabled={isLoadingUsers}
+              >
+                <option value="">No department lead</option>
+                {users.map(user => (
+                  <option key={user.id} value={user.id}>
+                    {user.name} ({user.email})
+                  </option>
+                ))}
+              </select>
+              {isLoadingUsers && (
+                <p className="text-sm text-gray-400 mt-1">Loading users...</p>
+              )}
             </div>
           </>
         );

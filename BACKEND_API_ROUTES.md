@@ -129,7 +129,9 @@ These V1 data routes are deployed and working on main branch:
   "department_id": "dept_1703123456789_abc123def", // Auto-generated unique ID
   "company_id": "company_id_here",                 // Required
   "department_name": "Department Name",           // Required  
-  "department_lead": "user_id_here"              // Optional (can be null)
+  "department_lead": "user_id_here",              // Optional (can be null)
+  "department_lead_name": "John Doe",             // Populated in GET responses
+  "department_lead_id": "user_id_here"            // Original ID for editing
 }
 ```
 
@@ -141,10 +143,35 @@ These V1 data routes are deployed and working on main branch:
 }
 ```
 
+**GET Response Example**:
+```json
+{
+  "success": true,
+  "data": [
+    {
+      "department_id": "dept_1703123456789_abc123def",
+      "company_id": "comp_1703123456789_xyz789",
+      "department_name": "Human Resources",
+      "department_lead": "user_1703123456789_def456",
+      "department_lead_name": "John Doe",
+      "department_lead_id": "user_1703123456789_def456",
+      "createdAt": "2025-06-26T10:30:00.000Z",
+      "updatedAt": "2025-06-26T10:30:00.000Z"
+    }
+  ],
+  "meta": {
+    "total": 1,
+    "limit": 100,
+    "skip": 0
+  }
+}
+```
+
 **Features**:
 - ✅ **Auto-generated department_id**: Uses timestamp + random string pattern
 - ✅ **Company filtering**: `GET /api/v1/departments?companyId={company_id}`
-- ✅ **Simplified schema**: Removed `department_desc`, replaced `user_head` with `department_lead`
+- ✅ **User name population**: department_lead_name shows actual user names instead of IDs
+- ✅ **Edit-friendly**: department_lead_id preserved for form editing
 - ✅ **Optional department lead**: Can be null when creating departments
 - ✅ **Access control**: Users can only see/create departments for their company
 - ✅ **Compound uniqueness**: Department name must be unique within each company

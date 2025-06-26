@@ -466,11 +466,14 @@ This document provides a comprehensive analysis of all frontend pages and their 
 - **Endpoints**: 
   - `GET /api/v1/users` - List all users
   - `GET /api/v1/companies` - List all companies  
-  - `GET /api/v1/departments` - List all departments
+  - `GET /api/v1/departments` - List all departments with populated user names
   - `GET /api/v1/employees` - List all employees
 - **When**: Tab switching in dashboard
 - **Purpose**: Display entity data in tables
 - **Headers**: `Authorization: Bearer {jwt_token}`
+- **Special Features**: 
+  - Departments endpoint populates `department_lead_name` with actual user names
+  - Preserves `department_lead_id` for editing purposes
 
 **5. Update Entity**
 - **Endpoints**: 
@@ -501,11 +504,18 @@ This document provides a comprehensive analysis of all frontend pages and their 
 - **When**: Delete confirmation
 - **Purpose**: Remove entity from database
 
+#### **Enhanced Department Management Features**:
+- ✅ **User Name Display**: Shows actual user names instead of IDs in department_lead column
+- ✅ **Smart Edit Modal**: Dropdown populated with company users for department lead selection
+- ✅ **Dual Field Support**: API returns both `department_lead_name` for display and `department_lead_id` for editing
+- ✅ **Company-filtered Users**: Edit modal only shows users from the same company as the department
+
 #### **Features**:
 - ✅ Multi-tab interface (Users, Companies, Departments, Employees, Tokens)
 - ✅ CRUD operations with icons (Edit ✏️, Password 🔑, Delete 🗑️)
 - ✅ Real-time data fetching
 - ✅ Password update functionality
+- ✅ Enhanced department management with user name resolution
 - ✅ Comprehensive admin controls
 
 ---
