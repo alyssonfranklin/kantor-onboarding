@@ -38,7 +38,7 @@ These V1 data routes are deployed and working on main branch:
 | `/api/v1/users/[id]/update-password` | PUT | Update user password (admin only) | ✅ Live |
 | `/api/v1/companies` | GET, POST | List companies with filtering, create new companies | ✅ Live |
 | `/api/v1/companies/[id]` | GET, PUT, DELETE | CRUD operations for specific company | ✅ Live |
-| `/api/v1/departments` | GET, POST | List departments with filtering, create new departments | ✅ Live |
+| `/api/v1/departments` | GET, POST | List departments with filtering by company, create new departments | ✅ Live |
 | `/api/v1/departments/[id]` | GET, PUT, DELETE | CRUD operations for specific department | ✅ Live |
 | `/api/v1/employees` | GET, POST | List employees with filtering, create new employees | ✅ Live |
 | `/api/v1/employees/[id]` | GET, PUT, DELETE | CRUD operations for specific employee | ✅ Live |
@@ -116,6 +116,38 @@ These V1 data routes are deployed and working on main branch:
 |-------|---------|------------|---------|
 | `/api/departments` | GET, POST | None | List departments with filtering, create new department |
 | `/api/departments/[id]` | GET, PUT, DELETE | `[id]` - Department ID or name | CRUD operations for specific department |
+
+### 🆕 **V1 Department API (Updated Schema)**
+
+**Endpoint**: `POST /api/v1/departments`  
+**Purpose**: Create new department with updated schema  
+**Authentication**: Required (JWT Bearer token)
+
+**Updated Department Schema**:
+```json
+{
+  "department_id": "dept_1703123456789_abc123def", // Auto-generated unique ID
+  "company_id": "company_id_here",                 // Required
+  "department_name": "Department Name",           // Required  
+  "department_lead": "user_id_here"              // Optional (can be null)
+}
+```
+
+**Request Payload**:
+```json
+{
+  "company_id": "selected_company_id",
+  "department_name": "Human Resources"
+}
+```
+
+**Features**:
+- ✅ **Auto-generated department_id**: Uses timestamp + random string pattern
+- ✅ **Company filtering**: `GET /api/v1/departments?companyId={company_id}`
+- ✅ **Simplified schema**: Removed `department_desc`, replaced `user_head` with `department_lead`
+- ✅ **Optional department lead**: Can be null when creating departments
+- ✅ **Access control**: Users can only see/create departments for their company
+- ✅ **Compound uniqueness**: Department name must be unique within each company
 
 ---
 
@@ -275,3 +307,11 @@ The following V1 endpoints have been successfully deployed and tested:
   - Updated admin dashboard with password update feature using icons
   - Enhanced departments create page with real API integration
   - Total routes now: 57 (31 V1 + 26 legacy)
+- **2025-06-26**: Enhanced department management functionality
+  - **Updated department schema**: Changed to `department_id`, `company_id`, `department_name`, `department_lead`
+  - **Auto-generated department IDs**: Using timestamp + random string pattern
+  - **Company filtering**: `GET /api/v1/departments?companyId={company_id}` for dependent dropdowns
+  - **Admin users create page**: Added dependent department dropdown and "New Department" modal
+  - **Real-time department creation**: Create departments on-the-fly without page refresh
+  - **Form reordering**: Department field moved after company selection
+  - **Enhanced UX**: Loading states, keyboard support, modal validation

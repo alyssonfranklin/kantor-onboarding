@@ -536,7 +536,26 @@ This document provides a comprehensive analysis of all frontend pages and their 
 - **Purpose**: Populate company dropdown
 - **Headers**: `Authorization: Bearer {jwt_token}`
 
-**5. Create User and Company**
+**5. Fetch Departments by Company**
+- **Endpoint**: `GET /api/v1/departments?companyId={company_id}`
+- **When**: Company selection change in form
+- **Purpose**: Populate department dropdown based on selected company
+- **Headers**: `Authorization: Bearer {jwt_token}`
+
+**6. Create New Department**
+- **Endpoint**: `POST /api/v1/departments`
+- **When**: User selects "New Department" option and submits modal form
+- **Purpose**: Create new department for selected company
+- **Headers**: `Authorization: Bearer {jwt_token}`
+- **Payload**:
+  ```json
+  {
+    "company_id": "selected_company_id",
+    "department_name": "Department Name"
+  }
+  ```
+
+**7. Create User and Company**
 - **Endpoint**: `POST /api/v1/add-user`
 - **When**: Form submission
 - **Purpose**: Create new user and company
@@ -559,9 +578,14 @@ This document provides a comprehensive analysis of all frontend pages and their 
 - ✅ Comprehensive user creation form
 - ✅ Role-based access control
 - ✅ **Company dropdown** (dynamically loaded from API)
+- ✅ **Department dropdown** (dependent on company selection)
+- ✅ **"New Department" modal** for creating departments on-the-fly
+- ✅ **Auto-generated department_id** using timestamp + random string
+- ✅ Department field reordered to appear after company selection
 - ✅ OpenAI assistant linking
-- ✅ Loading states for company dropdown
+- ✅ Loading states for company and department dropdowns
 - ✅ Form validation and error handling
+- ✅ Keyboard support in modal (Enter to submit, Escape to close)
 
 ---
 
