@@ -13,6 +13,10 @@ export default function CreateUserPage() {
   const [departments, setDepartments] = useState<any[]>([]);
   const [isLoadingCompanies, setIsLoadingCompanies] = useState(true);
   const [isLoadingDepartments, setIsLoadingDepartments] = useState(false);
+  const [isCreatingDepartment, setIsCreatingDepartment] = useState(false);
+  const [showDepartmentModal, setShowDepartmentModal] = useState(false);
+  const [newDepartmentName, setNewDepartmentName] = useState('');
+  const [departmentError, setDepartmentError] = useState('');
   const [token, setToken] = useState('');
   
   const [formData, setFormData] = useState({
@@ -150,8 +154,67 @@ export default function CreateUserPage() {
       } else {
         setDepartments([]);
       }
+    } else if (name === 'department' && value === 'NEW_DEPARTMENT') {
+      // Open modal for creating new department
+      setShowDepartmentModal(true);
+      setNewDepartmentName('');
+      setDepartmentError('');
     } else {
       setFormData(prev => ({ ...prev, [name]: value }));
+    }
+  };
+
+  // Create new department
+  const handleCreateDepartment = async () => {
+    if (!newDepartmentName.trim()) {
+      setDepartmentError('Department name is required');
+      return;
+    }
+
+    const selectedCompany = companies.find(company => company.name === formData.companyName);
+    if (!selectedCompany) {
+      setDepartmentError('Please select a company first');
+      return;
+    }
+
+    setIsCreatingDepartment(true);
+    setDepartmentError('');
+
+    try {
+      const response = await fetch('/api/v1/departments', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({
+          company_id: selectedCompany.company_id,
+          department_name: newDepartmentName.trim()
+        })
+      });
+
+      if (response.ok) {
+        const result = await response.json();
+        if (result.success) {
+          // Refresh departments list
+          await fetchDepartments(selectedCompany.company_id);
+          // Set the newly created department as selected
+          setFormData(prev => ({ ...prev, department: newDepartmentName.trim() }));
+          // Close modal
+          setShowDepartmentModal(false);
+          setNewDepartmentName('');
+        } else {
+          setDepartmentError(result.message || 'Failed to create department');
+        }
+      } else {
+        const errorData = await response.json();
+        setDepartmentError(errorData.message || 'Failed to create department');
+      }
+    } catch (err) {
+      console.error('Error creating department:', err);
+      setDepartmentError('Error creating department');
+    } finally {
+      setIsCreatingDepartment(false);
     }
   };
 
@@ -324,6 +387,11 @@ export default function CreateUserPage() {
                       {department.department_name}
                     </option>
                   ))}
+                  {formData.companyName && (
+                    <option value="NEW_DEPARTMENT" className="font-bold text-blue-400">
+                      + New Department
+                    </option>
+                  )}
                 </select>
               </div>
               
@@ -339,6 +407,67 @@ export default function CreateUserPage() {
           </form>
         </CardContent>
       </Card>
+
+      {/* New Department Modal */}
+      {showDepartmentModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-gray-800 rounded-lg p-6 w-full max-w-md mx-4">
+            <h2 className="text-xl font-bold text-white mb-4">Create New Department</h2>
+            
+            {departmentError && (
+              <Alert className="mb-4 bg-red-800 border-red-600">
+                <AlertDescription>{departmentError}</AlertDescription>
+              </Alert>
+            )}
+            
+            <div className="mb-4">
+              <label className="block mb-2 font-medium text-white">Department Name</label>
+              <input
+                type="text"
+                value={newDepartmentName}
+                onChange={(e) => setNewDepartmentName(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' && newDepartmentName.trim() && !isCreatingDepartment) {
+                    handleCreateDepartment();
+                  } else if (e.key === 'Escape') {
+                    setShowDepartmentModal(false);
+                    setNewDepartmentName('');
+                    setDepartmentError('');
+                  }
+                }}
+                className="w-full p-2 rounded-md border border-gray-700 bg-gray-800 text-white"
+                placeholder="Enter department name"
+                disabled={isCreatingDepartment}
+                autoFocus
+              />
+            </div>
+            
+            <div className="flex gap-3 justify-end">
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => {
+                  setShowDepartmentModal(false);
+                  setNewDepartmentName('');
+                  setDepartmentError('');
+                }}
+                disabled={isCreatingDepartment}
+                className="px-4 py-2"
+              >
+                Cancel
+              </Button>
+              <Button
+                type="button"
+                onClick={handleCreateDepartment}
+                disabled={isCreatingDepartment || !newDepartmentName.trim()}
+                className="px-4 py-2 bg-blue-600 hover:bg-blue-700"
+              >
+                {isCreatingDepartment ? 'Creating...' : 'Create Department'}
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

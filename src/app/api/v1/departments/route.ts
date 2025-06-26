@@ -75,6 +75,9 @@ export async function POST(req: NextRequest) {
         );
       }
       
+      // Generate department_id
+      const departmentId = `dept_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+      
       // Check if user has permission for this company
       if (user.company_id !== body.company_id && user.role !== 'admin') {
         return NextResponse.json(
@@ -98,10 +101,10 @@ export async function POST(req: NextRequest) {
       
       // Create new department
       const department = await Department.create({
+        department_id: departmentId,
         company_id: body.company_id,
         department_name: body.department_name,
-        department_desc: body.department_desc || '',
-        user_head: body.user_head || null
+        department_lead: body.department_lead || null
       });
       
       return NextResponse.json({

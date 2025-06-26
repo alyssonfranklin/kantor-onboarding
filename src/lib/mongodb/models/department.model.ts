@@ -1,18 +1,18 @@
 import mongoose, { Schema, Document } from 'mongoose';
 
 export interface IDepartment extends Document {
+  department_id: string;
   company_id: string;
   department_name: string;
-  department_desc: string;
-  user_head: string;
+  department_lead?: string;
 }
 
 const DepartmentSchema: Schema = new Schema(
   {
+    department_id: { type: String, required: true, unique: true },
     company_id: { type: String, required: true },
     department_name: { type: String, required: true },
-    department_desc: { type: String, required: true },
-    user_head: { type: String, required: true },
+    department_lead: { type: String, required: false },
   },
   { timestamps: true }
 );
