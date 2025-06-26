@@ -10,7 +10,9 @@ export default function CreateUserPage() {
   const [success, setSuccess] = useState('');
   const [error, setError] = useState('');
   const [companies, setCompanies] = useState<any[]>([]);
+  const [departments, setDepartments] = useState<any[]>([]);
   const [isLoadingCompanies, setIsLoadingCompanies] = useState(true);
+  const [isLoadingDepartments, setIsLoadingDepartments] = useState(false);
   const [token, setToken] = useState('');
   
   const [formData, setFormData] = useState({
@@ -96,14 +98,58 @@ export default function CreateUserPage() {
     fetchCompanies();
   }, [token]);
 
+  // Fetch departments when company is selected
+  const fetchDepartments = async (companyId: string) => {
+    if (!companyId || !token) return;
+    
+    setIsLoadingDepartments(true);
+    try {
+      const response = await fetch(`/api/v1/departments?companyId=${companyId}`, {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+      
+      if (response.ok) {
+        const result = await response.json();
+        if (result.success) {
+          setDepartments(result.data || []);
+        } else {
+          setDepartments([]);
+        }
+      } else {
+        setDepartments([]);
+      }
+    } catch (err) {
+      console.error('Error fetching departments:', err);
+      setDepartments([]);
+    } finally {
+      setIsLoadingDepartments(false);
+    }
+  };
+
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
     
-    // If company is selected, automatically set the assistant ID
+    // If company is selected, automatically set the assistant ID and fetch departments
     if (name === 'companyName') {
       const selectedCompany = companies.find(company => company.name === value);
       const assistantId = selectedCompany?.assistant_id || 'default_assistant_id';
-      setFormData(prev => ({ ...prev, [name]: value, assistantId }));
+      const companyId = selectedCompany?.company_id;
+      
+      setFormData(prev => ({ 
+        ...prev, 
+        [name]: value, 
+        assistantId,
+        department: '' // Reset department when company changes
+      }));
+      
+      // Fetch departments for the selected company
+      if (companyId) {
+        fetchDepartments(companyId);
+      } else {
+        setDepartments([]);
+      }
     } else {
       setFormData(prev => ({ ...prev, [name]: value }));
     }
@@ -137,7 +183,7 @@ export default function CreateUserPage() {
         password: '',
         companyName: '',
         role: 'user',
-        department: 'Management',
+        department: '',
         company_role: 'Employee',
         assistantId: 'default_assistant_id',
         version: '1.0'
@@ -223,18 +269,6 @@ export default function CreateUserPage() {
               </div>
               
               <div>
-                <label className="block mb-1 font-medium">Department</label>
-                <input
-                  type="text"
-                  name="department"
-                  value={formData.department}
-                  onChange={handleChange}
-                  className="w-full p-2 rounded-md border border-gray-700 bg-gray-800 text-white"
-                  required
-                />
-              </div>
-              
-              <div>
                 <label className="block mb-1 font-medium">Company Role</label>
                 <input
                   type="text"
@@ -267,12 +301,38 @@ export default function CreateUserPage() {
                 </select>
               </div>
               
+              <div className="md:col-span-2">
+                <label className="block mb-1 font-medium">Department</label>
+                <select
+                  name="department"
+                  value={formData.department}
+                  onChange={handleChange}
+                  className="w-full p-2 rounded-md border border-gray-700 bg-gray-800 text-white"
+                  required
+                  disabled={isLoadingDepartments || !formData.companyName}
+                >
+                  <option value="">
+                    {!formData.companyName 
+                      ? 'Select a company first' 
+                      : isLoadingDepartments 
+                        ? 'Loading departments...' 
+                        : 'Select a department'
+                    }
+                  </option>
+                  {departments.map(department => (
+                    <option key={department._id} value={department.department_name}>
+                      {department.department_name}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              
             </div>
             
             <Button 
               type="submit" 
               className="mt-6 w-full bg-red-500 hover:bg-red-600"
-              disabled={isLoading || isLoadingCompanies}
+              disabled={isLoading || isLoadingCompanies || isLoadingDepartments}
             >
               {isLoading ? 'Creating...' : 'Create User and Company'}
             </Button>

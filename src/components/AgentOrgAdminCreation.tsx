@@ -13,7 +13,6 @@ interface FormData {
   companyName: string;
   password: string;
   version: string;
-  createDefaultDepartment: boolean;
 }
 
 interface InsightVersion {
@@ -30,8 +29,7 @@ const AgentOrgAdminCreation = () => {
     name: '',
     companyName: '',
     password: '',
-    version: '',
-    createDefaultDepartment: false
+    version: ''
   });
 
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -140,8 +138,6 @@ const AgentOrgAdminCreation = () => {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          // Set header for department creation based on checkbox
-          'x-create-default-department': formData.createDefaultDepartment ? 'true' : 'false',
         },
         body: JSON.stringify({
           email: formData.email,
@@ -174,8 +170,7 @@ const AgentOrgAdminCreation = () => {
         name: '',
         companyName: '',
         password: '',
-        version: insightVersions.length > 0 ? insightVersions[0].insight_id : '',
-        createDefaultDepartment: false
+        version: insightVersions.length > 0 ? insightVersions[0].insight_id : ''
       });
     } catch (error: unknown) {
       const err = error as Error;
@@ -283,19 +278,6 @@ const AgentOrgAdminCreation = () => {
             </select>
           </div>
 
-          <div className="flex items-center my-4">
-            <input
-              type="checkbox"
-              id="createDefaultDepartment"
-              name="createDefaultDepartment"
-              checked={formData.createDefaultDepartment}
-              onChange={handleChange}
-              className="w-4 h-4 mr-2"
-            />
-            <label htmlFor="createDefaultDepartment" className="text-white">
-              Create default Management department
-            </label>
-          </div>
 
           {error && (
             <Alert variant="destructive">
