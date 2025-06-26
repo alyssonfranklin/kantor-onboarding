@@ -220,7 +220,7 @@ export default function AdminDashboardPage() {
       case 'companies':
         return ['Company ID', 'Name', 'Assistant ID', 'Status', 'Created At', 'Actions'];
       case 'departments':
-        return ['Company ID', 'Department Name', 'Description', 'Department Head', 'Actions'];
+        return ['Department ID', 'Company ID', 'Department Name', 'Department Lead', 'Created At', 'Actions'];
       case 'employees':
         return ['Employee ID', 'Name', 'Role', 'Company ID', 'Actions'];
       case 'tokens':
@@ -261,7 +261,7 @@ export default function AdminDashboardPage() {
           id = updatedData.company_id;
           break;
         case 'departments':
-          id = updatedData.department_name;
+          id = updatedData.department_id;
           break;
         case 'employees':
           id = updatedData.employee_id;
@@ -279,7 +279,7 @@ export default function AdminDashboardPage() {
         prevData.map(item => {
           if ((activeTab === 'users' && item.id === id) ||
               (activeTab === 'companies' && item.company_id === id) ||
-              (activeTab === 'departments' && item.department_name === id) ||
+              (activeTab === 'departments' && item.department_id === id) ||
               (activeTab === 'employees' && item.employee_id === id) ||
               (activeTab === 'tokens' && item.token === id)) {
             return { ...item, ...updatedData };
@@ -308,7 +308,7 @@ export default function AdminDashboardPage() {
           id = selectedItem.company_id;
           break;
         case 'departments':
-          id = selectedItem.department_name;
+          id = selectedItem.department_id;
           break;
         case 'employees':
           id = selectedItem.employee_id;
@@ -326,7 +326,7 @@ export default function AdminDashboardPage() {
         prevData.filter(item => {
           if ((activeTab === 'users' && item.id === id) ||
               (activeTab === 'companies' && item.company_id === id) ||
-              (activeTab === 'departments' && item.department_name === id) ||
+              (activeTab === 'departments' && item.department_id === id) ||
               (activeTab === 'employees' && item.employee_id === id) ||
               (activeTab === 'tokens' && item.token === id)) {
             return false;
@@ -469,25 +469,30 @@ export default function AdminDashboardPage() {
         case 'departments':
           return (
             <tr key={index} className="border-b border-gray-700">
+              <td className="p-3">
+                <span className="font-mono text-xs">{item.department_id}</span>
+              </td>
               <td className="p-3">{item.company_id}</td>
               <td className="p-3">{item.department_name}</td>
-              <td className="p-3">{item.department_desc}</td>
-              <td className="p-3">{item.user_head || 'None'}</td>
+              <td className="p-3">{item.department_lead || 'None'}</td>
+              <td className="p-3">{item.createdAt ? new Date(item.createdAt).toLocaleDateString() : 'N/A'}</td>
               <td className="p-3">
                 <Button 
-                  variant="destructive" 
+                  variant="outline" 
                   size="sm" 
                   className="mr-2"
                   onClick={() => handleEdit(item)}
+                  title="Edit department"
                 >
-                  Edit
+                  <Edit className="h-4 w-4" />
                 </Button>
                 <Button 
                   variant="destructive" 
                   size="sm"
                   onClick={() => handleDelete(item)}
+                  title="Delete department"
                 >
-                  Delete
+                  <Trash2 className="h-4 w-4" />
                 </Button>
               </td>
             </tr>

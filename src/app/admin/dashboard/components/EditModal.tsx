@@ -128,12 +128,14 @@ const EditModal = ({ isOpen, onClose, onSave, item, entityType }: EditModalProps
               />
             </div>
             <div>
-              <label className="block mb-1 font-medium">Description</label>
-              <textarea
-                name="department_desc"
-                value={formData.department_desc || ''}
+              <label className="block mb-1 font-medium">Department Lead</label>
+              <input
+                type="text"
+                name="department_lead"
+                value={formData.department_lead || ''}
                 onChange={handleChange}
-                className="w-full p-2 rounded-md border border-gray-700 bg-gray-800 h-24"
+                className="w-full p-2 rounded-md border border-gray-700 bg-gray-800"
+                placeholder="User ID or name (optional)"
               />
             </div>
           </>
