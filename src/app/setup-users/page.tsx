@@ -24,7 +24,7 @@ export default function LoginPage() {
     departmentRole: ''
   });
   const [showBatchProcessing, setShowBatchProcessing] = useState(false);
-  const [contacts, setContacts] = useState([{ name: '', email: '' }]);
+  const [contacts, setContacts] = useState([{ name: '', email: '', saved: false }]);
   const [finishByUpload, setFinishByUpload] = useState(false);
   const [leaders, setLeaders] = useState(
     [
@@ -32,13 +32,15 @@ export default function LoginPage() {
         id: uuidv4(),
         name: '', 
         email: '', 
-        role: '', 
+        role: '',
+        saved: false,
         employees: 
         [
           {
             name: '',
             email: '',
-            role: ''
+            role: '',
+            saved: false
           }
         ] 
       }
@@ -78,11 +80,13 @@ export default function LoginPage() {
     }
   ];
 
-  const handleContactsChange = (updatedContacts: { name: string; email: string }[]) => {
+  const handleContactsChange = (updatedContacts: { name: string; email: string, saved: boolean }[]) => {
     setContacts(updatedContacts);
   };
 
-  const handleLeadersChange = (updatedLeaders: { id: string, name: string; email: string; role: string; }[]) => {
+  const handleLeadersChange = (
+    updatedLeaders: { id: string, name: string; email: string; role: string; saved: boolean }[]
+  ) => {
     setLeaders(
       updatedLeaders.map(leader => ({
         ...leader,
@@ -199,6 +203,7 @@ export default function LoginPage() {
                   <DepartmentAddEmployees 
                     onNext={handleNext}
                     onLeaderSelected={onLeaderSelected}
+                    leaders={leaders}
                   />
                 }
 
@@ -208,6 +213,7 @@ export default function LoginPage() {
                     leader={leaderSelected}
                     employees={employees}
                     addEmployeesToLeader={addEmployeesToLeader}
+                    departmentName={departmentName}
                   />
                 }
                 

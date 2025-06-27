@@ -3,53 +3,38 @@ import Image from 'next/image';
 import React, { useCallback, useEffect, useState } from 'react'
 import CardLeader from '../users/CardLeader';
 import { useAuth } from '@/lib/auth/hooks';
+import { Alert, AlertDescription } from '@/components/ui/alert';
 
 export default function DepartmentAddEmployees(
-  { onNext, onLeaderSelected }
+  { onNext, onLeaderSelected, leaders }
 ) {
 
-  const { user } = useAuth();
-
-  const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState('');
-  const [first, setFirst] = useState(true);
-  const [leaders, setLeaders] = useState([]);
 
   const handleNextClick = () => {
+    console.log('handleNextClick - leaders: ', leaders);
+    const hasValidLeader = leaders.some(
+      (leader) =>
+        Array.isArray(leader.employees) &&
+        leader.employees.length > 0 &&
+        leader.employees.every(
+          (emp) =>
+            emp.name &&
+            emp.email &&
+            emp.role &&
+            emp.name.trim() !== '' &&
+            emp.email.trim() !== '' &&
+            emp.role.trim() !== ''
+        )
+    );
+
+    if (!hasValidLeader) {
+      setError('At least one leader must have at least one employee with name, email, and role filled in.');
+      return;
+    }
+    setError('');
     onNext();
   };
-
-  const getLeaders = useCallback(
-    async () => {
-      setIsSubmitting(true);
-      setError('');
-      const response = await fetch(`/api/v1/users`, {
-        method: 'GET',
-        headers: {
-          'Content-Type': 'application/json',
-        }
-      });
-
-      setIsSubmitting(false);
-
-      const responseData = await response.json();
-
-      console.log('responseData: ', responseData);
-
-      if (!response.ok) {
-        setError(responseData.error);
-      }
-    },
-    [],
-  )
-  
-
-  useEffect(() => {
-    if (first) {
-      setFirst(false);
-      getLeaders();
-    }
-  }, [first, getLeaders]);
 
   return (
     <div className="bg-white border-gray-200">
@@ -73,6 +58,12 @@ export default function DepartmentAddEmployees(
               Now it&apos;s time to add the employees to your department. Please select one of the leaders below to begin.
             </div>
           </div>
+
+          {error && (
+            <Alert variant="destructive">
+              <AlertDescription>{error}</AlertDescription>
+            </Alert>
+          )}
 
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3">
             {

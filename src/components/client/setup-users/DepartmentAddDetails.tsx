@@ -34,94 +34,108 @@ export default function DepartmentAddDetails(
 
   const saveHeadContact = useCallback(
     async (theContact) => {
-      setIsSubmitting(true);
-      setError('');
-      const data = {
-        email: theContact.email,
-        name: theContact.name,
-        company_id: user?.company_id,
-        password: defaultPassword,
-        role: 'user',
-        company_role: 'Director'
-      };
-      const response = await fetch('/api/v1/users', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(data)
-      });
 
-      setIsSubmitting(false);
+      console.log('saveHeadContact theContact: ', theContact);
+      if (!theContact.saved) {
+        setIsSubmitting(true);
+        setError('');
+        const data = {
+          email: theContact.email,
+          name: theContact.name,
+          company_id: user?.company_id,
+          password: defaultPassword,
+          role: 'user',
+          company_role: 'Director'
+        };
+        const response = await fetch('/api/v1/users', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify(data)
+        });
 
-      const responseData = await response.json();
+        setIsSubmitting(false);
 
-      if (!response.ok) {
+        const responseData = await response.json();
+
+        if (!response.ok) {
+          return {
+            success: false,
+            error: responseData.message
+          };
+        }
+
+        setLocalContacts((prev) =>
+          prev.map((c) =>
+            c.email === theContact.email ? { ...c, saved: true } : c
+          )
+        );
+
         return {
-          success: false,
-          error: responseData.message
+          success: true,
+          error: '',
+          contact: responseData.data
+        };
+      } else {
+        return {
+          success: true,
+          error: '',
+          contact: theContact
         };
       }
-
-      return {
-        success: true,
-        error: '',
-        contact: responseData.data
-      };
-
     },
     [defaultPassword, user?.company_id],
   )
   
 
   const handleNextClick = async () => {
-    if (!setupData.departmentName || !setupData.departmentRole || localContacts.length === 0) {
+    if (!setupData.departmentName || !setupData.departmentRole) {
       setError('All fields are required!');
       return;
     }
 
-    for (const contact of localContacts) {
-      if (!contact.name || !contact.email) {
-        setError('Each contact must have a name and email.');
-        return;
-      }
-    }
+    // for (const contact of localContacts) {
+    //   if (!contact.name || !contact.email) {
+    //     setError('Each contact must have a name and email.');
+    //     return;
+    //   }
+    // }
 
-    const results = [];
+    // const results = [];
 
-    for (const contact of localContacts) {
-      const contactSaved = await saveHeadContact(contact);
+    // for (const contact of localContacts) {
+    //   const contactSaved = await saveHeadContact(contact);
 
-      if (!contactSaved.success) {
-        results.push(
-          {
-            success: false,
-            contact: contact,
-            error: contactSaved.error
-          }
-        );
-      } else {
-        results.push(
-          {
-            success: true,
-            contact: contactSaved.contact
-          }
-        );
-      }
-    }
+    //   if (!contactSaved.success) {
+    //     results.push(
+    //       {
+    //         success: false,
+    //         contact: contact,
+    //         error: contactSaved.error
+    //       }
+    //     );
+    //   } else {
+    //     results.push(
+    //       {
+    //         success: true,
+    //         contact: contactSaved.contact
+    //       }
+    //     );
+    //   }
+    // }
 
-    const failedContacts = results.filter(r => r.success === false);
+    // const failedContacts = results.filter(r => r.success === false);
 
-    if (failedContacts.length > 0) {
-      setContactsError(failedContacts);
-      return;
-    }
+    // if (failedContacts.length > 0) {
+    //   setContactsError(failedContacts);
+    //   return;
+    // }
 
     const data = {
       company_id: user?.company_id,
       department_name: setupData.departmentName,
-      department_desc: setupData.departmentRole,
-      user_head: results[0].contact.id
+      department_description: setupData.departmentRole
     };
     
     setIsSubmitting(true);
@@ -171,6 +185,8 @@ export default function DepartmentAddDetails(
       });
 
       const responseData = await response.json();
+
+      console.log('responseData: ', responseData);
 
       if (!response.ok) {
         setError(responseData.error || 'Ocurrió un error al obtener la configuración');
@@ -261,7 +277,7 @@ export default function DepartmentAddDetails(
             />
           </div>
 
-          <div className="mt-4">
+          {/* <div className="mt-4">
             <div className='w-full text-center text-[#475467]'>
               Who is the head of the Department?
             </div>
@@ -334,7 +350,7 @@ export default function DepartmentAddDetails(
                 Add another
               </div>
             </div>
-          </div>
+          </div> */}
 
           <div className="py-4">
             <Button

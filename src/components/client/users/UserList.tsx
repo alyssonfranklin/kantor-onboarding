@@ -10,6 +10,7 @@ type User = {
   tags: string[];
   assessment: string;
   utilization: number;
+  company_role: string;
 };
 
 type UserListProps = {
@@ -50,12 +51,12 @@ const UserList: React.FC<UserListProps> = ({ users, handlePageChange }) => (
               <td className="px-6 py-4 whitespace-nowrap">
                 <Avatar
                   name={user.name}
-                  description={user.role}
+                  description={user.company_role}
                   imageUrl={`/images/icons/avatar.svg`} // Assuming images are named by user ID
                 />
               </td>
               <td className="px-6 py-4 whitespace-nowrap">
-                {user.tags.map((tag, index) => (
+                {user.tags &&user.tags.map((tag, index) => (
                   <span 
                     key={index} 
                     className="inline-block bg-white text-black text-xs font-semibold mr-2 px-2 py-1 rounded border border-gray-300"

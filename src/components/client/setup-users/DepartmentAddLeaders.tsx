@@ -46,50 +46,61 @@ export default function DepartmentAddLeaders(
     const results = [];
     setContactsError([]);
     for (const leader of localLeaders) {
-      const data = {
-        email: leader.email,
-        name: leader.name,
-        company_id: user?.company_id,
-        password: defaultPassword,
-        role: 'user',
-        company_role: leader.role,
-        department: departmentName
-      };
-      setIsSubmitting(true);
-      const response = await fetch('/api/v1/users', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(data)
-      });
-      setIsSubmitting(false);
+      console.log('for of leader: ', leader);
+      if (!leader.saved) {
+        const data = {
+          email: leader.email,
+          name: leader.name,
+          company_id: user?.company_id,
+          password: defaultPassword,
+          role: 'user',
+          company_role: leader.role,
+          department: departmentName
+        };
+        setIsSubmitting(true);
+        const response = await fetch('/api/v1/users', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify(data)
+        });
+        setIsSubmitting(false);
 
-      const responseData = await response.json();
+        const responseData = await response.json();
 
-      if (!response.ok) {
-        results.push(
-          {
-            success: false,
-            contact: leader,
-            error: responseData.error
-          }
-        );
-      } else {
-        results.push(
-          {
-            success: true,
-            contact: responseData.data
-          }
-        );
+        if (!response.ok) {
+          results.push(
+            {
+              success: false,
+              contact: leader,
+              error: responseData.message
+            }
+          );
+        } else {
+
+          setLocalLeaders((prev) =>
+            prev.map((c) =>
+              c.email === leader.email ? { ...c, saved: true } : c
+            )
+          );
+
+          results.push(
+            {
+              success: true,
+              contact: responseData.data
+            }
+          );
+        }
+
+        const failedContacts = results.filter(r => r.success === false);
+
+        if (failedContacts.length > 0) {
+          setContactsError(failedContacts);
+          return;
+        }
       }
-
-      const failedContacts = results.filter(r => r.success === false);
-
-      if (failedContacts.length > 0) {
-        setContactsError(failedContacts);
-        return;
-      }
+      
     }
     
     onNext();
