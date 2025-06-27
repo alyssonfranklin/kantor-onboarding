@@ -27,20 +27,32 @@ export default function UsersPage() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState('');
   const [limitRows, setLimitRows] = useState(10);
-  const [meta, setMeta] = useState({limit: limitRows, skip: 0, total: 0});
+  const [meta, setMeta] = useState({currentPage: 1, totalPages: 1});
 
   const handlePageChange = (page: number) => {
-    console.log(`Page changed to: ${page}`);
-    // Implement your page change logic here
+    const skip = (page - 1) * limitRows;
+    getUsers(skip);
   };
 
+  const makeMetaData = useCallback(
+    (meta) => {
+      console.log('meta: ', meta);
+      const { skip, total } = meta;
+      const currentPage = Math.floor(skip / limitRows) + 1;
+      const totalPages = Math.ceil(total / limitRows);
+      setMeta({ ...meta, currentPage, totalPages });
+    },
+    [limitRows],
+  );
+  
+
   const getUsers = useCallback(
-    async () => {
+    async (skip: number) => {
       console.log('user: ', user);
       setIsSubmitting(true);
       setError('');
       try {
-        const response = await fetch(`/api/v1/users?companyId=${user?.company_id}&limit=${limitRows}`, {
+        const response = await fetch(`/api/v1/users?companyId=${user?.company_id}&limit=${limitRows}&skip=${skip}`, {
           method: 'GET',
           headers: {
             'Content-Type': 'application/json',
@@ -56,7 +68,7 @@ export default function UsersPage() {
         }
         console.log('responseData.data: ', responseData.data);
         setUsers(responseData.data);
-        setMeta(responseData.meta);
+        makeMetaData(responseData.meta);
       } catch (error) {
         let errorMessage = 'Ocurrió un error al guardar la información';
         if (error instanceof Error) {
@@ -69,11 +81,11 @@ export default function UsersPage() {
         setError(errorMessage);
         setIsSubmitting(false);
       }
-    }, [limitRows, user],
+    }, [limitRows, makeMetaData, user],
   );
 
   useEffect(() => {
-    getUsers();
+    getUsers(0);
     return () => {
       
     };
@@ -106,6 +118,7 @@ export default function UsersPage() {
             <UserList
               users={users}
               handlePageChange={handlePageChange}
+              meta={meta}
             />
           }
         </div>
