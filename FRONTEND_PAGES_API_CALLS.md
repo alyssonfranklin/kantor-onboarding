@@ -241,6 +241,43 @@ This document provides a comprehensive analysis of all frontend pages and their 
 
 ---
 
+### 📊 **Company Status Page**
+**URL**: `https://kantor-onboarding-alysson-franklins-projects.vercel.app/company-status`
+
+#### **API Calls**:
+
+**1. Admin Authentication**
+- **Endpoint**: `POST /api/v1/verify-password`
+- **When**: Page initialization for testing
+- **Purpose**: Get JWT token for API access
+- **Payload**:
+  ```json
+  {
+    "email": "admin@voxerion.com",
+    "password": "admin123"
+  }
+  ```
+
+**2. Get Company Status**
+- **Endpoint**: `GET /api/v1/company-status?companyId={company_id}`
+- **When**: Page load or manual refresh
+- **Purpose**: Retrieve current company onboarding status and progress
+- **Headers**: `Authorization: Bearer {jwt_token}`
+- **Parameters**: 
+  - `companyId` (optional) - For testing mode, uses user's company from auth context in production
+
+#### **Features**:
+- ✅ **Test Mode**: Manual company ID input for backend testing
+- ✅ **Progress Visualization**: Progress bar showing completion percentage
+- ✅ **Step Tracking**: Visual indicators for each onboarding step
+- ✅ **Status History**: Timeline of recent status changes
+- ✅ **Real-time Updates**: Refresh functionality to check latest status
+- ✅ **Company Information**: Display of company details and metadata
+- ✅ **Responsive Design**: Mobile-friendly layout with proper spacing
+- ✅ **Smart Authentication**: Automatic token handling for API requests
+
+---
+
 ## 🤖 **AI Assistant Management**
 
 ### 🎨 **Create Assistant Page**
@@ -350,6 +387,7 @@ This document provides a comprehensive analysis of all frontend pages and their 
 - ✅ Company information collection (Portuguese)
 - ✅ OpenAI assistant customization
 - ✅ Real-time token/cost calculation
+- ✅ **Usage Logging**: Automatically logs status `6123-98712312-8923` after successful onboarding completion
 
 ---
 
@@ -407,6 +445,7 @@ This document provides a comprehensive analysis of all frontend pages and their 
 - ✅ OpenAI assistant creation
 - ✅ Admin user creation
 - ✅ Department creation option
+- ✅ **Usage Logging**: Automatically logs status `6233-832932-1313` after successful account creation
 
 ---
 
@@ -466,11 +505,16 @@ This document provides a comprehensive analysis of all frontend pages and their 
 - **Endpoints**: 
   - `GET /api/v1/users` - List all users
   - `GET /api/v1/companies` - List all companies  
-  - `GET /api/v1/departments` - List all departments
+  - `GET /api/v1/departments` - List all departments with populated company names, user names and descriptions
   - `GET /api/v1/employees` - List all employees
 - **When**: Tab switching in dashboard
 - **Purpose**: Display entity data in tables
 - **Headers**: `Authorization: Bearer {jwt_token}`
+- **Special Features**: 
+  - Departments endpoint populates `company_name` with actual company names
+  - Departments endpoint populates `department_lead_name` with actual user names
+  - Preserves `department_lead_id` for editing purposes
+  - Includes `department_description` field for department details
 
 **5. Update Entity**
 - **Endpoints**: 
@@ -501,11 +545,18 @@ This document provides a comprehensive analysis of all frontend pages and their 
 - **When**: Delete confirmation
 - **Purpose**: Remove entity from database
 
+#### **Enhanced Department Management Features**:
+- ✅ **User Name Display**: Shows actual user names instead of IDs in department_lead column
+- ✅ **Smart Edit Modal**: Dropdown populated with company users for department lead selection
+- ✅ **Dual Field Support**: API returns both `department_lead_name` for display and `department_lead_id` for editing
+- ✅ **Company-filtered Users**: Edit modal only shows users from the same company as the department
+
 #### **Features**:
 - ✅ Multi-tab interface (Users, Companies, Departments, Employees, Tokens)
 - ✅ CRUD operations with icons (Edit ✏️, Password 🔑, Delete 🗑️)
 - ✅ Real-time data fetching
 - ✅ Password update functionality
+- ✅ Enhanced department management with user name resolution
 - ✅ Comprehensive admin controls
 
 ---
@@ -536,7 +587,26 @@ This document provides a comprehensive analysis of all frontend pages and their 
 - **Purpose**: Populate company dropdown
 - **Headers**: `Authorization: Bearer {jwt_token}`
 
-**5. Create User and Company**
+**5. Fetch Departments by Company**
+- **Endpoint**: `GET /api/v1/departments?companyId={company_id}`
+- **When**: Company selection change in form
+- **Purpose**: Populate department dropdown based on selected company
+- **Headers**: `Authorization: Bearer {jwt_token}`
+
+**6. Create New Department**
+- **Endpoint**: `POST /api/v1/departments`
+- **When**: User selects "New Department" option and submits modal form
+- **Purpose**: Create new department for selected company
+- **Headers**: `Authorization: Bearer {jwt_token}`
+- **Payload**:
+  ```json
+  {
+    "company_id": "selected_company_id",
+    "department_name": "Department Name"
+  }
+  ```
+
+**7. Create User and Company**
 - **Endpoint**: `POST /api/v1/add-user`
 - **When**: Form submission
 - **Purpose**: Create new user and company
@@ -559,9 +629,15 @@ This document provides a comprehensive analysis of all frontend pages and their 
 - ✅ Comprehensive user creation form
 - ✅ Role-based access control
 - ✅ **Company dropdown** (dynamically loaded from API)
+- ✅ **Department dropdown** (dependent on company selection)
+- ✅ **"New Department" modal** for creating departments on-the-fly
+- ✅ **Auto-generated department_id** using timestamp + random string
+- ✅ Department field reordered to appear after company selection
 - ✅ OpenAI assistant linking
-- ✅ Loading states for company dropdown
+- ✅ Loading states for company and department dropdowns
 - ✅ Form validation and error handling
+- ✅ Keyboard support in modal (Enter to submit, Escape to close)
+- ✅ **Usage Logging**: Automatically logs status `6723-09823413-0002` after successful user creation
 
 ---
 
@@ -644,8 +720,8 @@ This document provides a comprehensive analysis of all frontend pages and their 
   {
     "company_id": "selected_company_id",
     "department_name": "department_name",
-    "department_desc": "department_description",
-    "user_head": "selected_user_id"
+    "department_description": "department_description",
+    "department_lead": "selected_user_id"
   }
   ```
 
@@ -655,6 +731,7 @@ This document provides a comprehensive analysis of all frontend pages and their 
 - ✅ Department head assignment
 - ✅ Real-time form validation
 - ✅ Loading states for all dropdowns
+- ✅ **Usage Logging**: Automatically logs status `8290-90232442-0233` after successful department creation
 
 ---
 
@@ -717,6 +794,16 @@ Currently uses hardcoded company and employee leader data. Real API integration 
 - **Token Counting**: Live calculation on company onboarding
 - **Dynamic Loading**: User lists based on company selection
 - **Form Validation**: Client-side and server-side validation
+
+### **Usage Logging System**:
+- **Purpose**: Controls Voxerion access based on company status progression
+- **API Endpoint**: `POST /api/v1/usage-logs`
+- **Integration Points**:
+  - **Account Creation**: Status `6233-832932-1313` (agent-org-creation)
+  - **Onboarding Completion**: Status `6123-98712312-8923` (onboarding-company)
+  - **Department Creation**: Status `8290-90232442-0233` (admin/departments/create)
+  - **User Creation**: Status `6723-09823413-0002` (admin/users/create)
+- **Features**: Automatic logging, company filtering, chronological tracking
 
 ---
 

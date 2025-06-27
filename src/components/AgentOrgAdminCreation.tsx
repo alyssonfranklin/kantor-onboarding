@@ -6,6 +6,7 @@ import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Loader2 } from 'lucide-react';
+import { logCompanyStatus, COMPANY_STATUS } from '@/lib/utils/usage-log-helper';
 
 interface FormData {
   email: string;
@@ -13,7 +14,6 @@ interface FormData {
   companyName: string;
   password: string;
   version: string;
-  createDefaultDepartment: boolean;
 }
 
 interface InsightVersion {
@@ -30,8 +30,7 @@ const AgentOrgAdminCreation = () => {
     name: '',
     companyName: '',
     password: '',
-    version: '',
-    createDefaultDepartment: false
+    version: ''
   });
 
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -140,8 +139,6 @@ const AgentOrgAdminCreation = () => {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          // Set header for department creation based on checkbox
-          'x-create-default-department': formData.createDefaultDepartment ? 'true' : 'false',
         },
         body: JSON.stringify({
           email: formData.email,
@@ -167,6 +164,17 @@ const AgentOrgAdminCreation = () => {
         companyWasExisting: spreadsheetData.companyWasExisting
       });
 
+      // Log company status after successful account creation
+      if (spreadsheetData.companyId) {
+        try {
+          await logCompanyStatus(spreadsheetData.companyId, COMPANY_STATUS.ACCOUNT_CREATED);
+          console.log('Account creation status logged successfully');
+        } catch (error) {
+          console.error('Failed to log account creation status:', error);
+          // Don't fail the main flow if logging fails
+        }
+      }
+
       setSuccess(true);
       // Reset form
       setFormData({
@@ -174,8 +182,7 @@ const AgentOrgAdminCreation = () => {
         name: '',
         companyName: '',
         password: '',
-        version: insightVersions.length > 0 ? insightVersions[0].insight_id : '',
-        createDefaultDepartment: false
+        version: insightVersions.length > 0 ? insightVersions[0].insight_id : ''
       });
     } catch (error: unknown) {
       const err = error as Error;
@@ -283,19 +290,6 @@ const AgentOrgAdminCreation = () => {
             </select>
           </div>
 
-          <div className="flex items-center my-4">
-            <input
-              type="checkbox"
-              id="createDefaultDepartment"
-              name="createDefaultDepartment"
-              checked={formData.createDefaultDepartment}
-              onChange={handleChange}
-              className="w-4 h-4 mr-2"
-            />
-            <label htmlFor="createDefaultDepartment" className="text-white">
-              Create default Management department
-            </label>
-          </div>
 
           {error && (
             <Alert variant="destructive">

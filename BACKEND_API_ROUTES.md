@@ -38,13 +38,15 @@ These V1 data routes are deployed and working on main branch:
 | `/api/v1/users/[id]/update-password` | PUT | Update user password (admin only) | ✅ Live |
 | `/api/v1/companies` | GET, POST | List companies with filtering, create new companies | ✅ Live |
 | `/api/v1/companies/[id]` | GET, PUT, DELETE | CRUD operations for specific company | ✅ Live |
-| `/api/v1/departments` | GET, POST | List departments with filtering, create new departments | ✅ Live |
+| `/api/v1/departments` | GET, POST | List departments with filtering by company, create new departments | ✅ Live |
 | `/api/v1/departments/[id]` | GET, PUT, DELETE | CRUD operations for specific department | ✅ Live |
 | `/api/v1/employees` | GET, POST | List employees with filtering, create new employees | ✅ Live |
 | `/api/v1/employees/[id]` | GET, PUT, DELETE | CRUD operations for specific employee | ✅ Live |
 | `/api/v1/labels` | GET | Get labels for internationalization (supports en, pt, es) | ✅ Live |
 | `/api/v1/health` | GET | Health check for API and database connectivity | ✅ Live |
 | `/api/v1/users/update-insights` | GET, POST | Update user insights count (public endpoint) | ✅ Live |
+| `/api/v1/usage-logs` | GET, POST | Track company status changes and usage logging | ✅ Live |
+| `/api/v1/company-status` | GET | Get current company onboarding status and progress | ✅ Live |
 
 ### 🔐 Password Management
 
@@ -65,6 +67,134 @@ These V1 data routes are deployed and working on main branch:
 - ✅ Automatic bcrypt hashing
 - ✅ Direct database update (bypasses Mongoose validation)
 - ✅ Timeout protection (10 seconds)
+
+## 📊 V1 Usage Logging (Versioned)
+
+| Route | Methods | Purpose | Status |
+|-------|---------|---------|--------|
+| `/api/v1/usage-logs` | GET, POST | Track company status changes and control Voxerion access | ✅ Live |
+
+### 🆕 **V1 Usage Logs API**
+
+**Endpoint**: `POST /api/v1/usage-logs`  
+**Purpose**: Record company status changes to control Voxerion access  
+**Authentication**: Required (JWT Bearer token)
+
+**Usage Log Schema**:
+```json
+{
+  "usage_id": "log_1703123456789_abc123def",     // Auto-generated unique ID
+  "company_id": "company_id_here",               // Required - from companies.company_id
+  "last_status_id": "6233-832932-1313",         // Required - status code
+  "datetime": "2025-06-26T10:30:00.000Z"        // Auto-generated timestamp
+}
+```
+
+**Request Payload**:
+```json
+{
+  "company_id": "comp_1703123456789_xyz789",
+  "last_status_id": "6233-832932-1313"
+}
+```
+
+**Status Codes**:
+- `6233-832932-1313` - Account created (agent-org-creation)
+- `6123-98712312-8923` - Onboarding completed (onboarding-company)
+- `8290-90232442-0233` - Department created (admin/departments/create)
+- `6723-09823413-0002` - User created (admin/users/create)
+
+**GET Response Example**:
+```json
+{
+  "success": true,
+  "data": [
+    {
+      "usage_id": "log_1703123456789_abc123def",
+      "company_id": "comp_1703123456789_xyz789",
+      "last_status_id": "6233-832932-1313",
+      "datetime": "2025-06-26T10:30:00.000Z",
+      "createdAt": "2025-06-26T10:30:00.000Z",
+      "updatedAt": "2025-06-26T10:30:00.000Z"
+    }
+  ],
+  "meta": {
+    "total": 1,
+    "limit": 100,
+    "skip": 0
+  }
+}
+```
+
+**Features**:
+- ✅ **Auto-generated usage_id**: Uses timestamp + random string pattern
+- ✅ **Company filtering**: `GET /api/v1/usage-logs?companyId={company_id}`
+- ✅ **Automatic logging**: Integrated into key user flows
+- ✅ **Status tracking**: Controls Voxerion access based on company status
+- ✅ **Access control**: Users can only see/create logs for their company
+- ✅ **Chronological ordering**: Sorted by datetime (most recent first)
+
+### 🆕 **V1 Company Status API**
+
+**Endpoint**: `GET /api/v1/company-status`  
+**Purpose**: Get current company onboarding status and progress  
+**Authentication**: Required (JWT Bearer token)
+
+**Query Parameters**:
+- `companyId` (optional) - Specific company ID to check (admin only for other companies)
+
+**Response Schema**:
+```json
+{
+  "success": true,
+  "data": {
+    "company": {
+      "company_id": "comp_1703123456789_xyz789",
+      "name": "Acme Corporation",
+      "status": "active",
+      "created_at": "2025-06-26T10:00:00.000Z"
+    },
+    "currentStatus": {
+      "name": "Onboarding Completed",
+      "description": "Company information and assistant instructions have been configured",
+      "step": 2,
+      "statusId": "6123-98712312-8923",
+      "lastUpdated": "2025-06-26T10:30:00.000Z"
+    },
+    "progress": {
+      "percentage": 50,
+      "completedSteps": 2,
+      "totalSteps": 4,
+      "steps": [
+        {
+          "statusId": "6233-832932-1313",
+          "name": "Account Created",
+          "description": "Company account and admin user have been created",
+          "step": 1,
+          "completed": true,
+          "completedAt": "2025-06-26T10:00:00.000Z"
+        }
+      ]
+    },
+    "statusHistory": [
+      {
+        "statusId": "6123-98712312-8923",
+        "name": "Onboarding Completed",
+        "description": "Company information and assistant instructions have been configured",
+        "datetime": "2025-06-26T10:30:00.000Z"
+      }
+    ]
+  }
+}
+```
+
+**Features**:
+- ✅ **Progress Tracking**: Visual progress indicator with percentage completion
+- ✅ **Status Mapping**: Human-readable status names and descriptions
+- ✅ **Step Tracking**: Ordered steps with completion status
+- ✅ **History**: Recent status changes with timestamps
+- ✅ **Access Control**: Users can only see their own company status (admin can see all)
+- ✅ **Smart Defaults**: Uses user's company_id from auth context if not specified
 
 ## 🔧 V1 Assistant/AI Management (Versioned)
 
@@ -116,6 +246,73 @@ These V1 data routes are deployed and working on main branch:
 |-------|---------|------------|---------|
 | `/api/departments` | GET, POST | None | List departments with filtering, create new department |
 | `/api/departments/[id]` | GET, PUT, DELETE | `[id]` - Department ID or name | CRUD operations for specific department |
+
+### 🆕 **V1 Department API (Updated Schema)**
+
+**Endpoint**: `POST /api/v1/departments`  
+**Purpose**: Create new department with updated schema  
+**Authentication**: Required (JWT Bearer token)
+
+**Updated Department Schema**:
+```json
+{
+  "department_id": "dept_1703123456789_abc123def", // Auto-generated unique ID
+  "company_id": "company_id_here",                 // Required
+  "company_name": "Acme Corporation",             // Populated in GET responses
+  "department_name": "Department Name",           // Required  
+  "department_description": "Department purpose",  // Optional description
+  "department_lead": "user_id_here",              // Optional (can be null)
+  "department_lead_name": "John Doe",             // Populated in GET responses
+  "department_lead_id": "user_id_here"            // Original ID for editing
+}
+```
+
+**Request Payload**:
+```json
+{
+  "company_id": "selected_company_id",
+  "department_name": "Human Resources",
+  "department_description": "Manages employee relations and policies",
+  "department_lead": "user_id_here"
+}
+```
+
+**GET Response Example**:
+```json
+{
+  "success": true,
+  "data": [
+    {
+      "department_id": "dept_1703123456789_abc123def",
+      "company_id": "comp_1703123456789_xyz789",
+      "company_name": "Acme Corporation",
+      "department_name": "Human Resources",
+      "department_description": "Manages employee relations and policies",
+      "department_lead": "user_1703123456789_def456",
+      "department_lead_name": "John Doe",
+      "department_lead_id": "user_1703123456789_def456",
+      "createdAt": "2025-06-26T10:30:00.000Z",
+      "updatedAt": "2025-06-26T10:30:00.000Z"
+    }
+  ],
+  "meta": {
+    "total": 1,
+    "limit": 100,
+    "skip": 0
+  }
+}
+```
+
+**Features**:
+- ✅ **Auto-generated department_id**: Uses timestamp + random string pattern
+- ✅ **Company filtering**: `GET /api/v1/departments?companyId={company_id}`
+- ✅ **Company name population**: company_name shows actual company names instead of IDs
+- ✅ **User name population**: department_lead_name shows actual user names instead of IDs
+- ✅ **Edit-friendly**: department_lead_id preserved for form editing
+- ✅ **Optional department lead**: Can be null when creating departments
+- ✅ **Department descriptions**: Optional text field for department purpose/description
+- ✅ **Access control**: Users can only see/create departments for their company
+- ✅ **Compound uniqueness**: Department name must be unique within each company
 
 ---
 
@@ -275,3 +472,11 @@ The following V1 endpoints have been successfully deployed and tested:
   - Updated admin dashboard with password update feature using icons
   - Enhanced departments create page with real API integration
   - Total routes now: 57 (31 V1 + 26 legacy)
+- **2025-06-26**: Enhanced department management functionality
+  - **Updated department schema**: Changed to `department_id`, `company_id`, `department_name`, `department_lead`
+  - **Auto-generated department IDs**: Using timestamp + random string pattern
+  - **Company filtering**: `GET /api/v1/departments?companyId={company_id}` for dependent dropdowns
+  - **Admin users create page**: Added dependent department dropdown and "New Department" modal
+  - **Real-time department creation**: Create departments on-the-fly without page refresh
+  - **Form reordering**: Department field moved after company selection
+  - **Enhanced UX**: Loading states, keyboard support, modal validation

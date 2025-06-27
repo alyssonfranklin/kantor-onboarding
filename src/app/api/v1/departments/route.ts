@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { dbConnect } from '@/lib/mongodb/connect';
 import Department from '@/lib/mongodb/models/department.model';
+import User from '@/lib/mongodb/models/user.model';
+import Company from '@/lib/mongodb/models/company.model';
 import { withAuth } from '@/lib/middleware/auth';
 
 /**
@@ -35,11 +37,50 @@ export async function GET(req: NextRequest) {
         .skip(skip)
         .sort({ department_name: 1 });
         
+      // Populate department_lead with user names and company names
+      const departmentsWithNames = await Promise.all(
+        departments.map(async (dept) => {
+          const deptObj = dept.toObject();
+          
+          // Populate department lead name
+          if (deptObj.department_lead) {
+            try {
+              // Use the custom 'id' field instead of '_id'
+              const leadUser = await User.findOne({ id: deptObj.department_lead });
+              deptObj.department_lead_name = leadUser ? leadUser.name : 'Unknown User';
+              deptObj.department_lead_id = deptObj.department_lead; // Keep original ID for editing
+            } catch (error) {
+              console.error('Error fetching user for department lead:', error);
+              deptObj.department_lead_name = 'Unknown User';
+              deptObj.department_lead_id = deptObj.department_lead;
+            }
+          } else {
+            deptObj.department_lead_name = null;
+            deptObj.department_lead_id = null;
+          }
+          
+          // Populate company name
+          if (deptObj.company_id) {
+            try {
+              const company = await Company.findOne({ company_id: deptObj.company_id });
+              deptObj.company_name = company ? company.name : 'Unknown Company';
+            } catch (error) {
+              console.error('Error fetching company for department:', error);
+              deptObj.company_name = 'Unknown Company';
+            }
+          } else {
+            deptObj.company_name = 'No Company';
+          }
+          
+          return deptObj;
+        })
+      );
+        
       const total = await Department.countDocuments(query);
       
       return NextResponse.json({
         success: true,
-        data: departments,
+        data: departmentsWithNames,
         meta: {
           total,
           limit,
@@ -75,6 +116,9 @@ export async function POST(req: NextRequest) {
         );
       }
       
+      // Generate department_id
+      const departmentId = `dept_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+      
       // Check if user has permission for this company
       if (user.company_id !== body.company_id && user.role !== 'admin') {
         return NextResponse.json(
@@ -98,10 +142,11 @@ export async function POST(req: NextRequest) {
       
       // Create new department
       const department = await Department.create({
+        department_id: departmentId,
         company_id: body.company_id,
         department_name: body.department_name,
-        department_desc: body.department_desc || '',
-        user_head: body.user_head || null
+        department_description: body.department_description || null,
+        department_lead: body.department_lead || null
       });
       
       return NextResponse.json({
