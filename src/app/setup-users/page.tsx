@@ -46,6 +46,7 @@ export default function LoginPage() {
   );
   const [leaderSelected, setLeaderSelected] = useState(null);
   const [employees, setEmployees] = useState<{ name: string; email: string; role: string }[] | null>(null);
+  const [departmentName, setDepartmentName] = useState('');
 
   const steps = [
   { 
@@ -139,6 +140,11 @@ export default function LoginPage() {
     setCurrentStep(3);
     setShowConfirmationBatch(true);
   };
+
+  const onSetDepartment = (department) => {
+    console.log('department: ', department);
+    setDepartmentName(department.department_name);
+  };
   
   return (
     <>
@@ -165,6 +171,7 @@ export default function LoginPage() {
                     onNext={handleNext}
                     contacts={contacts} 
                     onContactsChange={handleContactsChange}
+                    onSetDepartment={onSetDepartment}
                   />
                 }
 
@@ -176,6 +183,7 @@ export default function LoginPage() {
                     leaders={leaders} 
                     onLeadersChange={handleLeadersChange}
                     handleBatchProcessingClick={handleBatchProcessingClick}
+                    departmentName={departmentName}
                   />
                 }
 
@@ -190,7 +198,6 @@ export default function LoginPage() {
                   currentStep === 3 && !leaderSelected && !finishByUpload &&
                   <DepartmentAddEmployees 
                     onNext={handleNext}
-                    leaders={leaders}
                     onLeaderSelected={onLeaderSelected}
                   />
                 }

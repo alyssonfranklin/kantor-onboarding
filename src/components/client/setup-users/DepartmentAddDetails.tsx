@@ -3,7 +3,7 @@ import Input from '@/components/ui/input';
 import TextArea from '@/components/ui/textArea';
 import { useAuth } from '@/lib/auth/hooks';
 import Image from 'next/image';
-import React, { useEffect, useState } from 'react'
+import React, { useCallback, useEffect, useState } from 'react'
 import ModalLoader from '../ModalLoader';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 
@@ -13,7 +13,7 @@ interface Contact {
 }
 
 export default function DepartmentAddDetails(
-  { setupData, updateSetupData, onNext, contacts, onContactsChange }
+  { setupData, updateSetupData, onNext, contacts, onContactsChange, onSetDepartment }
 ) {
 
   const { user } = useAuth();
@@ -21,16 +21,99 @@ export default function DepartmentAddDetails(
   const [localContacts, setLocalContacts] = useState(contacts);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState('');
+  const [contactsError, setContactsError] = useState<
+    Array<{ success: boolean; contact: any; error?: any }> | null
+  >(null);
+  const [defaultPassword, setDefaultPassword] = useState('');
+  const [first, setFirst] = useState(true);
   
   const handleChange = (e) => {
     const { name, value } = e.target;
     updateSetupData({ [name]: value });
   };
 
+  const saveHeadContact = useCallback(
+    async (theContact) => {
+      setIsSubmitting(true);
+      setError('');
+      const data = {
+        email: theContact.email,
+        name: theContact.name,
+        company_id: user?.company_id,
+        password: defaultPassword,
+        role: 'user',
+        company_role: 'Director'
+      };
+      const response = await fetch('/api/v1/users', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(data)
+      });
+
+      setIsSubmitting(false);
+
+      const responseData = await response.json();
+
+      if (!response.ok) {
+        return {
+          success: false,
+          error: responseData.message
+        };
+      }
+
+      return {
+        success: true,
+        error: '',
+        contact: responseData.data
+      };
+
+    },
+    [defaultPassword, user?.company_id],
+  )
+  
+
   const handleNextClick = async () => {
-    console.log('user: ', user);
     if (!setupData.departmentName || !setupData.departmentRole || localContacts.length === 0) {
       setError('All fields are required!');
+      return;
+    }
+
+    for (const contact of localContacts) {
+      if (!contact.name || !contact.email) {
+        setError('Each contact must have a name and email.');
+        return;
+      }
+    }
+
+    const results = [];
+
+    for (const contact of localContacts) {
+      const contactSaved = await saveHeadContact(contact);
+
+      if (!contactSaved.success) {
+        results.push(
+          {
+            success: false,
+            contact: contact,
+            error: contactSaved.error
+          }
+        );
+      } else {
+        results.push(
+          {
+            success: true,
+            contact: contactSaved.contact
+          }
+        );
+      }
+    }
+
+    const failedContacts = results.filter(r => r.success === false);
+
+    if (failedContacts.length > 0) {
+      setContactsError(failedContacts);
       return;
     }
 
@@ -38,29 +121,28 @@ export default function DepartmentAddDetails(
       company_id: user?.company_id,
       department_name: setupData.departmentName,
       department_desc: setupData.departmentRole,
-      user_head: ''
+      user_head: results[0].contact.id
     };
-    console.log('data: ', data);
+    
+    setIsSubmitting(true);
+    setError('');
     const response = await fetch('/api/v1/departments', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
       },
-      body: JSON.stringify({
-        data
-      })
+      body: JSON.stringify(data)
     });
 
     setIsSubmitting(false);
 
     const responseData = await response.json();
 
-    console.log('responseData: ', responseData);
-
     if (!response.ok) {
       setError(responseData.error || 'Ocurrió un error al guardar la información');
       return;
     }
+    onSetDepartment(responseData.data);
     onNext();
   };
 
@@ -79,9 +161,35 @@ export default function DepartmentAddDetails(
     setLocalContacts(updated);
   };
 
+  const getDefaultClientPassword = useCallback(
+    async () => {
+      const response = await fetch('/api/v1/auth/default-password', {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+        }
+      });
+
+      const responseData = await response.json();
+
+      if (!response.ok) {
+        setError(responseData.error || 'Ocurrió un error al obtener la configuración');
+        return;
+      }
+
+      setDefaultPassword(responseData.defaultClientPassword);
+    },
+    [],
+  )
+  
+
   useEffect(() => {
     onContactsChange(localContacts);
-  }, [localContacts, onContactsChange]);
+    if (first) {
+      setFirst(false);
+      getDefaultClientPassword();
+    }
+  }, [first, getDefaultClientPassword, localContacts, onContactsChange]);
 
   return (
     <div className="bg-white border-gray-200">
@@ -96,6 +204,17 @@ export default function DepartmentAddDetails(
       {error && (
         <Alert variant="destructive">
           <AlertDescription>{error}</AlertDescription>
+        </Alert>
+      )}
+
+      {contactsError && (
+        <Alert variant="destructive">
+          { contactsError && contactsError.map((r, index) => (
+            <AlertDescription key={index}>
+              {r.contact.email}: {r.error}
+            </AlertDescription>
+          ))
+        }
         </Alert>
       )}
 

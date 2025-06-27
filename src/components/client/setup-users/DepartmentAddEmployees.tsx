@@ -1,15 +1,55 @@
 import { Button } from '@/components/ui/button';
 import Image from 'next/image';
-import React, { useState } from 'react'
+import React, { useCallback, useEffect, useState } from 'react'
 import CardLeader from '../users/CardLeader';
+import { useAuth } from '@/lib/auth/hooks';
 
 export default function DepartmentAddEmployees(
-  { leaders, onNext, onLeaderSelected }
+  { onNext, onLeaderSelected }
 ) {
+
+  const { user } = useAuth();
+
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [error, setError] = useState('');
+  const [first, setFirst] = useState(true);
+  const [leaders, setLeaders] = useState([]);
 
   const handleNextClick = () => {
     onNext();
   };
+
+  const getLeaders = useCallback(
+    async () => {
+      setIsSubmitting(true);
+      setError('');
+      const response = await fetch(`/api/v1/users`, {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+        }
+      });
+
+      setIsSubmitting(false);
+
+      const responseData = await response.json();
+
+      console.log('responseData: ', responseData);
+
+      if (!response.ok) {
+        setError(responseData.error);
+      }
+    },
+    [],
+  )
+  
+
+  useEffect(() => {
+    if (first) {
+      setFirst(false);
+      getLeaders();
+    }
+  }, [first, getLeaders]);
 
   return (
     <div className="bg-white border-gray-200">
@@ -39,10 +79,10 @@ export default function DepartmentAddEmployees(
               leaders.map((leader, index) => (
                 <CardLeader
                   key={index}
-                  id={leader.id}
-                  name={leader.name}
-                  email={leader.email}
-                  role={leader.role}
+                  id={leader?.id}
+                  name={leader?.name}
+                  email={leader?.email}
+                  role={leader?.role}
                   onLeaderSelected={onLeaderSelected}
                 />
             ))}

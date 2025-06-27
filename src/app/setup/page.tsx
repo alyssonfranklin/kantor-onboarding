@@ -145,7 +145,6 @@ export default function LoginPage() {
           return;
         }
 
-        setIsSubmitting(false);
         setShowConfirmation(true);
       } catch (error) {
         let errorMessage = 'Ocurrió un error al guardar la información';
