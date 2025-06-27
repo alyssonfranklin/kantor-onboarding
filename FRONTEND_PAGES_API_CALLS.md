@@ -678,8 +678,8 @@ This document provides a comprehensive analysis of all frontend pages and their 
   {
     "company_id": "selected_company_id",
     "department_name": "department_name",
-    "department_desc": "department_description",
-    "user_head": "selected_user_id"
+    "department_description": "department_description",
+    "department_lead": "selected_user_id"
   }
   ```
 

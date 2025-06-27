@@ -19,8 +19,8 @@ export default function CreateDepartmentPage() {
   const [formData, setFormData] = useState({
     company_id: '',
     department_name: '',
-    department_desc: '',
-    user_head: ''
+    department_description: '',
+    department_lead: ''
   });
 
   // Initialize and get authentication token
@@ -136,8 +136,8 @@ export default function CreateDepartmentPage() {
     
     if (name === 'company_id') {
       setSelectedCompany(value);
-      // Clear user_head when company changes
-      setFormData(prev => ({ ...prev, [name]: value, user_head: '' }));
+      // Clear department_lead when company changes
+      setFormData(prev => ({ ...prev, [name]: value, department_lead: '' }));
     } else {
       setFormData(prev => ({ ...prev, [name]: value }));
     }
@@ -172,8 +172,8 @@ export default function CreateDepartmentPage() {
         setFormData({
           company_id: '',
           department_name: '',
-          department_desc: '',
-          user_head: ''
+          department_description: '',
+          department_lead: ''
         });
         setSelectedCompany('');
       } else {
@@ -244,8 +244,8 @@ export default function CreateDepartmentPage() {
             <div>
               <label className="block mb-1 font-medium">Description</label>
               <textarea
-                name="department_desc"
-                value={formData.department_desc}
+                name="department_description"
+                value={formData.department_description}
                 onChange={handleChange}
                 className="w-full p-2 rounded-md border border-gray-700 bg-gray-800 h-24 text-white"
               />
@@ -254,8 +254,8 @@ export default function CreateDepartmentPage() {
             <div>
               <label className="block mb-1 font-medium">Department Head</label>
               <select
-                name="user_head"
-                value={formData.user_head}
+                name="department_lead"
+                value={formData.department_lead}
                 onChange={handleChange}
                 className="w-full p-2 rounded-md border border-gray-700 bg-gray-800"
                 disabled={isLoadingUsers || !selectedCompany}
