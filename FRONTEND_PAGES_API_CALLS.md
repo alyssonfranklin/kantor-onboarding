@@ -241,6 +241,43 @@ This document provides a comprehensive analysis of all frontend pages and their 
 
 ---
 
+### 📊 **Company Status Page**
+**URL**: `https://kantor-onboarding-alysson-franklins-projects.vercel.app/company-status`
+
+#### **API Calls**:
+
+**1. Admin Authentication**
+- **Endpoint**: `POST /api/v1/verify-password`
+- **When**: Page initialization for testing
+- **Purpose**: Get JWT token for API access
+- **Payload**:
+  ```json
+  {
+    "email": "admin@voxerion.com",
+    "password": "admin123"
+  }
+  ```
+
+**2. Get Company Status**
+- **Endpoint**: `GET /api/v1/company-status?companyId={company_id}`
+- **When**: Page load or manual refresh
+- **Purpose**: Retrieve current company onboarding status and progress
+- **Headers**: `Authorization: Bearer {jwt_token}`
+- **Parameters**: 
+  - `companyId` (optional) - For testing mode, uses user's company from auth context in production
+
+#### **Features**:
+- ✅ **Test Mode**: Manual company ID input for backend testing
+- ✅ **Progress Visualization**: Progress bar showing completion percentage
+- ✅ **Step Tracking**: Visual indicators for each onboarding step
+- ✅ **Status History**: Timeline of recent status changes
+- ✅ **Real-time Updates**: Refresh functionality to check latest status
+- ✅ **Company Information**: Display of company details and metadata
+- ✅ **Responsive Design**: Mobile-friendly layout with proper spacing
+- ✅ **Smart Authentication**: Automatic token handling for API requests
+
+---
+
 ## 🤖 **AI Assistant Management**
 
 ### 🎨 **Create Assistant Page**

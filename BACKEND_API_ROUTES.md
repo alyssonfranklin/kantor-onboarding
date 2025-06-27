@@ -46,6 +46,7 @@ These V1 data routes are deployed and working on main branch:
 | `/api/v1/health` | GET | Health check for API and database connectivity | ✅ Live |
 | `/api/v1/users/update-insights` | GET, POST | Update user insights count (public endpoint) | ✅ Live |
 | `/api/v1/usage-logs` | GET, POST | Track company status changes and usage logging | ✅ Live |
+| `/api/v1/company-status` | GET | Get current company onboarding status and progress | ✅ Live |
 
 ### 🔐 Password Management
 
@@ -132,6 +133,68 @@ These V1 data routes are deployed and working on main branch:
 - ✅ **Status tracking**: Controls Voxerion access based on company status
 - ✅ **Access control**: Users can only see/create logs for their company
 - ✅ **Chronological ordering**: Sorted by datetime (most recent first)
+
+### 🆕 **V1 Company Status API**
+
+**Endpoint**: `GET /api/v1/company-status`  
+**Purpose**: Get current company onboarding status and progress  
+**Authentication**: Required (JWT Bearer token)
+
+**Query Parameters**:
+- `companyId` (optional) - Specific company ID to check (admin only for other companies)
+
+**Response Schema**:
+```json
+{
+  "success": true,
+  "data": {
+    "company": {
+      "company_id": "comp_1703123456789_xyz789",
+      "name": "Acme Corporation",
+      "status": "active",
+      "created_at": "2025-06-26T10:00:00.000Z"
+    },
+    "currentStatus": {
+      "name": "Onboarding Completed",
+      "description": "Company information and assistant instructions have been configured",
+      "step": 2,
+      "statusId": "6123-98712312-8923",
+      "lastUpdated": "2025-06-26T10:30:00.000Z"
+    },
+    "progress": {
+      "percentage": 50,
+      "completedSteps": 2,
+      "totalSteps": 4,
+      "steps": [
+        {
+          "statusId": "6233-832932-1313",
+          "name": "Account Created",
+          "description": "Company account and admin user have been created",
+          "step": 1,
+          "completed": true,
+          "completedAt": "2025-06-26T10:00:00.000Z"
+        }
+      ]
+    },
+    "statusHistory": [
+      {
+        "statusId": "6123-98712312-8923",
+        "name": "Onboarding Completed",
+        "description": "Company information and assistant instructions have been configured",
+        "datetime": "2025-06-26T10:30:00.000Z"
+      }
+    ]
+  }
+}
+```
+
+**Features**:
+- ✅ **Progress Tracking**: Visual progress indicator with percentage completion
+- ✅ **Status Mapping**: Human-readable status names and descriptions
+- ✅ **Step Tracking**: Ordered steps with completion status
+- ✅ **History**: Recent status changes with timestamps
+- ✅ **Access Control**: Users can only see their own company status (admin can see all)
+- ✅ **Smart Defaults**: Uses user's company_id from auth context if not specified
 
 ## 🔧 V1 Assistant/AI Management (Versioned)
 
