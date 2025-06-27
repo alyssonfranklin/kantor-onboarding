@@ -6,6 +6,7 @@ import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Loader2 } from 'lucide-react';
+import { logCompanyStatus, COMPANY_STATUS } from '@/lib/utils/usage-log-helper';
 
 interface FormData {
   email: string;
@@ -162,6 +163,17 @@ const AgentOrgAdminCreation = () => {
         assistantId,
         companyWasExisting: spreadsheetData.companyWasExisting
       });
+
+      // Log company status after successful account creation
+      if (spreadsheetData.companyId) {
+        try {
+          await logCompanyStatus(spreadsheetData.companyId, COMPANY_STATUS.ACCOUNT_CREATED);
+          console.log('Account creation status logged successfully');
+        } catch (error) {
+          console.error('Failed to log account creation status:', error);
+          // Don't fail the main flow if logging fails
+        }
+      }
 
       setSuccess(true);
       // Reset form

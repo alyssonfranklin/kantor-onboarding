@@ -350,6 +350,7 @@ This document provides a comprehensive analysis of all frontend pages and their 
 - ✅ Company information collection (Portuguese)
 - ✅ OpenAI assistant customization
 - ✅ Real-time token/cost calculation
+- ✅ **Usage Logging**: Automatically logs status `6123-98712312-8923` after successful onboarding completion
 
 ---
 
@@ -407,6 +408,7 @@ This document provides a comprehensive analysis of all frontend pages and their 
 - ✅ OpenAI assistant creation
 - ✅ Admin user creation
 - ✅ Department creation option
+- ✅ **Usage Logging**: Automatically logs status `6233-832932-1313` after successful account creation
 
 ---
 
@@ -598,6 +600,7 @@ This document provides a comprehensive analysis of all frontend pages and their 
 - ✅ Loading states for company and department dropdowns
 - ✅ Form validation and error handling
 - ✅ Keyboard support in modal (Enter to submit, Escape to close)
+- ✅ **Usage Logging**: Automatically logs status `6723-09823413-0002` after successful user creation
 
 ---
 
@@ -691,6 +694,7 @@ This document provides a comprehensive analysis of all frontend pages and their 
 - ✅ Department head assignment
 - ✅ Real-time form validation
 - ✅ Loading states for all dropdowns
+- ✅ **Usage Logging**: Automatically logs status `8290-90232442-0233` after successful department creation
 
 ---
 
@@ -753,6 +757,16 @@ Currently uses hardcoded company and employee leader data. Real API integration 
 - **Token Counting**: Live calculation on company onboarding
 - **Dynamic Loading**: User lists based on company selection
 - **Form Validation**: Client-side and server-side validation
+
+### **Usage Logging System**:
+- **Purpose**: Controls Voxerion access based on company status progression
+- **API Endpoint**: `POST /api/v1/usage-logs`
+- **Integration Points**:
+  - **Account Creation**: Status `6233-832932-1313` (agent-org-creation)
+  - **Onboarding Completion**: Status `6123-98712312-8923` (onboarding-company)
+  - **Department Creation**: Status `8290-90232442-0233` (admin/departments/create)
+  - **User Creation**: Status `6723-09823413-0002` (admin/users/create)
+- **Features**: Automatic logging, company filtering, chronological tracking
 
 ---
 

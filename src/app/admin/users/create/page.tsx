@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Alert, AlertDescription } from '@/components/ui/alert';
+import { logCompanyStatus, COMPANY_STATUS } from '@/lib/utils/usage-log-helper';
 
 export default function CreateUserPage() {
   const [isLoading, setIsLoading] = useState(false);
@@ -237,6 +238,18 @@ export default function CreateUserPage() {
       
       if (!response.ok) {
         throw new Error(data.error || 'Failed to create user');
+      }
+      
+      // Log company status after successful user creation
+      if (data.companyId || selectedCompany?.company_id) {
+        const companyId = data.companyId || selectedCompany?.company_id;
+        try {
+          await logCompanyStatus(companyId, COMPANY_STATUS.USER_CREATED, token);
+          console.log('User creation status logged successfully');
+        } catch (error) {
+          console.error('Failed to log user creation status:', error);
+          // Don't fail the main flow if logging fails
+        }
       }
       
       setSuccess('User and company created successfully!');

@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Alert, AlertDescription } from '@/components/ui/alert';
+import { logCompanyStatus, COMPANY_STATUS } from '@/lib/utils/usage-log-helper';
 
 export default function CreateDepartmentPage() {
   const [isLoading, setIsLoading] = useState(false);
@@ -169,6 +170,18 @@ export default function CreateDepartmentPage() {
       
       if (response.ok && result.success) {
         setSuccess('Department created successfully!');
+        
+        // Log company status after successful department creation
+        if (formData.company_id) {
+          try {
+            await logCompanyStatus(formData.company_id, COMPANY_STATUS.DEPARTMENT_CREATED, token);
+            console.log('Department creation status logged successfully');
+          } catch (error) {
+            console.error('Failed to log department creation status:', error);
+            // Don't fail the main flow if logging fails
+          }
+        }
+        
         setFormData({
           company_id: '',
           department_name: '',

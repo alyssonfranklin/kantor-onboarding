@@ -45,6 +45,7 @@ These V1 data routes are deployed and working on main branch:
 | `/api/v1/labels` | GET | Get labels for internationalization (supports en, pt, es) | ✅ Live |
 | `/api/v1/health` | GET | Health check for API and database connectivity | ✅ Live |
 | `/api/v1/users/update-insights` | GET, POST | Update user insights count (public endpoint) | ✅ Live |
+| `/api/v1/usage-logs` | GET, POST | Track company status changes and usage logging | ✅ Live |
 
 ### 🔐 Password Management
 
@@ -65,6 +66,72 @@ These V1 data routes are deployed and working on main branch:
 - ✅ Automatic bcrypt hashing
 - ✅ Direct database update (bypasses Mongoose validation)
 - ✅ Timeout protection (10 seconds)
+
+## 📊 V1 Usage Logging (Versioned)
+
+| Route | Methods | Purpose | Status |
+|-------|---------|---------|--------|
+| `/api/v1/usage-logs` | GET, POST | Track company status changes and control Voxerion access | ✅ Live |
+
+### 🆕 **V1 Usage Logs API**
+
+**Endpoint**: `POST /api/v1/usage-logs`  
+**Purpose**: Record company status changes to control Voxerion access  
+**Authentication**: Required (JWT Bearer token)
+
+**Usage Log Schema**:
+```json
+{
+  "usage_id": "log_1703123456789_abc123def",     // Auto-generated unique ID
+  "company_id": "company_id_here",               // Required - from companies.company_id
+  "last_status_id": "6233-832932-1313",         // Required - status code
+  "datetime": "2025-06-26T10:30:00.000Z"        // Auto-generated timestamp
+}
+```
+
+**Request Payload**:
+```json
+{
+  "company_id": "comp_1703123456789_xyz789",
+  "last_status_id": "6233-832932-1313"
+}
+```
+
+**Status Codes**:
+- `6233-832932-1313` - Account created (agent-org-creation)
+- `6123-98712312-8923` - Onboarding completed (onboarding-company)
+- `8290-90232442-0233` - Department created (admin/departments/create)
+- `6723-09823413-0002` - User created (admin/users/create)
+
+**GET Response Example**:
+```json
+{
+  "success": true,
+  "data": [
+    {
+      "usage_id": "log_1703123456789_abc123def",
+      "company_id": "comp_1703123456789_xyz789",
+      "last_status_id": "6233-832932-1313",
+      "datetime": "2025-06-26T10:30:00.000Z",
+      "createdAt": "2025-06-26T10:30:00.000Z",
+      "updatedAt": "2025-06-26T10:30:00.000Z"
+    }
+  ],
+  "meta": {
+    "total": 1,
+    "limit": 100,
+    "skip": 0
+  }
+}
+```
+
+**Features**:
+- ✅ **Auto-generated usage_id**: Uses timestamp + random string pattern
+- ✅ **Company filtering**: `GET /api/v1/usage-logs?companyId={company_id}`
+- ✅ **Automatic logging**: Integrated into key user flows
+- ✅ **Status tracking**: Controls Voxerion access based on company status
+- ✅ **Access control**: Users can only see/create logs for their company
+- ✅ **Chronological ordering**: Sorted by datetime (most recent first)
 
 ## 🔧 V1 Assistant/AI Management (Versioned)
 
