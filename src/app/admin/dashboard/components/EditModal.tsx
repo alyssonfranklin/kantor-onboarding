@@ -166,6 +166,16 @@ const EditModal = ({ isOpen, onClose, onSave, item, entityType, token }: EditMod
               />
             </div>
             <div>
+              <label className="block mb-1 font-medium">Description</label>
+              <textarea
+                name="department_description"
+                value={formData.department_description || ''}
+                onChange={handleChange}
+                className="w-full p-2 rounded-md border border-gray-700 bg-gray-800 h-24 text-white"
+                placeholder="Enter department description..."
+              />
+            </div>
+            <div>
               <label className="block mb-1 font-medium">Department Lead</label>
               <select
                 name="department_lead"

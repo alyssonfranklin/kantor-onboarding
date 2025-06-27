@@ -126,6 +126,7 @@ export async function POST(req: NextRequest) {
         department_id: departmentId,
         company_id: body.company_id,
         department_name: body.department_name,
+        department_description: body.department_description || null,
         department_lead: body.department_lead || null
       });
       

@@ -220,7 +220,7 @@ export default function AdminDashboardPage() {
       case 'companies':
         return ['Company ID', 'Name', 'Assistant ID', 'Status', 'Created At', 'Actions'];
       case 'departments':
-        return ['Department ID', 'Company ID', 'Department Name', 'Department Lead', 'Created At', 'Actions'];
+        return ['Department ID', 'Company ID', 'Department Name', 'Description', 'Department Lead', 'Created At', 'Actions'];
       case 'employees':
         return ['Employee ID', 'Name', 'Role', 'Company ID', 'Actions'];
       case 'tokens':
@@ -474,6 +474,18 @@ export default function AdminDashboardPage() {
               </td>
               <td className="p-3">{item.company_id}</td>
               <td className="p-3">{item.department_name}</td>
+              <td className="p-3">
+                <div className="max-w-xs">
+                  <span className="text-sm" title={item.department_description || 'No description'}>
+                    {item.department_description 
+                      ? (item.department_description.length > 50 
+                          ? item.department_description.substring(0, 50) + '...' 
+                          : item.department_description)
+                      : 'No description'
+                    }
+                  </span>
+                </div>
+              </td>
               <td className="p-3">{item.department_lead_name || 'None'}</td>
               <td className="p-3">{item.createdAt ? new Date(item.createdAt).toLocaleDateString() : 'N/A'}</td>
               <td className="p-3">
