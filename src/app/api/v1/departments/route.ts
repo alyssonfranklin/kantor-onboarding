@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { dbConnect } from '@/lib/mongodb/connect';
 import Department from '@/lib/mongodb/models/department.model';
 import User from '@/lib/mongodb/models/user.model';
+import Company from '@/lib/mongodb/models/company.model';
 import { withAuth } from '@/lib/middleware/auth';
 
 /**
@@ -36,10 +37,12 @@ export async function GET(req: NextRequest) {
         .skip(skip)
         .sort({ department_name: 1 });
         
-      // Populate department_lead with user names
-      const departmentsWithLeadNames = await Promise.all(
+      // Populate department_lead with user names and company names
+      const departmentsWithNames = await Promise.all(
         departments.map(async (dept) => {
           const deptObj = dept.toObject();
+          
+          // Populate department lead name
           if (deptObj.department_lead) {
             try {
               // Use the custom 'id' field instead of '_id'
@@ -55,6 +58,20 @@ export async function GET(req: NextRequest) {
             deptObj.department_lead_name = null;
             deptObj.department_lead_id = null;
           }
+          
+          // Populate company name
+          if (deptObj.company_id) {
+            try {
+              const company = await Company.findOne({ company_id: deptObj.company_id });
+              deptObj.company_name = company ? company.name : 'Unknown Company';
+            } catch (error) {
+              console.error('Error fetching company for department:', error);
+              deptObj.company_name = 'Unknown Company';
+            }
+          } else {
+            deptObj.company_name = 'No Company';
+          }
+          
           return deptObj;
         })
       );
@@ -63,7 +80,7 @@ export async function GET(req: NextRequest) {
       
       return NextResponse.json({
         success: true,
-        data: departmentsWithLeadNames,
+        data: departmentsWithNames,
         meta: {
           total,
           limit,

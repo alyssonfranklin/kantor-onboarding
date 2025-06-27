@@ -128,6 +128,7 @@ These V1 data routes are deployed and working on main branch:
 {
   "department_id": "dept_1703123456789_abc123def", // Auto-generated unique ID
   "company_id": "company_id_here",                 // Required
+  "company_name": "Acme Corporation",             // Populated in GET responses
   "department_name": "Department Name",           // Required  
   "department_description": "Department purpose",  // Optional description
   "department_lead": "user_id_here",              // Optional (can be null)
@@ -154,6 +155,7 @@ These V1 data routes are deployed and working on main branch:
     {
       "department_id": "dept_1703123456789_abc123def",
       "company_id": "comp_1703123456789_xyz789",
+      "company_name": "Acme Corporation",
       "department_name": "Human Resources",
       "department_description": "Manages employee relations and policies",
       "department_lead": "user_1703123456789_def456",
@@ -174,6 +176,7 @@ These V1 data routes are deployed and working on main branch:
 **Features**:
 - ✅ **Auto-generated department_id**: Uses timestamp + random string pattern
 - ✅ **Company filtering**: `GET /api/v1/departments?companyId={company_id}`
+- ✅ **Company name population**: company_name shows actual company names instead of IDs
 - ✅ **User name population**: department_lead_name shows actual user names instead of IDs
 - ✅ **Edit-friendly**: department_lead_id preserved for form editing
 - ✅ **Optional department lead**: Can be null when creating departments

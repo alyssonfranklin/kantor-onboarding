@@ -466,12 +466,13 @@ This document provides a comprehensive analysis of all frontend pages and their 
 - **Endpoints**: 
   - `GET /api/v1/users` - List all users
   - `GET /api/v1/companies` - List all companies  
-  - `GET /api/v1/departments` - List all departments with populated user names and descriptions
+  - `GET /api/v1/departments` - List all departments with populated company names, user names and descriptions
   - `GET /api/v1/employees` - List all employees
 - **When**: Tab switching in dashboard
 - **Purpose**: Display entity data in tables
 - **Headers**: `Authorization: Bearer {jwt_token}`
 - **Special Features**: 
+  - Departments endpoint populates `company_name` with actual company names
   - Departments endpoint populates `department_lead_name` with actual user names
   - Preserves `department_lead_id` for editing purposes
   - Includes `department_description` field for department details
