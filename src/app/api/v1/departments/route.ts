@@ -42,10 +42,12 @@ export async function GET(req: NextRequest) {
           const deptObj = dept.toObject();
           if (deptObj.department_lead) {
             try {
-              const leadUser = await User.findById(deptObj.department_lead);
+              // Use the custom 'id' field instead of '_id'
+              const leadUser = await User.findOne({ id: deptObj.department_lead });
               deptObj.department_lead_name = leadUser ? leadUser.name : 'Unknown User';
               deptObj.department_lead_id = deptObj.department_lead; // Keep original ID for editing
             } catch (error) {
+              console.error('Error fetching user for department lead:', error);
               deptObj.department_lead_name = 'Unknown User';
               deptObj.department_lead_id = deptObj.department_lead;
             }
