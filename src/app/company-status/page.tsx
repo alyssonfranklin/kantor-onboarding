@@ -56,6 +56,7 @@ export default function CompanyStatusPage() {
   useEffect(() => {
     const initializeAndLogin = async () => {
       try {
+        console.log('Initializing database...');
         // Initialize database
         const initResponse = await fetch('/api/v1/admin/initialize-db', {
           method: 'POST',
@@ -64,6 +65,10 @@ export default function CompanyStatusPage() {
           }
         });
         
+        const initData = await initResponse.json();
+        console.log('Init response:', initData);
+        
+        console.log('Attempting login...');
         // Login to get token
         const loginResponse = await fetch('/api/v1/verify-password', {
           method: 'POST',
@@ -76,15 +81,21 @@ export default function CompanyStatusPage() {
           }),
         });
         
+        console.log('Login response status:', loginResponse.status);
         const loginData = await loginResponse.json();
+        console.log('Login response data:', loginData);
+        
         if (loginData.token) {
           setToken(loginData.token);
           setIsTestMode(true); // In test mode, we need to manually enter company ID
+          console.log('Authentication successful, token received');
         } else {
-          setError('Failed to authenticate');
+          console.error('Login failed:', loginData);
+          setError(`Failed to authenticate: ${loginData.error || 'Unknown error'}`);
         }
       } catch (err) {
-        setError('Failed to initialize');
+        console.error('Initialization error:', err);
+        setError(`Failed to initialize: ${err instanceof Error ? err.message : 'Unknown error'}`);
       }
     };
     
@@ -92,7 +103,10 @@ export default function CompanyStatusPage() {
   }, []);
 
   const fetchCompanyStatus = async (targetCompanyId?: string) => {
-    if (!token) return;
+    if (!token) {
+      setError('No authentication token available');
+      return;
+    }
     
     setIsLoading(true);
     setError('');
@@ -101,22 +115,30 @@ export default function CompanyStatusPage() {
       const url = targetCompanyId 
         ? `/api/v1/company-status?companyId=${targetCompanyId}`
         : '/api/v1/company-status'; // Will use user's company_id from auth context
+      
+      console.log('Fetching company status from:', url);
+      console.log('Using token:', token.substring(0, 20) + '...');
         
       const response = await fetch(url, {
         headers: {
-          'Authorization': `Bearer ${token}`
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
         }
       });
       
+      console.log('Response status:', response.status);
+      
       const result = await response.json();
+      console.log('Response data:', result);
       
       if (response.ok && result.success) {
         setCompanyStatus(result.data);
       } else {
-        setError(result.message || 'Failed to fetch company status');
+        setError(result.message || `Failed to fetch company status (${response.status})`);
       }
     } catch (err) {
-      setError('Error fetching company status');
+      console.error('Error fetching company status:', err);
+      setError(`Error fetching company status: ${err instanceof Error ? err.message : 'Unknown error'}`);
     } finally {
       setIsLoading(false);
     }
