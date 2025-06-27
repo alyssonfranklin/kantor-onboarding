@@ -46,7 +46,8 @@ interface CompanyStatus {
 
 export default function CompanyStatusPage() {
   const [companyStatus, setCompanyStatus] = useState<CompanyStatus | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
+  const [isLoading, setIsLoading] = useState(false);
+  const [isInitializing, setIsInitializing] = useState(true);
   const [error, setError] = useState('');
   const [token, setToken] = useState('');
   const [companyId, setCompanyId] = useState('');
@@ -55,6 +56,7 @@ export default function CompanyStatusPage() {
   // Initialize and get authentication token
   useEffect(() => {
     const initializeAndLogin = async () => {
+      setIsInitializing(true);
       try {
         console.log('Initializing database...');
         // Initialize database
@@ -96,6 +98,8 @@ export default function CompanyStatusPage() {
       } catch (err) {
         console.error('Initialization error:', err);
         setError(`Failed to initialize: ${err instanceof Error ? err.message : 'Unknown error'}`);
+      } finally {
+        setIsInitializing(false);
       }
     };
     
@@ -195,8 +199,8 @@ export default function CompanyStatusPage() {
                   className="flex-1 p-2 rounded-md border border-gray-700 bg-gray-800 text-white"
                   required
                 />
-                <Button type="submit" disabled={isLoading}>
-                  {isLoading ? 'Loading...' : 'Check Status'}
+                <Button type="submit" disabled={isLoading || isInitializing || !token}>
+                  {isInitializing ? 'Initializing...' : isLoading ? 'Loading...' : 'Check Status'}
                 </Button>
               </form>
             </CardContent>
@@ -209,9 +213,9 @@ export default function CompanyStatusPage() {
           </Alert>
         )}
 
-        {isLoading && !isTestMode && (
+        {isInitializing && (
           <div className="text-center py-8">
-            <div className="text-white">Loading company status...</div>
+            <div className="text-white">Initializing system...</div>
           </div>
         )}
 
