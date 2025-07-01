@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useAuth } from '@/lib/auth/hooks';
 import { Check, AlertCircle, ArrowRight } from 'lucide-react';
@@ -11,7 +11,7 @@ import { Alert, AlertDescription } from '@/components/ui/alert';
 import { usePayment } from '@/hooks/usePayment';
 import { SubscriptionData } from '@/types/payment';
 
-export default function PaymentSuccessPage() {
+function PaymentSuccessContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const { user } = useAuth();
@@ -203,5 +203,13 @@ export default function PaymentSuccessPage() {
         </CardFooter>
       </Card>
     </div>
+  );
+}
+
+export default function PaymentSuccessPage() {
+  return (
+    <Suspense fallback={<ModalLoader message="Loading payment details..." />}>
+      <PaymentSuccessContent />
+    </Suspense>
   );
 }

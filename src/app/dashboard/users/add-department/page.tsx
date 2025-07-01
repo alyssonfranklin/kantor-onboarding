@@ -1,11 +1,11 @@
 "use client"
 
 import Image from 'next/image'
-import React, { useEffect, useState } from 'react'
+import React, { useEffect, useState, Suspense } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import CardLeader from '@/components/client/users/CardLeader';
 
-export default function UsersDepartmentAddPage() {
+function UsersDepartmentAddContent() {
 
   const router = useRouter();
 
@@ -166,4 +166,12 @@ export default function UsersDepartmentAddPage() {
 
     </div>
   )
+}
+
+export default function UsersDepartmentAddPage() {
+  return (
+    <Suspense fallback={<div className="p-4">Loading...</div>}>
+      <UsersDepartmentAddContent />
+    </Suspense>
+  );
 }
