@@ -323,18 +323,21 @@ export class RetryHandler {
   }
 }
 
-// Error boundary for React components
-export function createErrorBoundary(fallbackComponent: React.ComponentType<{ error: PaymentError; retry: () => void }>) {
-  return class PaymentErrorBoundary extends React.Component<
-    { children: React.ReactNode },
-    { error: PaymentError | null }
-  > {
-    constructor(props: { children: React.ReactNode }) {
-      super(props);
-      this.state = { error: null };
-    }
+// Error boundary for React components - moved to separate .tsx file
+// To use error boundary, create a separate .tsx file with React component
+export interface ErrorBoundaryProps {
+  error: PaymentError;
+  retry: () => void;
+}
 
-    static getDerivedStateFromError(error: any): { error: PaymentError } {
+export interface ErrorBoundaryState {
+  error: PaymentError | null;
+}
+
+// Helper function to create error boundary configuration
+export function createErrorBoundaryConfig() {
+  return {
+    getDerivedStateFromError: (error: any): ErrorBoundaryState => {
       const paymentError = error instanceof PaymentError 
         ? error 
         : PaymentErrorHandler.createError(PaymentErrorType.UNKNOWN_ERROR);
@@ -345,19 +348,13 @@ export function createErrorBoundary(fallbackComponent: React.ComponentType<{ err
       });
       
       return { error: paymentError };
-    }
-
-    retry = () => {
-      this.setState({ error: null });
-    };
-
-    render() {
-      if (this.state.error) {
-        const FallbackComponent = fallbackComponent;
-        return <FallbackComponent error={this.state.error} retry={this.retry} />;
-      }
-
-      return this.props.children;
+    },
+    
+    logError: (error: PaymentError, errorInfo: any) => {
+      PaymentErrorHandler.logError(error, {
+        component: 'PaymentErrorBoundary',
+        errorInfo,
+      });
     }
   };
 }

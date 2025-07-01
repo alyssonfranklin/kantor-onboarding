@@ -1,7 +1,7 @@
 // Trial management system for proactive email notifications
 // This system sends reminder emails at different intervals before trial expiration
 
-import { connectToDatabase } from '@/lib/mongodb/connect';
+import { dbConnect } from '@/lib/mongodb/connect';
 import User from '@/lib/mongodb/models/user.model';
 import SubscriptionHistory from '@/lib/mongodb/models/subscription-history.model';
 import { sendSubscriptionEmail } from '@/lib/email/subscription-emails';
@@ -18,7 +18,7 @@ interface TrialReminder {
 // Function to check and send trial reminders
 export async function checkAndSendTrialReminders(): Promise<void> {
   try {
-    await connectToDatabase();
+    await dbConnect();
 
     const now = new Date();
     const sevenDaysFromNow = new Date(now.getTime() + (7 * 24 * 60 * 60 * 1000));
@@ -123,7 +123,7 @@ async function sendTrialReminder(reminder: TrialReminder, user: any): Promise<vo
 // Function to handle trial expiration (convert to paid or cancel)
 export async function processTrialExpirations(): Promise<void> {
   try {
-    await connectToDatabase();
+    await dbConnect();
 
     const now = new Date();
 
@@ -190,7 +190,7 @@ export async function getTrialStatus(userId: string): Promise<{
   conversionReady: boolean;
 }> {
   try {
-    await connectToDatabase();
+    await dbConnect();
 
     const user = await User.findOne({ id: userId }).select(
       'subscription_status trial_end_date stripe_customer_id subscription_id'
@@ -237,7 +237,7 @@ export async function getTrialStatus(userId: string): Promise<{
 // Function to extend trial (if allowed)
 export async function extendTrial(userId: string, additionalDays: number = 7): Promise<boolean> {
   try {
-    await connectToDatabase();
+    await dbConnect();
 
     const user = await User.findOne({ id: userId });
     if (!user || user.subscription_status !== 'trial') {

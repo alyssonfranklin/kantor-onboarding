@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { connectToDatabase } from '@/lib/mongodb/connect';
+import { dbConnect } from '@/lib/mongodb/connect';
 import { withAuth } from '@/lib/middleware/auth';
 import { getTrialStatus, extendTrial } from '@/lib/stripe/trial-management';
 
@@ -7,7 +7,7 @@ import { getTrialStatus, extendTrial } from '@/lib/stripe/trial-management';
 export async function GET(request: NextRequest) {
   return withAuth(request, async (req, { userId }) => {
     try {
-      await connectToDatabase();
+      await dbConnect();
 
       const trialStatus = await getTrialStatus(userId);
 
@@ -35,7 +35,7 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   return withAuth(request, async (req, { userId }) => {
     try {
-      await connectToDatabase();
+      await dbConnect();
 
       const body = await request.json();
       const { action, additionalDays } = body;

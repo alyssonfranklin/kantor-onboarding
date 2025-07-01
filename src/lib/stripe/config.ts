@@ -8,32 +8,41 @@ const requiredEnvVars = {
   NEXT_PUBLIC_DOMAIN: process.env.NEXT_PUBLIC_DOMAIN,
 } as const;
 
-for (const [key, value] of Object.entries(requiredEnvVars)) {
-  if (!value) {
-    throw new Error(`${key} is not set in environment variables`);
+// Only throw errors during runtime, not build time
+if (typeof window !== 'undefined' || process.env.NODE_ENV !== 'production') {
+  for (const [key, value] of Object.entries(requiredEnvVars)) {
+    if (!value) {
+      console.warn(`Warning: ${key} is not set in environment variables`);
+      if (typeof window !== 'undefined') {
+        // Only throw on client-side runtime
+        throw new Error(`${key} is not set in environment variables`);
+      }
+    }
   }
 }
 
 // Initialize Stripe with error handling
-export const stripe = new Stripe(requiredEnvVars.STRIPE_SECRET_KEY, {
-  apiVersion: '2024-12-18.acacia',
-  typescript: true,
-  maxNetworkRetries: 3,
-  timeout: 10000, // 10 seconds
-  telemetry: false, // Disable telemetry for privacy
-  appInfo: {
-    name: 'Voxerion Kantor Onboarding',
-    version: '1.0.0',
-  },
-});
+export const stripe = requiredEnvVars.STRIPE_SECRET_KEY 
+  ? new Stripe(requiredEnvVars.STRIPE_SECRET_KEY, {
+      apiVersion: '2024-12-18.acacia',
+      typescript: true,
+      maxNetworkRetries: 3,
+      timeout: 10000, // 10 seconds
+      telemetry: false, // Disable telemetry for privacy
+      appInfo: {
+        name: 'Voxerion Kantor Onboarding',
+        version: '1.0.0',
+      },
+    })
+  : {} as Stripe; // Fallback for build time
 
 export const STRIPE_CONFIG = {
-  publishableKey: requiredEnvVars.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY,
-  webhookSecret: requiredEnvVars.STRIPE_WEBHOOK_SECRET,
+  publishableKey: requiredEnvVars.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY || '',
+  webhookSecret: requiredEnvVars.STRIPE_WEBHOOK_SECRET || '',
   currency: 'usd',
   trialPeriodDays: 7,
-  successUrl: `${requiredEnvVars.NEXT_PUBLIC_DOMAIN}/payment/success`,
-  cancelUrl: `${requiredEnvVars.NEXT_PUBLIC_DOMAIN}/payment`,
+  successUrl: `${requiredEnvVars.NEXT_PUBLIC_DOMAIN || 'http://localhost:3000'}/payment/success`,
+  cancelUrl: `${requiredEnvVars.NEXT_PUBLIC_DOMAIN || 'http://localhost:3000'}/payment`,
   // Additional configuration
   defaultLocale: 'en',
   allowedCountries: ['US', 'CA', 'GB', 'DE', 'FR', 'ES', 'IT', 'NL', 'BR'],

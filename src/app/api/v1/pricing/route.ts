@@ -1,12 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { connectToDatabase } from '@/lib/mongodb/connect';
+import { dbConnect } from '@/lib/mongodb/connect';
 import Price from '@/lib/mongodb/models/price.model';
 import Insight from '@/lib/mongodb/models/insight.model';
 
 // GET /api/v1/pricing - Get pricing tiers (synced from Stripe)
 export async function GET(request: NextRequest) {
   try {
-    await connectToDatabase();
+    await dbConnect();
 
     const { searchParams } = new URL(request.url);
     const billingPeriod = searchParams.get('billing_period') || 'monthly';
@@ -85,7 +85,7 @@ export async function GET(request: NextRequest) {
 // POST /api/v1/pricing - Create or update pricing
 export async function POST(request: NextRequest) {
   try {
-    await connectToDatabase();
+    await dbConnect();
 
     const body = await request.json();
     const { kantor_version, price_value, currency_id, billing_period, stripe_price_id } = body;

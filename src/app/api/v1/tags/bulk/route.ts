@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { withAuth } from '@/lib/middleware/auth';
-import { connectToDatabase } from '@/lib/mongodb/connect';
+import { dbConnect } from '@/lib/mongodb/connect';
 import Tag from '@/lib/mongodb/models/tag.model';
 import { v4 as uuidv4 } from 'uuid';
 
@@ -8,7 +8,7 @@ import { v4 as uuidv4 } from 'uuid';
 export async function POST(request: NextRequest) {
   return withAuth(request, async (req, { userId, companyId }) => {
     try {
-      await connectToDatabase();
+      await dbConnect();
 
       const body = await request.json();
       const { operation, data } = body;
@@ -61,7 +61,7 @@ export async function POST(request: NextRequest) {
 export async function DELETE(request: NextRequest) {
   return withAuth(request, async (req, { companyId }) => {
     try {
-      await connectToDatabase();
+      await dbConnect();
 
       const body = await request.json();
       const { tag_ids } = body;

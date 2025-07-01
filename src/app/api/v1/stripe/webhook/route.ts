@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { stripe, STRIPE_CONFIG } from '@/lib/stripe/config';
-import { connectToDatabase } from '@/lib/mongodb/connect';
+import { dbConnect } from '@/lib/mongodb/connect';
 import Subscription from '@/lib/mongodb/models/subscription.model';
 import Payment from '@/lib/mongodb/models/payment.model';
 import Company from '@/lib/mongodb/models/company.model';
@@ -8,7 +8,7 @@ import { v4 as uuidv4 } from 'uuid';
 
 export async function POST(request: NextRequest) {
   try {
-    await connectToDatabase();
+    await dbConnect();
 
     const body = await request.text();
     const signature = request.headers.get('stripe-signature');

@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { withAuth } from '@/lib/middleware/auth';
-import { connectToDatabase } from '@/lib/mongodb/connect';
+import { dbConnect } from '@/lib/mongodb/connect';
 import Tag from '@/lib/mongodb/models/tag.model';
 import { v4 as uuidv4 } from 'uuid';
 
@@ -8,7 +8,7 @@ import { v4 as uuidv4 } from 'uuid';
 export async function GET(request: NextRequest) {
   return withAuth(request, async (req, { userId, companyId }) => {
     try {
-      await connectToDatabase();
+      await dbConnect();
 
       const { searchParams } = new URL(request.url);
       const targetUserId = searchParams.get('userId');
@@ -43,7 +43,7 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   return withAuth(request, async (req, { userId, companyId }) => {
     try {
-      await connectToDatabase();
+      await dbConnect();
 
       const body = await request.json();
       const { user_id, tag_name, tag_color } = body;

@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { stripe, handleStripeError } from '@/lib/stripe/config';
-import { connectToDatabase } from '@/lib/mongodb/connect';
+import { dbConnect } from '@/lib/mongodb/connect';
 import { withAuth } from '@/lib/middleware/auth';
 import User from '@/lib/mongodb/models/user.model';
 import Subscription from '@/lib/mongodb/models/subscription.model';
@@ -11,7 +11,7 @@ import Insight from '@/lib/mongodb/models/insight.model';
 export async function GET(request: NextRequest) {
   return withAuth(request, async (req, { userId, companyId }) => {
     try {
-      await connectToDatabase();
+      await dbConnect();
 
       // Get user with subscription details
       const user = await User.findOne({ id: userId }).select('-password');

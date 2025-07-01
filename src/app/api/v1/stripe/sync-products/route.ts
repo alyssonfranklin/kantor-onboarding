@@ -1,13 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { stripe } from '@/lib/stripe/config';
-import { connectToDatabase } from '@/lib/mongodb/connect';
+import { dbConnect } from '@/lib/mongodb/connect';
 import Price from '@/lib/mongodb/models/price.model';
 import Insight from '@/lib/mongodb/models/insight.model';
 
 // GET /api/v1/stripe/sync-products - Sync Stripe products with local database
 export async function GET(request: NextRequest) {
   try {
-    await connectToDatabase();
+    await dbConnect();
 
     // Fetch all products from Stripe
     const products = await stripe.products.list({

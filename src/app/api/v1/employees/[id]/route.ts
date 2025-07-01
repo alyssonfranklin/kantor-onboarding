@@ -6,13 +6,14 @@ import { withAuth } from '@/lib/middleware/auth';
 // GET /api/employees/[id]
 export async function GET(
   req: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   return withAuth(req, async (req, user) => {
     await dbConnect();
+    const { id } = await params;
     
     try {
-      const employee = await Employee.findOne({ employee_id: params.id });
+      const employee = await Employee.findOne({ employee_id: id });
       
       if (!employee) {
         return NextResponse.json(
@@ -46,16 +47,17 @@ export async function GET(
 // PUT /api/employees/[id]
 export async function PUT(
   req: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   return withAuth(req, async (req, user) => {
     await dbConnect();
+    const { id } = await params;
     
     try {
       const body = await req.json();
       
       // Find the employee first to check permissions
-      const employee = await Employee.findOne({ employee_id: params.id });
+      const employee = await Employee.findOne({ employee_id: id });
       
       if (!employee) {
         return NextResponse.json(
@@ -74,7 +76,7 @@ export async function PUT(
       
       // Update the employee
       const updatedEmployee = await Employee.findOneAndUpdate(
-        { employee_id: params.id },
+        { employee_id: id },
         { 
           $set: {
             ...body,
@@ -102,14 +104,14 @@ export async function PUT(
 // DELETE /api/employees/[id]
 export async function DELETE(
   req: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   return withAuth(req, async (req, user) => {
     await dbConnect();
     
     try {
       // Find the employee first to check permissions
-      const employee = await Employee.findOne({ employee_id: params.id });
+      const employee = await Employee.findOne({ employee_id: id });
       
       if (!employee) {
         return NextResponse.json(
@@ -130,7 +132,7 @@ export async function DELETE(
       }
       
       // Delete the employee
-      await Employee.deleteOne({ employee_id: params.id });
+      await Employee.deleteOne({ employee_id: id });
       
       return NextResponse.json({
         success: true,

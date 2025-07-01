@@ -1,12 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { withAuth } from '@/lib/middleware/auth';
-import { connectToDatabase } from '@/lib/mongodb/connect';
+import { dbConnect } from '@/lib/mongodb/connect';
 import User from '@/lib/mongodb/models/user.model';
 
 export async function GET(request: NextRequest) {
   return withAuth(request, async (req, { companyId }) => {
     try {
-      await connectToDatabase();
+      await dbConnect();
 
       // Aggregate pipeline to count employees and leaders per department
       const departmentStats = await User.aggregate([

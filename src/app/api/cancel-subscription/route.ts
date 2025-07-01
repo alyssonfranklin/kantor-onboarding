@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { stripe, handleStripeError } from '@/lib/stripe/config';
-import { connectToDatabase } from '@/lib/mongodb/connect';
+import { dbConnect } from '@/lib/mongodb/connect';
 import { withAuth } from '@/lib/middleware/auth';
 import User from '@/lib/mongodb/models/user.model';
 import Subscription from '@/lib/mongodb/models/subscription.model';
@@ -17,7 +17,7 @@ interface CancelSubscriptionRequest {
 export async function POST(request: NextRequest) {
   return withAuth(request, async (req, { userId, companyId }) => {
     try {
-      await connectToDatabase();
+      await dbConnect();
 
       const body: CancelSubscriptionRequest = await request.json();
       const { immediately = false, reason, feedback } = body;
@@ -182,7 +182,7 @@ export async function POST(request: NextRequest) {
 export async function GET(request: NextRequest) {
   return withAuth(request, async (req, { userId }) => {
     try {
-      await connectToDatabase();
+      await dbConnect();
 
       const { searchParams } = new URL(request.url);
       const immediately = searchParams.get('immediately') === 'true';

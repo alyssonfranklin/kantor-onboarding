@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { stripe, STRIPE_CONFIG, handleStripeError } from '@/lib/stripe/config';
-import { connectToDatabase } from '@/lib/mongodb/connect';
+import { dbConnect } from '@/lib/mongodb/connect';
 import { withAuth } from '@/lib/middleware/auth';
 import User from '@/lib/mongodb/models/user.model';
 import Price from '@/lib/mongodb/models/price.model';
@@ -19,7 +19,7 @@ interface CreateCheckoutSessionRequest {
 export async function POST(request: NextRequest) {
   return withAuth(request, async (req, { userId, companyId }) => {
     try {
-      await connectToDatabase();
+      await dbConnect();
 
       const body: CreateCheckoutSessionRequest = await request.json();
       const { priceId, planId, billingPeriod, successUrl, cancelUrl } = body;
@@ -234,7 +234,7 @@ export async function POST(request: NextRequest) {
 export async function GET(request: NextRequest) {
   return withAuth(request, async (req, { userId }) => {
     try {
-      await connectToDatabase();
+      await dbConnect();
 
       const { searchParams } = new URL(request.url);
       const sessionId = searchParams.get('sessionId');

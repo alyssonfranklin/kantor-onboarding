@@ -1,11 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { stripe } from '@/lib/stripe/config';
-import { connectToDatabase } from '@/lib/mongodb/connect';
+import { dbConnect } from '@/lib/mongodb/connect';
 import Subscription from '@/lib/mongodb/models/subscription.model';
 
 export async function GET(request: NextRequest) {
   try {
-    await connectToDatabase();
+    await dbConnect();
 
     const { searchParams } = new URL(request.url);
     const sessionId = searchParams.get('session_id');

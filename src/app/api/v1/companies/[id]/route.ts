@@ -6,21 +6,22 @@ import { withAuth } from '@/lib/middleware/auth';
 // GET /api/companies/[id]
 export async function GET(
   req: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   return withAuth(req, async (req, user) => {
     await dbConnect();
+    const { id } = await params;
     
     try {
       // Validate authorization - users can only access their own company unless admin
-      if (user.company_id !== params.id && user.role !== 'admin') {
+      if (user.company_id !== id && user.role !== 'admin') {
         return NextResponse.json(
           { success: false, message: 'Unauthorized' },
           { status: 403 }
         );
       }
       
-      const company = await Company.findOne({ company_id: params.id });
+      const company = await Company.findOne({ company_id: id });
       
       if (!company) {
         return NextResponse.json(
@@ -46,16 +47,17 @@ export async function GET(
 // PUT /api/companies/[id]
 export async function PUT(
   req: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   return withAuth(req, async (req, user) => {
     await dbConnect();
+    const { id } = await params;
     
     try {
       const body = await req.json();
       
       // Only admins or company administrators can update company details
-      if (user.company_id !== params.id && user.role !== 'admin') {
+      if (user.company_id !== id && user.role !== 'admin') {
         return NextResponse.json(
           { success: false, message: 'Unauthorized to update this company' },
           { status: 403 }
@@ -64,7 +66,7 @@ export async function PUT(
       
       // Find and update the company
       const updatedCompany = await Company.findOneAndUpdate(
-        { company_id: params.id },
+        { company_id: id },
         { 
           $set: {
             ...body,
@@ -99,10 +101,11 @@ export async function PUT(
 // DELETE /api/companies/[id]
 export async function DELETE(
   req: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   return withAuth(req, async (req, user) => {
     await dbConnect();
+    const { id } = await params;
     
     try {
       // Only admins can delete companies
@@ -113,7 +116,7 @@ export async function DELETE(
         );
       }
       
-      const result = await Company.deleteOne({ company_id: params.id });
+      const result = await Company.deleteOne({ company_id: id });
       
       if (result.deletedCount === 0) {
         return NextResponse.json(

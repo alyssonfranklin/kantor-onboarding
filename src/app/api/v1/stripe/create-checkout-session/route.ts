@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { stripe, STRIPE_CONFIG } from '@/lib/stripe/config';
-import { connectToDatabase } from '@/lib/mongodb/connect';
+import { dbConnect } from '@/lib/mongodb/connect';
 import { withAuth } from '@/lib/middleware/auth';
 import Subscription from '@/lib/mongodb/models/subscription.model';
 import User from '@/lib/mongodb/models/user.model';
@@ -9,7 +9,7 @@ import { v4 as uuidv4 } from 'uuid';
 export async function POST(request: NextRequest) {
   return withAuth(request, async (req, { userId, companyId }) => {
     try {
-      await connectToDatabase();
+      await dbConnect();
 
       const body = await request.json();
       const { priceId, kantor_version, billing_period } = body;

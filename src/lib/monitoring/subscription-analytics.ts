@@ -1,7 +1,7 @@
 // Subscription analytics and monitoring system
 // Following reference repository monitoring patterns
 
-import { connectToDatabase } from '@/lib/mongodb/connect';
+import { dbConnect } from '@/lib/mongodb/connect';
 import SubscriptionHistory from '@/lib/mongodb/models/subscription-history.model';
 import User from '@/lib/mongodb/models/user.model';
 import Subscription from '@/lib/mongodb/models/subscription.model';
@@ -100,7 +100,7 @@ export class SubscriptionAnalytics {
     endDate?: Date
   ): Promise<SubscriptionMetrics> {
     try {
-      await connectToDatabase();
+      await dbConnect();
 
       const now = new Date();
       const start = startDate || new Date(now.getFullYear(), now.getMonth(), 1);
@@ -269,7 +269,7 @@ export class SubscriptionAnalytics {
 
     try {
       // Database connectivity
-      await connectToDatabase();
+      await dbConnect();
       checks.database = true;
 
       // Stripe API connectivity
