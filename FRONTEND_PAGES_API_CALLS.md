@@ -7,7 +7,7 @@ This document provides a comprehensive analysis of all frontend pages and their 
 **Total Pages Analyzed**: 20  
 **Pages with API Calls**: 14  
 **Pages without API Calls**: 6  
-**Total Unique API Endpoints**: 17  
+**Total Unique API Endpoints**: 18  
 **Authentication Protected Pages**: 12  
 
 ---
@@ -771,13 +771,72 @@ Currently uses hardcoded company and employee leader data. Real API integration 
 
 ---
 
+## 📊 **Statistics & Analytics Endpoints**
+
+### 📈 **Department Statistics**
+**URL**: `GET /api/v1/users/department-stats`
+
+#### **API Call Details**:
+
+**Authentication**: ✅ Required (JWT token)
+
+**Purpose**: Count employees and leaders per department for the authenticated user's company
+
+**Response Format**:
+```json
+{
+  "success": true,
+  "data": [
+    {
+      "department": "Engineering",
+      "totalEmployees": 15,
+      "leaders": 2
+    },
+    {
+      "department": "Marketing", 
+      "totalEmployees": 8,
+      "leaders": 1
+    },
+    {
+      "department": "Sales",
+      "totalEmployees": 12,
+      "leaders": 3
+    }
+  ]
+}
+```
+
+#### **Key Features**:
+- ✅ **Company Scoped**: Only returns data for the authenticated user's company
+- ✅ **Employee Counting**: Total employees per department
+- ✅ **Leader Identification**: Counts users where `id` equals `reports_to` (self-reporting leaders)
+- ✅ **Sorted Results**: Departments sorted alphabetically
+- ✅ **Aggregation Pipeline**: Uses MongoDB aggregation for efficient querying
+- ✅ **Error Handling**: Comprehensive error responses with proper status codes
+
+#### **Business Logic**:
+- **Employee Count**: All users assigned to each department
+- **Leader Definition**: Users where their `user.id` matches their `user.reports_to` field
+- **Company Isolation**: Results filtered by the user's `company_id` for security
+- **Performance**: Single database query using aggregation pipeline
+
+#### **Usage Scenarios**:
+- Management dashboards showing organizational structure
+- HR analytics and reporting
+- Department head identification
+- Organizational charts and statistics
+- Resource allocation planning
+
+---
+
 ## 📊 **API Usage Summary**
 
 ### **Most Used Endpoints**:
 1. `POST /api/v1/admin/verify-password` - Used by 8 admin pages
 2. `POST /api/v1/add-user` - Used by 4 different creation flows
 3. `GET /api/v1/users` - Used by admin dashboard and department creation
-4. Authentication endpoints - Used across multiple pages
+4. `GET /api/v1/users/department-stats` - Analytics endpoint for organizational statistics
+5. Authentication endpoints - Used across multiple pages
 
 ### **Authentication Patterns**:
 - **Admin Protection**: 8 pages use `PasswordProtection` component
@@ -808,6 +867,12 @@ Currently uses hardcoded company and employee leader data. Real API integration 
 ---
 
 ## 🔄 **Update History**
+
+- **2025-07-01**: Added department statistics endpoint
+  - New endpoint: `GET /api/v1/users/department-stats`
+  - Added `reports_to` field to User model for leader identification
+  - Updated total unique API endpoints to 18
+  - Enhanced analytics capabilities for organizational insights
 
 - **2025-06-17**: Initial comprehensive documentation created
   - Analyzed 20 frontend pages
