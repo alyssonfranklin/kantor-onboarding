@@ -58,7 +58,7 @@ export default function Pillars(
               placeholder="Explain Voxerion what is yours company Mission"
               value={setupData.mission}
               onChange={handleChange}
-              className="border-[#D0D5DD] placeholder:text-[#667085] bg-white"
+              className="text-black border-[#D0D5DD] placeholder:text-[#667085] bg-white"
               required={true}
               name="mission"
             />
@@ -69,7 +69,7 @@ export default function Pillars(
               placeholder="Explain Voxerion what is yours company Vision"
               value={setupData.vision}
               onChange={handleChange}
-              className="border-[#D0D5DD] placeholder:text-[#667085] bg-white"
+              className="text-black border-[#D0D5DD] placeholder:text-[#667085] bg-white"
               required={true}
               name="vision"
             />
@@ -80,7 +80,7 @@ export default function Pillars(
               placeholder="What are the Core Values of your company?"
               value={setupData.coreValues}
               onChange={handleChange}
-              className="border-[#D0D5DD] placeholder:text-[#667085] bg-white"
+              className="text-black border-[#D0D5DD] placeholder:text-[#667085] bg-white"
               required={true}
               name="coreValues"
             />

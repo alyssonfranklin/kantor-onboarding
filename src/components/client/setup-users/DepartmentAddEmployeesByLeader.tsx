@@ -1,8 +1,10 @@
+import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
 import Input from '@/components/ui/input';
+import { useAuth } from '@/lib/auth/hooks';
 import Image from 'next/image'
 import Link from 'next/link';
-import React, { useState } from 'react'
+import React, { useCallback, useEffect, useState } from 'react'
 
 interface Employee {
   name: string;
@@ -11,14 +13,22 @@ interface Employee {
 }
 
 export default function DepartmentAddEmployeesByLeader(
-  { leader, employees, addEmployeesToLeader }
+  { leader, employees, addEmployeesToLeader, departmentName }
 ) {
+
+  const { user } = useAuth();
 
   const [error, setError] = useState('');
   const [localEmployees, setLocalEmployees] = useState(employees);
+  const [first, setFirst] = useState(true);
+  const [defaultPassword, setDefaultPassword] = useState('');
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [contactsError, setContactsError] = useState<
+    Array<{ success: boolean; contact: any; error?: any }> | null
+  >(null);
 
   const addEmployee = () => {
-    setLocalEmployees([...localEmployees, { name: '', email: '', role: '' }]);
+    setLocalEmployees([...localEmployees, { name: '', email: '', role: '', saved: false }]);
   };
 
   const handleRemoveEmployee = (index: number) => {
@@ -32,7 +42,7 @@ export default function DepartmentAddEmployeesByLeader(
     setLocalEmployees(updated);
   };
 
-  const handleContinue = () => {
+  const handleContinue = async () => {
     if (
       localEmployees.length === 0 ||
       localEmployees.some(
@@ -45,9 +55,98 @@ export default function DepartmentAddEmployeesByLeader(
       setError('Please add at least one employee and fill in all fields (name, email, role) for each.');
       return;
     }
-    addEmployeesToLeader(localEmployees);
+
     setError('');
+    const results = [];
+    setContactsError(null);
+    for (const employee of localEmployees) {
+      console.log('for of employee: ', employee);
+      if (!employee.saved) {
+        const data = {
+          email: employee.email,
+          name: employee.name,
+          company_id: user?.company_id,
+          password: defaultPassword,
+          role: 'user',
+          company_role: employee.role,
+          department: departmentName
+        };
+        setIsSubmitting(true);
+        const response = await fetch('/api/v1/users', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify(data)
+        });
+        setIsSubmitting(false);
+
+        const responseData = await response.json();
+
+        console.log('add employee responseData: ', responseData);
+
+        if (!response.ok) {
+          results.push(
+            {
+              success: false,
+              contact: employee,
+              error: responseData.message
+            }
+          );
+        } else {
+
+          setLocalEmployees((prev) =>
+            prev.map((c) =>
+              c.email === employee.email ? { ...c, saved: true } : c
+            )
+          );
+
+          results.push(
+            {
+              success: true,
+              contact: responseData.data
+            }
+          );
+        }
+
+        const failedContacts = results.filter(r => r.success === false);
+
+        if (failedContacts.length > 0) {
+          setContactsError(failedContacts);
+          return;
+        }
+      }
+    }
+    addEmployeesToLeader(localEmployees);
   };
+
+  const getDefaultClientPassword = useCallback(
+    async () => {
+      const response = await fetch('/api/v1/auth/default-password', {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+        }
+      });
+
+      const responseData = await response.json();
+
+      if (!response.ok) {
+        setError(responseData.error || 'Ocurrió un error al obtener la configuración');
+        return;
+      }
+
+      setDefaultPassword(responseData.defaultClientPassword);
+    },
+    [],
+  )
+
+  useEffect(() => {
+    if (first) {
+      setFirst(false);
+      getDefaultClientPassword();
+    }
+  }, [first, getDefaultClientPassword]);
 
   return (
     <div className="bg-white border-gray-200">
@@ -80,9 +179,20 @@ export default function DepartmentAddEmployeesByLeader(
           
 
           {error && (
-            <div className="bg-transparent border border-red-400 text-red-700 px-4 py-1 rounded relative my-2 text-center" role="alert">
-              <span className="block sm:inline">{error}</span>
-            </div>
+            <Alert variant="destructive">
+              <AlertDescription>{error}</AlertDescription>
+            </Alert>
+          )}
+
+          {contactsError && (
+            <Alert variant="destructive">
+              { contactsError && contactsError.map((r, index) => (
+                <AlertDescription key={index}>
+                  {r.contact.email}: {r.error}
+                </AlertDescription>
+              ))
+            }
+            </Alert>
           )}
 
           <div className="mt-4">
@@ -96,7 +206,7 @@ export default function DepartmentAddEmployeesByLeader(
                   placeholder="Name"
                   value={employee.name}
                   onChange={(e) => handleChangeEmployee(index, 'name', e.target.value)}
-                  className="border-[#D0D5DD] placeholder:text-[#667085] bg-white flex-1"
+                  className="border-[#D0D5DD] placeholder:text-[#667085] bg-white text-black flex-1"
                   required={true}
                   name="name"
                 />
@@ -114,7 +224,7 @@ export default function DepartmentAddEmployeesByLeader(
                     placeholder="you@mycompany.com"
                     value={employee.email}
                     onChange={(e) => handleChangeEmployee(index, 'email', e.target.value)}
-                    className="border-[#D0D5DD] placeholder:text-[#667085] bg-white pl-10 w-full"
+                    className="border-[#D0D5DD] placeholder:text-[#667085] bg-white text-black pl-10 w-full"
                     required={true}
                     name="leaderEmail"
                     type="email"
@@ -124,7 +234,7 @@ export default function DepartmentAddEmployeesByLeader(
                   placeholder="Role"
                   value={employee.role}
                   onChange={(e) => handleChangeEmployee(index, 'role', e.target.value)}
-                  className="border-[#D0D5DD] placeholder:text-[#667085] bg-white flex-1"
+                  className="border-[#D0D5DD] placeholder:text-[#667085] bg-white text-black flex-1"
                   required={true}
                   name="role"
                 />

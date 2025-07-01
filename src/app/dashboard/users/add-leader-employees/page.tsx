@@ -41,6 +41,7 @@ export default function UsersLeaderEmployeesAddPage() {
   const addEmployeesToLeader = (theEmployees) => {
     console.log('theEmployees: ', theEmployees);
     setEmployees(theEmployees);
+
     handleNext();
   };
 
@@ -71,6 +72,7 @@ export default function UsersLeaderEmployeesAddPage() {
             leader={leaderSelected}
             employees={employees}
             addEmployeesToLeader={addEmployeesToLeader}
+            departmentName={'General'}
           />
         </div>
       }

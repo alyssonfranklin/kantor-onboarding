@@ -2,8 +2,11 @@ import { Button } from '@/components/ui/button';
 import Input from '@/components/ui/input';
 import Image from 'next/image';
 import Link from 'next/link';
-import React, { useEffect, useState } from 'react'
+import React, { useCallback, useEffect, useState } from 'react'
 import { v4 as uuidv4 } from 'uuid';
+import ModalLoader from '../ModalLoader';
+import { Alert, AlertDescription } from '@/components/ui/alert';
+import { useAuth } from '@/lib/auth/hooks';
 
 interface Leader {
   name: string;
@@ -12,17 +15,94 @@ interface Leader {
 }
 
 export default function DepartmentAddLeaders(
-  { leaders, onLeadersChange, onNext, title, handleBatchProcessingClick }
+  { leaders, onLeadersChange, onNext, title, handleBatchProcessingClick, departmentName }
 ) {
 
-  const [error, setError] = useState('');
-  const [localLeaders, setLocalLeaders] = useState(leaders);
+  const { user } = useAuth();
 
-  const handleNextClick = () => {
+  const [error, setError] = useState('');
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [localLeaders, setLocalLeaders] = useState(leaders);
+  const [defaultPassword, setDefaultPassword] = useState('');
+  const [first, setFirst] = useState(true);
+  const [contactsError, setContactsError] = useState<
+      Array<{ success: boolean; contact: any; error?: any }> | null
+    >(null);
+
+  const handleNextClick = async () => {
     if (localLeaders.length === 0) {
       setError('At least one leader is required!');
       return;
     }
+
+    const hasEmptyFields = localLeaders.some(
+      (leader) => !leader.name.trim() || !leader.email.trim() || !leader.role.trim()
+    );
+    if (hasEmptyFields) {
+      setError('Each leader must have a name, email, and role.');
+      return;
+    }
+
+    const results = [];
+    setContactsError([]);
+    for (const leader of localLeaders) {
+      console.log('for of leader: ', leader);
+      if (!leader.saved) {
+        const data = {
+          email: leader.email,
+          name: leader.name,
+          company_id: user?.company_id,
+          password: defaultPassword,
+          role: 'user',
+          company_role: leader.role,
+          department: departmentName
+        };
+        setIsSubmitting(true);
+        const response = await fetch('/api/v1/users', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify(data)
+        });
+        setIsSubmitting(false);
+
+        const responseData = await response.json();
+
+        if (!response.ok) {
+          results.push(
+            {
+              success: false,
+              contact: leader,
+              error: responseData.message
+            }
+          );
+        } else {
+
+          setLocalLeaders((prev) =>
+            prev.map((c) =>
+              c.email === leader.email ? { ...c, saved: true } : c
+            )
+          );
+
+          results.push(
+            {
+              success: true,
+              contact: responseData.data
+            }
+          );
+        }
+
+        const failedContacts = results.filter(r => r.success === false);
+
+        if (failedContacts.length > 0) {
+          setContactsError(failedContacts);
+          return;
+        }
+      }
+      
+    }
+    
     onNext();
   };
 
@@ -42,12 +122,45 @@ export default function DepartmentAddLeaders(
     setLocalLeaders(updated);
   };
 
+  const getDefaultClientPassword = useCallback(
+    async () => {
+      const response = await fetch('/api/v1/auth/default-password', {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+        }
+      });
+
+      const responseData = await response.json();
+
+      if (!response.ok) {
+        setError(responseData.error || 'Ocurrió un error al obtener la configuración');
+        return;
+      }
+
+      setDefaultPassword(responseData.defaultClientPassword);
+    },
+    [],
+  )
+
   useEffect(() => {
     onLeadersChange(localLeaders);
-  }, [localLeaders]);
+    if (first) {
+      setFirst(false);
+      getDefaultClientPassword();
+    }
+  }, [first, getDefaultClientPassword, localLeaders]);
 
   return (
     <div className="bg-white border-gray-200">
+
+      {
+        isSubmitting &&
+        <ModalLoader
+          message="Guardando"
+        />
+      }
+
       <div className="max-w-screen-xl flex flex-wrap justify-center mx-auto px-4">
         <div className="w-full">
           <div className="flex justify-center">
@@ -76,9 +189,20 @@ export default function DepartmentAddLeaders(
           </div>
 
           {error && (
-            <div className="bg-transparent border border-red-400 text-red-700 px-4 py-1 rounded relative my-2 text-center" role="alert">
-              <span className="block sm:inline">{error}</span>
-            </div>
+            <Alert variant="destructive">
+              <AlertDescription>{error}</AlertDescription>
+            </Alert>
+          )}
+
+          {contactsError && (
+            <Alert variant="destructive">
+              { contactsError && contactsError.map((r, index) => (
+                <AlertDescription key={index}>
+                  {r.contact.email}: {r.error}
+                </AlertDescription>
+              ))
+            }
+            </Alert>
           )}
 
           <div className="mt-4">
@@ -92,7 +216,7 @@ export default function DepartmentAddLeaders(
                   placeholder="Name"
                   value={leader.name}
                   onChange={(e) => handleChangeLeader(index, 'name', e.target.value)}
-                  className="border-[#D0D5DD] placeholder:text-[#667085] bg-white flex-1"
+                  className="border-[#D0D5DD] placeholder:text-[#667085] bg-white text-black flex-1"
                   required={true}
                   name="name"
                 />
@@ -110,7 +234,7 @@ export default function DepartmentAddLeaders(
                     placeholder="you@mycompany.com"
                     value={leader.email}
                     onChange={(e) => handleChangeLeader(index, 'email', e.target.value)}
-                    className="border-[#D0D5DD] placeholder:text-[#667085] bg-white pl-10 w-full"
+                    className="border-[#D0D5DD] placeholder:text-[#667085] bg-white text-black pl-10 w-full"
                     required={true}
                     name="leaderEmail"
                     type="email"
@@ -120,7 +244,7 @@ export default function DepartmentAddLeaders(
                   placeholder="Role"
                   value={leader.role}
                   onChange={(e) => handleChangeLeader(index, 'role', e.target.value)}
-                  className="border-[#D0D5DD] placeholder:text-[#667085] bg-white flex-1"
+                  className="border-[#D0D5DD] placeholder:text-[#667085] bg-white text-black flex-1"
                   required={true}
                   name="role"
                 />

@@ -64,6 +64,7 @@ export default function WelcomePage() {
         
         if (response.ok) {
           const result = await response.json();
+          console.log('response insights: ', result);
           if (result.success && result.data) {
             setInsightVersions(result.data);
             // Set default version to the first option if available

@@ -1,8 +1,11 @@
 import { Button } from '@/components/ui/button';
 import Input from '@/components/ui/input';
 import TextArea from '@/components/ui/textArea';
+import { useAuth } from '@/lib/auth/hooks';
 import Image from 'next/image';
-import React, { useEffect, useState } from 'react'
+import React, { useCallback, useEffect, useState } from 'react'
+import ModalLoader from '../ModalLoader';
+import { Alert, AlertDescription } from '@/components/ui/alert';
 
 interface Contact {
   name: string;
@@ -10,22 +13,150 @@ interface Contact {
 }
 
 export default function DepartmentAddDetails(
-  { setupData, updateSetupData, onNext, contacts, onContactsChange }
+  { setupData, updateSetupData, onNext, contacts, onContactsChange, onSetDepartment }
 ) {
 
-  const [error, setError] = useState('');
+  const { user } = useAuth();
+
   const [localContacts, setLocalContacts] = useState(contacts);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [error, setError] = useState('');
+  const [contactsError, setContactsError] = useState<
+    Array<{ success: boolean; contact: any; error?: any }> | null
+  >(null);
+  const [defaultPassword, setDefaultPassword] = useState('');
+  const [first, setFirst] = useState(true);
   
   const handleChange = (e) => {
     const { name, value } = e.target;
     updateSetupData({ [name]: value });
   };
 
-  const handleNextClick = () => {
-    if (!setupData.departmentName || !setupData.departmentRole || localContacts.length === 0) {
+  const saveHeadContact = useCallback(
+    async (theContact) => {
+
+      console.log('saveHeadContact theContact: ', theContact);
+      if (!theContact.saved) {
+        setIsSubmitting(true);
+        setError('');
+        const data = {
+          email: theContact.email,
+          name: theContact.name,
+          company_id: user?.company_id,
+          password: defaultPassword,
+          role: 'user',
+          company_role: 'Director'
+        };
+        const response = await fetch('/api/v1/users', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify(data)
+        });
+
+        setIsSubmitting(false);
+
+        const responseData = await response.json();
+
+        if (!response.ok) {
+          return {
+            success: false,
+            error: responseData.message
+          };
+        }
+
+        setLocalContacts((prev) =>
+          prev.map((c) =>
+            c.email === theContact.email ? { ...c, saved: true } : c
+          )
+        );
+
+        return {
+          success: true,
+          error: '',
+          contact: responseData.data
+        };
+      } else {
+        return {
+          success: true,
+          error: '',
+          contact: theContact
+        };
+      }
+    },
+    [defaultPassword, user?.company_id],
+  )
+  
+
+  const handleNextClick = async () => {
+    if (!setupData.departmentName || !setupData.departmentRole) {
       setError('All fields are required!');
       return;
     }
+
+    // for (const contact of localContacts) {
+    //   if (!contact.name || !contact.email) {
+    //     setError('Each contact must have a name and email.');
+    //     return;
+    //   }
+    // }
+
+    // const results = [];
+
+    // for (const contact of localContacts) {
+    //   const contactSaved = await saveHeadContact(contact);
+
+    //   if (!contactSaved.success) {
+    //     results.push(
+    //       {
+    //         success: false,
+    //         contact: contact,
+    //         error: contactSaved.error
+    //       }
+    //     );
+    //   } else {
+    //     results.push(
+    //       {
+    //         success: true,
+    //         contact: contactSaved.contact
+    //       }
+    //     );
+    //   }
+    // }
+
+    // const failedContacts = results.filter(r => r.success === false);
+
+    // if (failedContacts.length > 0) {
+    //   setContactsError(failedContacts);
+    //   return;
+    // }
+
+    const data = {
+      company_id: user?.company_id,
+      department_name: setupData.departmentName,
+      department_description: setupData.departmentRole
+    };
+    
+    setIsSubmitting(true);
+    setError('');
+    const response = await fetch('/api/v1/departments', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(data)
+    });
+
+    setIsSubmitting(false);
+
+    const responseData = await response.json();
+
+    if (!response.ok) {
+      setError(responseData.error || 'Ocurrió un error al guardar la información');
+      return;
+    }
+    onSetDepartment(responseData.data);
     onNext();
   };
 
@@ -44,12 +175,65 @@ export default function DepartmentAddDetails(
     setLocalContacts(updated);
   };
 
+  const getDefaultClientPassword = useCallback(
+    async () => {
+      const response = await fetch('/api/v1/auth/default-password', {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+        }
+      });
+
+      const responseData = await response.json();
+
+      console.log('responseData: ', responseData);
+
+      if (!response.ok) {
+        setError(responseData.error || 'Ocurrió un error al obtener la configuración');
+        return;
+      }
+
+      setDefaultPassword(responseData.defaultClientPassword);
+    },
+    [],
+  )
+  
+
   useEffect(() => {
     onContactsChange(localContacts);
-  }, [localContacts, onContactsChange]);
+    if (first) {
+      setFirst(false);
+      getDefaultClientPassword();
+    }
+  }, [first, getDefaultClientPassword, localContacts, onContactsChange]);
 
   return (
     <div className="bg-white border-gray-200">
+
+      {
+        isSubmitting &&
+        <ModalLoader
+          message="Guardando"
+        />
+      }
+
+      {error && (
+        <Alert variant="destructive">
+          <AlertDescription>{error}</AlertDescription>
+        </Alert>
+      )}
+
+      {contactsError && (
+        <Alert variant="destructive">
+          { contactsError && contactsError.map((r, index) => (
+            <AlertDescription key={index}>
+              {r.contact.email}: {r.error}
+            </AlertDescription>
+          ))
+        }
+        </Alert>
+      )}
+
       <div className="max-w-screen-xl flex flex-wrap justify-center mx-auto px-4">
         <div className="w-full">
           <div className="flex justify-center">
@@ -71,18 +255,12 @@ export default function DepartmentAddDetails(
             </div>
           </div>
 
-          {error && (
-            <div className="bg-transparent border border-red-400 text-red-700 px-4 py-1 rounded relative my-2 text-center" role="alert">
-              <span className="block sm:inline">{error}</span>
-            </div>
-          )}
-
           <div className="mt-4">
             <Input
               placeholder="Enter the department name"
               value={setupData.departmentName}
               onChange={handleChange}
-              className="border-[#D0D5DD] placeholder:text-[#667085] bg-white"
+              className="border-[#D0D5DD] placeholder:text-[#667085] bg-white text-black"
               required={true}
               name="departmentName"
             />
@@ -99,7 +277,7 @@ export default function DepartmentAddDetails(
             />
           </div>
 
-          <div className="mt-4">
+          {/* <div className="mt-4">
             <div className='w-full text-center text-[#475467]'>
               Who is the head of the Department?
             </div>
@@ -114,7 +292,7 @@ export default function DepartmentAddDetails(
                   placeholder="Name"
                   value={contact.name}
                   onChange={(e) => handleChangeContact(index, 'name', e.target.value)}
-                  className="border-[#D0D5DD] placeholder:text-[#667085] bg-white flex-1"
+                  className="border-[#D0D5DD] placeholder:text-[#667085] bg-white text-black flex-1"
                   required={true}
                   name="departmentHeadName"
                 />
@@ -132,7 +310,7 @@ export default function DepartmentAddDetails(
                     placeholder="you@mycompany.com"
                     value={contact.email}
                     onChange={(e) => handleChangeContact(index, 'email', e.target.value)}
-                    className="border-[#D0D5DD] placeholder:text-[#667085] bg-white pl-10 w-full"
+                    className="border-[#D0D5DD] placeholder:text-[#667085] bg-white text-black pl-10 w-full"
                     required={true}
                     name="departmentHeadEmail"
                     type="email"
@@ -172,7 +350,7 @@ export default function DepartmentAddDetails(
                 Add another
               </div>
             </div>
-          </div>
+          </div> */}
 
           <div className="py-4">
             <Button
