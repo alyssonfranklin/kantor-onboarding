@@ -13,14 +13,6 @@ import React, { useCallback, useEffect, useState } from 'react'
  */
 export default function UsersPage() {
 
-  // const users = [
-  //   { id: 1, name: 'Phoenix Baker', role: 'Sales', tags: ['Leadership', 'Assessment', 'Feedback', 'Sales'], assessment: 'Active', utilization: 75 },
-  //   { id: 2, name: 'Lana Steiner', role: 'IT', tags: ['Leadership', 'Assessment', 'Feedback', 'Sales'], assessment: 'Pending', utilization: 50 },
-  //   { id: 3, name: 'Candice Wu', role: 'Marketing', tags: ['Leadership', 'Assessment', 'Feedback', 'Sales'], assessment: 'Active', utilization: 80 },
-  //   { id: 4, name: 'Bob Brown', role: 'Human Resources', tags: ['Leadership', 'Assessment', 'Feedback', 'Sales'], assessment: 'Active', utilization: 60 },
-  //   { id: 5, name: 'Charlie White', role: 'Member', tags: ['Leadership', 'Assessment', 'Feedback', 'Sales'], assessment: 'Pending', utilization: 40 }
-  // ];
-
   const { user } = useAuth();
 
   const [users, setUsers] = useState([]);
