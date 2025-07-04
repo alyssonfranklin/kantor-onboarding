@@ -382,7 +382,8 @@ export default function AdminDashboardPage() {
 
   // Render tags component
   const renderTags = (tags: any[]) => {
-    if (!tags || tags.length === 0) {
+    // Handle undefined, null, or non-array tags
+    if (!tags || !Array.isArray(tags) || tags.length === 0) {
       return <span className="text-gray-500 text-sm italic">No tags</span>;
     }
 
@@ -392,15 +393,15 @@ export default function AdminDashboardPage() {
           <span
             key={index}
             className="inline-block px-2 py-1 text-xs font-medium rounded-full bg-blue-100 text-blue-800 border border-blue-200"
-            title={tag.tag_name}
+            title={tag?.tag_name || 'Unknown tag'}
           >
-            {tag.tag_name.length > 12 ? tag.tag_name.substring(0, 12) + '...' : tag.tag_name}
+            {tag?.tag_name ? (tag.tag_name.length > 12 ? tag.tag_name.substring(0, 12) + '...' : tag.tag_name) : 'Unknown'}
           </span>
         ))}
         {tags.length > 3 && (
           <span 
             className="inline-block px-2 py-1 text-xs font-medium rounded-full bg-gray-100 text-gray-600 border border-gray-200"
-            title={`${tags.length - 3} more tags: ${tags.slice(3).map(t => t.tag_name).join(', ')}`}
+            title={`${tags.length - 3} more tags: ${tags.slice(3).map(t => t?.tag_name || 'Unknown').join(', ')}`}
           >
             +{tags.length - 3}
           </span>
@@ -421,7 +422,7 @@ export default function AdminDashboardPage() {
               <td className="p-3">{item.name}</td>
               <td className="p-3">{item.role}</td>
               <td className="p-3">{item.company_id}</td>
-              <td className="p-3">{renderTags(item.tags)}</td>
+              <td className="p-3">{renderTags(item.tags || [])}</td>
               <td className="p-3">
                 <Button 
                   variant="outline" 
