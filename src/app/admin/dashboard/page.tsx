@@ -387,10 +387,10 @@ export default function AdminDashboardPage() {
       return <span className="text-gray-500 text-sm italic">No tags</span>;
     }
 
-    // Debug: Log the first tag to see its structure
+    // Debug: Log tag structure
     if (tags.length > 0) {
-      console.log('Debug - First tag structure:', tags[0]);
-      console.log('Debug - Available properties:', Object.keys(tags[0]));
+      console.log('Frontend Debug - Tags array:', tags);
+      console.log('Frontend Debug - First tag JSON:', JSON.stringify(tags[0]));
     }
 
     return (

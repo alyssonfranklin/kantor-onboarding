@@ -29,6 +29,11 @@ export async function GET(request: NextRequest) {
         .sort({ tag_name: 1 })
         .lean();
 
+      console.log('API Debug - Found tags:', tags.length);
+      if (tags.length > 0) {
+        console.log('API Debug - First tag:', JSON.stringify(tags[0], null, 2));
+      }
+
       // Group tags by user_id
       const tagsByUser = tags.reduce((acc: any, tag) => {
         if (!acc[tag.user_id]) {
@@ -44,10 +49,25 @@ export async function GET(request: NextRequest) {
       }, {});
 
       // Combine users with their tags
-      const usersWithTags = users.map(user => ({
-        ...user,
-        tags: tagsByUser[user.id] || []
-      }));
+      const usersWithTags = users.map(user => {
+        const userTags = tagsByUser[user.id] || [];
+        return {
+          ...user,
+          tags: userTags
+        };
+      });
+
+      console.log('API Debug - Users with tags count:', usersWithTags.length);
+      if (usersWithTags.length > 0) {
+        const userWithTags = usersWithTags.find(u => u.tags && u.tags.length > 0);
+        if (userWithTags) {
+          console.log('API Debug - User with tags example:', JSON.stringify({
+            id: userWithTags.id,
+            email: userWithTags.email,
+            tags: userWithTags.tags
+          }, null, 2));
+        }
+      }
 
       return NextResponse.json({
         success: true,
