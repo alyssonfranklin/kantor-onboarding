@@ -387,21 +387,31 @@ export default function AdminDashboardPage() {
       return <span className="text-gray-500 text-sm italic">No tags</span>;
     }
 
+    // Debug: Log the first tag to see its structure
+    if (tags.length > 0) {
+      console.log('Debug - First tag structure:', tags[0]);
+      console.log('Debug - Available properties:', Object.keys(tags[0]));
+    }
+
     return (
       <div className="flex flex-wrap gap-1 max-w-xs">
-        {tags.slice(0, 3).map((tag, index) => (
-          <span
-            key={index}
-            className="inline-block px-2 py-1 text-xs font-medium rounded-full bg-blue-100 text-blue-800 border border-blue-200"
-            title={tag?.tag_name || 'Unknown tag'}
-          >
-            {tag?.tag_name ? (tag.tag_name.length > 12 ? tag.tag_name.substring(0, 12) + '...' : tag.tag_name) : 'Unknown'}
-          </span>
-        ))}
+        {tags.slice(0, 3).map((tag, index) => {
+          // Try different possible property names for the tag name
+          const tagName = tag?.tag_name || tag?.name || tag?.tagName || 'Unknown';
+          return (
+            <span
+              key={index}
+              className="inline-block px-2 py-1 text-xs font-medium rounded-full bg-blue-100 text-blue-800 border border-blue-200"
+              title={tagName}
+            >
+              {tagName.length > 12 ? tagName.substring(0, 12) + '...' : tagName}
+            </span>
+          );
+        })}
         {tags.length > 3 && (
           <span 
             className="inline-block px-2 py-1 text-xs font-medium rounded-full bg-gray-100 text-gray-600 border border-gray-200"
-            title={`${tags.length - 3} more tags: ${tags.slice(3).map(t => t?.tag_name || 'Unknown').join(', ')}`}
+            title={`${tags.length - 3} more tags: ${tags.slice(3).map(t => t?.tag_name || t?.name || t?.tagName || 'Unknown').join(', ')}`}
           >
             +{tags.length - 3}
           </span>
