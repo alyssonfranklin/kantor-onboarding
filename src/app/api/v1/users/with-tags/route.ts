@@ -6,18 +6,18 @@ import Tag from '@/lib/mongodb/models/tag.model';
 
 // GET /api/v1/users/with-tags - Get all users with their associated tags
 export async function GET(request: NextRequest) {
-  return withAuth(request, async (req, { companyId }) => {
+  return withAuth(request, async (req, user) => {
     try {
       await dbConnect();
 
       // Get all users from the company
-      const users = await User.find({ company_id: companyId })
+      const users = await User.find({ company_id: user.company_id })
         .select('-password') // Exclude password field
         .sort({ name: 1 })
         .lean();
 
       // Get all tags for users in this company
-      const tags = await Tag.find({ company_id: companyId })
+      const tags = await Tag.find({ company_id: user.company_id })
         .sort({ tag_name: 1 })
         .lean();
 
