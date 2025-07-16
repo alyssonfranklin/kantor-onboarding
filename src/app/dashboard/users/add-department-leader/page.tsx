@@ -1,14 +1,14 @@
 "use client"
 
 import Image from 'next/image'
-import React, { useEffect, useState } from 'react'
+import React, { useEffect, useState, Suspense } from 'react'
 import { useSearchParams } from 'next/navigation'
 import CardLeader from '@/components/client/users/CardLeader';
 import DepartmentAddLeaders from '@/components/client/setup-users/DepartmentAddLeaders';
 import { v4 as uuidv4 } from 'uuid';
 import SetupUsersConfirmation from '@/components/client/setup-users/SetupUsersConfirmation';
 
-export default function UsersDepartmentLeadersAddPage() {
+function UsersDepartmentLeadersAddPageContent() {
 
   const searchParams = useSearchParams()
   const departmentId = searchParams.get('departmentId')
@@ -74,5 +74,13 @@ export default function UsersDepartmentLeadersAddPage() {
       }
 
     </div>
+  )
+}
+
+export default function UsersDepartmentLeadersAddPage() {
+  return (
+    <Suspense fallback={<div className="p-4">Loading...</div>}>
+      <UsersDepartmentLeadersAddPageContent />
+    </Suspense>
   )
 }

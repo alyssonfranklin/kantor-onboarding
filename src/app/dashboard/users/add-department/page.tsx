@@ -1,14 +1,14 @@
 "use client"
 
 import Image from 'next/image'
-import React, { useCallback, useEffect, useState } from 'react'
+import React, { useEffect, useState, Suspense } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import CardLeader from '@/components/client/users/CardLeader';
 import { useAuth } from '@/lib/auth/hooks';
 import ModalLoader from '@/components/client/ModalLoader';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 
-export default function UsersDepartmentAddPage() {
+function UsersDepartmentAddContent() {
 
   const { user } = useAuth();
 
@@ -227,4 +227,12 @@ export default function UsersDepartmentAddPage() {
     
     </>
   )
+}
+
+export default function UsersDepartmentAddPage() {
+  return (
+    <Suspense fallback={<div className="p-4">Loading...</div>}>
+      <UsersDepartmentAddContent />
+    </Suspense>
+  );
 }

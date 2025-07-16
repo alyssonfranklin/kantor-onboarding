@@ -8,11 +8,19 @@
     "start": "next start",
     "lint": "next lint",
     "api:dev": "nodemon src/server.js",
-    "api:start": "node src/server.js"
+    "api:start": "node src/server.js",
+    "test": "jest",
+    "test:watch": "jest --watch",
+    "test:coverage": "jest --coverage",
+    "test:integration": "jest --testMatch='**/tests/integration/**/*.test.{js,ts}'",
+    "test:subscription-flow": "node scripts/test-subscription-flow.js",
+    "test:all": "npm run test && npm run test:integration && npm run test:subscription-flow",
+    "health-check": "curl -f http://localhost:3000/api/health || exit 1"
   },
   "dependencies": {
     "@radix-ui/react-alert-dialog": "^1.1.6",
     "@radix-ui/react-slot": "^1.1.2",
+    "@stripe/stripe-js": "^7.4.0",
     "bcryptjs": "^2.4.3",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
@@ -32,6 +40,7 @@
     "openai": "^4.85.1",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
+    "stripe": "^18.2.1",
     "tailwind-merge": "^3.0.1",
     "tailwindcss-animate": "^1.0.7",
     "uuid": "^11.1.0",

@@ -10,11 +10,12 @@ import bcrypt from 'bcryptjs';
  */
 export async function PUT(
   req: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   return withAuth(req, async (req, authUser) => {
     try {
       await dbConnect();
+      const { id } = await params;
     } catch (error) {
       console.error('Database connection failed:', error);
       return NextResponse.json(
@@ -60,7 +61,7 @@ export async function PUT(
       });
       
       const updateOperation = User.updateOne(
-        { id: params.id },
+        { id: id },
         { 
           $set: { 
             password: hashedPassword,

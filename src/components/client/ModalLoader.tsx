@@ -6,7 +6,6 @@ interface ModalLoaderProps {
 };
 
 const ModalLoader: React.FC<ModalLoaderProps> = ({ message }) => {
-  if (!open) return null;
 
   return (
     <>

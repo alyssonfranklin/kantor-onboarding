@@ -6,17 +6,18 @@ import { withAuth } from '@/lib/middleware/auth';
 // GET /api/departments/[id]
 export async function GET(
   req: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   return withAuth(req, async (req, user) => {
     await dbConnect();
+    const { id } = await params;
     
     try {
       // Either get a specific department by name or department ID
       const department = await Department.findOne({
         $or: [
-          { department_name: params.id },
-          { _id: params.id }
+          { department_name: id },
+          { _id: id }
         ]
       });
       
@@ -52,10 +53,11 @@ export async function GET(
 // PUT /api/departments/[id]
 export async function PUT(
   req: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   return withAuth(req, async (req, user) => {
     await dbConnect();
+    const { id } = await params;
     
     try {
       const body = await req.json();
@@ -63,8 +65,8 @@ export async function PUT(
       // Find the department first to check permissions
       const department = await Department.findOne({
         $or: [
-          { department_name: params.id },
-          { _id: params.id }
+          { department_name: id },
+          { _id: id }
         ]
       });
       
@@ -87,8 +89,8 @@ export async function PUT(
       const updatedDepartment = await Department.findOneAndUpdate(
         {
           $or: [
-            { department_name: params.id },
-            { _id: params.id }
+            { department_name: id },
+            { _id: id }
           ]
         },
         { $set: body },
@@ -113,17 +115,18 @@ export async function PUT(
 // DELETE /api/departments/[id]
 export async function DELETE(
   req: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   return withAuth(req, async (req, user) => {
     await dbConnect();
+    const { id } = await params;
     
     try {
       // Find the department first to check permissions
       const department = await Department.findOne({
         $or: [
-          { department_name: params.id },
-          { _id: params.id }
+          { department_name: id },
+          { _id: id }
         ]
       });
       
@@ -148,8 +151,8 @@ export async function DELETE(
       // Delete the department
       const result = await Department.deleteOne({
         $or: [
-          { department_name: params.id },
-          { _id: params.id }
+          { department_name: id },
+          { _id: id }
         ]
       });
       

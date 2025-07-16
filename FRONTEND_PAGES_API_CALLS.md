@@ -7,7 +7,7 @@ This document provides a comprehensive analysis of all frontend pages and their 
 **Total Pages Analyzed**: 20  
 **Pages with API Calls**: 14  
 **Pages without API Calls**: 6  
-**Total Unique API Endpoints**: 17  
+**Total Unique API Endpoints**: 23  
 **Authentication Protected Pages**: 12  
 
 ---
@@ -771,13 +771,323 @@ Currently uses hardcoded company and employee leader data. Real API integration 
 
 ---
 
+## 📊 **Statistics & Analytics Endpoints**
+
+### 📈 **Department Statistics**
+**URL**: `GET /api/v1/users/department-stats`
+
+#### **API Call Details**:
+
+**Authentication**: ✅ Required (JWT token)
+
+**Purpose**: Count employees and leaders per department for the authenticated user's company
+
+**Response Format**:
+```json
+{
+  "success": true,
+  "data": [
+    {
+      "department": "Engineering",
+      "totalEmployees": 15,
+      "leaders": 2
+    },
+    {
+      "department": "Marketing", 
+      "totalEmployees": 8,
+      "leaders": 1
+    },
+    {
+      "department": "Sales",
+      "totalEmployees": 12,
+      "leaders": 3
+    }
+  ]
+}
+```
+
+#### **Key Features**:
+- ✅ **Company Scoped**: Only returns data for the authenticated user's company
+- ✅ **Employee Counting**: Total employees per department
+- ✅ **Leader Identification**: Counts users where `id` equals `reports_to` (self-reporting leaders)
+- ✅ **Sorted Results**: Departments sorted alphabetically
+- ✅ **Aggregation Pipeline**: Uses MongoDB aggregation for efficient querying
+- ✅ **Error Handling**: Comprehensive error responses with proper status codes
+
+#### **Business Logic**:
+- **Employee Count**: All users assigned to each department
+- **Leader Definition**: Users where their `user.id` matches their `user.reports_to` field
+- **Company Isolation**: Results filtered by the user's `company_id` for security
+- **Performance**: Single database query using aggregation pipeline
+
+#### **Usage Scenarios**:
+- Management dashboards showing organizational structure
+- HR analytics and reporting
+- Department head identification
+- Organizational charts and statistics
+- Resource allocation planning
+
+---
+
+## 🏷️ **Tags Management Endpoints**
+
+### 📝 **Tags CRUD Operations**
+
+#### **Get All Tags**
+**URL**: `GET /api/v1/tags`
+
+**Authentication**: ✅ Required (JWT token)
+
+**Query Parameters**:
+- `userId` (optional) - Filter tags for specific user
+
+**Purpose**: Retrieve all tags for company or specific user
+
+**Response Format**:
+```json
+{
+  "success": true,
+  "data": [
+    {
+      "tag_id": "uuid-string",
+      "user_id": "user123",
+      "company_id": "company456",
+      "tag_name": "Leadership",
+      "tag_color": "#3B82F6",
+      "created_at": "2025-07-01T10:00:00Z",
+      "created_by": "admin123"
+    }
+  ]
+}
+```
+
+---
+
+#### **Create Tag**
+**URL**: `POST /api/v1/tags`
+
+**Authentication**: ✅ Required (JWT token)
+
+**Payload**:
+```json
+{
+  "user_id": "user123",
+  "tag_name": "Leadership",
+  "tag_color": "#3B82F6"
+}
+```
+
+**Purpose**: Create a new tag for a user
+
+**Features**:
+- ✅ Duplicate tag prevention per user
+- ✅ Default color assignment
+- ✅ Company scoping for security
+
+---
+
+#### **Get Specific Tag**
+**URL**: `GET /api/v1/tags/[id]`
+
+**Authentication**: ✅ Required (JWT token)
+
+**Purpose**: Retrieve details of a specific tag
+
+---
+
+#### **Update Tag**
+**URL**: `PUT /api/v1/tags/[id]`
+
+**Authentication**: ✅ Required (JWT token)
+
+**Payload**:
+```json
+{
+  "tag_name": "Senior Leadership",
+  "tag_color": "#10B981"
+}
+```
+
+**Purpose**: Update tag name and/or color
+
+**Features**:
+- ✅ Duplicate name validation
+- ✅ Company scoping
+
+---
+
+#### **Delete Tag**
+**URL**: `DELETE /api/v1/tags/[id]`
+
+**Authentication**: ✅ Required (JWT token)
+
+**Purpose**: Remove a specific tag
+
+---
+
+### 👥 **Users with Tags**
+
+#### **Get Users with Tags**
+**URL**: `GET /api/v1/users/with-tags`
+
+**Authentication**: ✅ Required (JWT token)
+
+**Purpose**: Retrieve all company users with their associated tags
+
+**Response Format**:
+```json
+{
+  "success": true,
+  "data": [
+    {
+      "id": "user123",
+      "name": "John Smith",
+      "email": "john@company.com",
+      "department": "Engineering",
+      "company_role": "Senior Developer",
+      "tags": [
+        {
+          "tag_id": "tag456",
+          "tag_name": "Leadership",
+          "tag_color": "#3B82F6",
+          "created_at": "2025-07-01T10:00:00Z"
+        }
+      ]
+    }
+  ]
+}
+```
+
+**Features**:
+- ✅ **Password Excluded**: User passwords filtered out for security
+- ✅ **Sorted Results**: Users sorted by name, tags by tag name
+- ✅ **Aggregated Data**: Combines user and tag information efficiently
+
+---
+
+### 🔄 **Bulk Tag Operations**
+
+#### **Bulk Create/Assign Tags**
+**URL**: `POST /api/v1/tags/bulk`
+
+**Authentication**: ✅ Required (JWT token)
+
+**Operations Supported**:
+
+**1. Create Multiple Tags**
+```json
+{
+  "operation": "create_multiple",
+  "data": [
+    {
+      "user_id": "user123",
+      "tag_name": "Leadership",
+      "tag_color": "#3B82F6"
+    },
+    {
+      "user_id": "user456",
+      "tag_name": "Assessment",
+      "tag_color": "#10B981"
+    }
+  ]
+}
+```
+
+**2. Assign Tags to Multiple Users**
+```json
+{
+  "operation": "assign_to_users",
+  "data": {
+    "tag_names": ["Leadership", "Assessment"],
+    "user_ids": ["user123", "user456", "user789"],
+    "tag_color": "#6366F1"
+  }
+}
+```
+
+**3. Remove Tags from Users**
+```json
+{
+  "operation": "remove_from_users",
+  "data": {
+    "tag_names": ["Leadership"],
+    "user_ids": ["user123", "user456"]
+  }
+}
+```
+
+**Features**:
+- ✅ **Batch Processing**: Handle multiple operations efficiently
+- ✅ **Duplicate Prevention**: Skips existing tag combinations
+- ✅ **Smart Assignment**: Bulk assign tags to multiple users at once
+
+---
+
+#### **Bulk Delete Tags**
+**URL**: `DELETE /api/v1/tags/bulk`
+
+**Authentication**: ✅ Required (JWT token)
+
+**Payload**:
+```json
+{
+  "tag_ids": ["tag123", "tag456", "tag789"]
+}
+```
+
+**Purpose**: Delete multiple tags in a single operation
+
+**Response Format**:
+```json
+{
+  "success": true,
+  "message": "3 tags deleted successfully",
+  "deletedCount": 3
+}
+```
+
+---
+
+### 🏷️ **Tag System Features**
+
+#### **Database Schema**:
+- **tag_id**: Unique identifier (UUID)
+- **user_id**: Links to users.id (employee association)
+- **company_id**: Company scoping for multi-tenant security
+- **tag_name**: Tag display name
+- **tag_color**: Hex color for UI display
+- **created_at**: Timestamp of creation
+- **created_by**: ID of user who created the tag
+
+#### **Key Features**:
+- ✅ **Multi-tenant Security**: All operations scoped to user's company
+- ✅ **User Association**: Tags linked to specific users via user_id
+- ✅ **Color Coding**: Visual categorization with customizable colors
+- ✅ **Duplicate Prevention**: No duplicate tag names per user
+- ✅ **Efficient Indexing**: Optimized database queries with compound indexes
+- ✅ **Bulk Operations**: Support for large-scale tag management
+- ✅ **Audit Trail**: Tracks who created each tag
+
+#### **Use Cases**:
+- Employee skill tagging and categorization
+- Performance assessment labels
+- Training status indicators
+- Role-based classifications
+- Custom organizational labels
+- HR analytics and reporting
+
+---
+
 ## 📊 **API Usage Summary**
 
 ### **Most Used Endpoints**:
 1. `POST /api/v1/admin/verify-password` - Used by 8 admin pages
 2. `POST /api/v1/add-user` - Used by 4 different creation flows
 3. `GET /api/v1/users` - Used by admin dashboard and department creation
-4. Authentication endpoints - Used across multiple pages
+4. `GET /api/v1/users/department-stats` - Analytics endpoint for organizational statistics
+5. `GET /api/v1/tags` - Tags management and filtering
+6. `GET /api/v1/users/with-tags` - Users with associated tags
+7. Authentication endpoints - Used across multiple pages
 
 ### **Authentication Patterns**:
 - **Admin Protection**: 8 pages use `PasswordProtection` component
@@ -808,6 +1118,18 @@ Currently uses hardcoded company and employee leader data. Real API integration 
 ---
 
 ## 🔄 **Update History**
+
+- **2025-07-01**: Added department statistics and tags management endpoints
+  - New endpoint: `GET /api/v1/users/department-stats`
+  - Added `reports_to` field to User model for leader identification
+  - **Tags Management System**: Complete CRUD API for employee tagging
+    - `GET/POST /api/v1/tags` - Basic tag operations
+    - `GET/PUT/DELETE /api/v1/tags/[id]` - Individual tag management
+    - `GET /api/v1/users/with-tags` - Users with associated tags
+    - `POST/DELETE /api/v1/tags/bulk` - Bulk tag operations
+  - Created Tag model with user_id linking to users.id
+  - Updated total unique API endpoints to 23
+  - Enhanced analytics and employee management capabilities
 
 - **2025-06-17**: Initial comprehensive documentation created
   - Analyzed 20 frontend pages

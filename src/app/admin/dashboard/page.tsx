@@ -91,8 +91,8 @@ export default function AdminDashboardPage() {
         
         switch (activeTab) {
           case 'users':
-            url = '/api/v1/users';
-            console.log(`Dashboard - Fetching users from ${url}`);
+            url = '/api/v1/users/with-tags';
+            console.log(`Dashboard - Fetching users with tags from ${url}`);
             
             response = await fetch(url, {
               headers: {
@@ -100,7 +100,7 @@ export default function AdminDashboardPage() {
               }
             });
             
-            console.log(`Dashboard - Users API response status:`, response.status);
+            console.log(`Dashboard - Users with tags API response status:`, response.status);
             
             // Check if response is JSON
             const contentType = response.headers.get('content-type');
@@ -111,13 +111,13 @@ export default function AdminDashboardPage() {
             }
             
             result = await response.json();
-            console.log('Dashboard - Users API response body:', result);
+            console.log('Dashboard - Users with tags API response body:', result);
             
             if (response.ok && result.success) {
-              console.log(`Dashboard - Got ${result.data?.length || 0} users`);
+              console.log(`Dashboard - Got ${result.data?.length || 0} users with tags`);
               setData(result.data || []);
             } else {
-              throw new Error(result.message || result.error || 'Failed to fetch users');
+              throw new Error(result.message || result.error || 'Failed to fetch users with tags');
             }
             break;
             
@@ -216,7 +216,7 @@ export default function AdminDashboardPage() {
   const getTableColumns = () => {
     switch (activeTab) {
       case 'users':
-        return ['ID', 'Email', 'Name', 'Role', 'Company ID', 'Actions'];
+        return ['ID', 'Email', 'Name', 'Role', 'Company ID', 'Tags', 'Actions'];
       case 'companies':
         return ['Company ID', 'Name', 'Assistant ID', 'Status', 'Created At', 'Actions'];
       case 'departments':
@@ -380,6 +380,46 @@ export default function AdminDashboardPage() {
     }
   };
 
+  // Render tags component
+  const renderTags = (tags: any[]) => {
+    // Handle undefined, null, or non-array tags
+    if (!tags || !Array.isArray(tags) || tags.length === 0) {
+      return <span className="text-gray-500 text-sm italic">No tags</span>;
+    }
+
+    // Debug: Log tag structure
+    if (tags.length > 0) {
+      console.log('Frontend Debug - Tags array:', tags);
+      console.log('Frontend Debug - First tag JSON:', JSON.stringify(tags[0]));
+    }
+
+    return (
+      <div className="flex flex-wrap gap-1 max-w-xs">
+        {tags.slice(0, 3).map((tag, index) => {
+          // Try different possible property names for the tag name
+          const tagName = tag?.tag_name || tag?.name || tag?.tagName || 'Unknown';
+          return (
+            <span
+              key={index}
+              className="inline-block px-2 py-1 text-xs font-medium rounded-full bg-blue-100 text-blue-800 border border-blue-200"
+              title={tagName}
+            >
+              {tagName.length > 12 ? tagName.substring(0, 12) + '...' : tagName}
+            </span>
+          );
+        })}
+        {tags.length > 3 && (
+          <span 
+            className="inline-block px-2 py-1 text-xs font-medium rounded-full bg-gray-100 text-gray-600 border border-gray-200"
+            title={`${tags.length - 3} more tags: ${tags.slice(3).map(t => t?.tag_name || t?.name || t?.tagName || 'Unknown').join(', ')}`}
+          >
+            +{tags.length - 3}
+          </span>
+        )}
+      </div>
+    );
+  };
+
   // Render table rows based on active tab
   const renderTableRows = () => {
     return data.map((item, index) => {
@@ -392,6 +432,7 @@ export default function AdminDashboardPage() {
               <td className="p-3">{item.name}</td>
               <td className="p-3">{item.role}</td>
               <td className="p-3">{item.company_id}</td>
+              <td className="p-3">{renderTags(item.tags || [])}</td>
               <td className="p-3">
                 <Button 
                   variant="outline" 
