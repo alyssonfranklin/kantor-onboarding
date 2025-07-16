@@ -41,8 +41,29 @@ export async function GET(request: NextRequest) {
       // Get total count for pagination
       const total = await User.countDocuments(userQuery);
 
-      // Get all tags for users (all companies if admin, or just user's company if not admin)
-      const tags = await Tag.find(tagQuery)
+      // Get user IDs from the filtered users
+      const userIds = users.map(user => user.id);
+
+      // Get tags for those specific users AND the company
+      let tagQuery2 = {};
+      if (user.role !== 'admin') {
+        tagQuery2 = { 
+          company_id: user.company_id,
+          user_id: { $in: userIds }
+        };
+      } else {
+        tagQuery2 = { user_id: { $in: userIds } };
+      }
+
+      // Add company filter if provided (admin only or user's own company)
+      if (companyId && (user.role === 'admin' || companyId === user.company_id)) {
+        tagQuery2 = { 
+          company_id: companyId,
+          user_id: { $in: userIds }
+        };
+      }
+
+      const tags = await Tag.find(tagQuery2)
         .sort({ Tag: 1 })
         .lean();
 
