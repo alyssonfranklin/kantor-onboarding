@@ -10,6 +10,12 @@ export async function GET(request: NextRequest) {
     try {
       await dbConnect();
 
+      // Get search params
+      const url = new URL(request.url);
+      const companyId = url.searchParams.get('companyId');
+      const limit = parseInt(url.searchParams.get('limit') || '100', 10);
+      const skip = parseInt(url.searchParams.get('skip') || '0', 10);
+
       // Access control - regular users can only see users from their company
       let userQuery = {};
       let tagQuery = {};
@@ -18,15 +24,26 @@ export async function GET(request: NextRequest) {
         tagQuery = { company_id: user.company_id };
       }
 
+      // Add company filter if provided (admin only or user's own company)
+      if (companyId && (user.role === 'admin' || companyId === user.company_id)) {
+        userQuery = { ...userQuery, company_id: companyId };
+        tagQuery = { ...tagQuery, company_id: companyId };
+      }
+
       // Get all users (all companies if admin, or just user's company if not admin)
       const users = await User.find(userQuery)
         .select('-password') // Exclude password field
         .sort({ name: 1 })
+        .limit(limit)
+        .skip(skip)
         .lean();
+
+      // Get total count for pagination
+      const total = await User.countDocuments(userQuery);
 
       // Get all tags for users (all companies if admin, or just user's company if not admin)
       const tags = await Tag.find(tagQuery)
-        .sort({ tag_name: 1 })
+        .sort({ Tag: 1 })
         .lean();
 
       console.log('API Debug - Found tags:', tags.length);
@@ -41,9 +58,9 @@ export async function GET(request: NextRequest) {
         }
         acc[tag.user_id].push({
           tag_id: tag._id || tag.tag_id,
-          tag_name: tag.Tag || tag.tag_name, // Use "Tag" property from database
+          tag_name: tag.Tag,
           tag_color: tag.tag_color || '#6B7280',
-          created_at: tag.createdAt || tag.created_at
+          created_at: tag.createdAt
         });
         return acc;
       }, {});
@@ -71,7 +88,12 @@ export async function GET(request: NextRequest) {
 
       return NextResponse.json({
         success: true,
-        data: usersWithTags
+        data: usersWithTags,
+        meta: {
+          total,
+          limit,
+          skip
+        }
       });
 
     } catch (error) {

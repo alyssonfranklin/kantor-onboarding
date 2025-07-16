@@ -44,7 +44,7 @@ export default function UsersPage() {
       setIsSubmitting(true);
       setError('');
       try {
-        const response = await fetch(`/api/v1/users?companyId=${user?.company_id}&limit=${limitRows}&skip=${skip}`, {
+        const response = await fetch(`/api/v1/users/with-tags?companyId=${user?.company_id}&limit=${limitRows}&skip=${skip}`, {
           method: 'GET',
           headers: {
             'Content-Type': 'application/json',
