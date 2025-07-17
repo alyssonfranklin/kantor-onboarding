@@ -7,7 +7,7 @@ type User = {
   id: number;
   name: string;
   role: string;
-  tags: string[];
+  tags: { tag_id: string; tag_name: string; created_at: string; }[];
   assessment: string;
   utilization: number;
   company_role: string;
@@ -61,7 +61,7 @@ const UserList: React.FC<UserListProps> = ({ users, handlePageChange, meta }) =>
                     key={index} 
                     className="inline-block bg-white text-black text-xs font-semibold mr-2 px-2 py-1 rounded border border-gray-300"
                   >
-                    {tag}
+                    {tag.tag_name}
                   </span>
                 ))}
               </td>

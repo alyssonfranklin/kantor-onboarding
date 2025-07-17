@@ -80,7 +80,6 @@ export async function GET(request: NextRequest) {
         acc[tag.user_id].push({
           tag_id: tag._id || tag.tag_id,
           tag_name: tag.Tag,
-          tag_color: tag.tag_color || '#6B7280',
           created_at: tag.createdAt
         });
         return acc;
