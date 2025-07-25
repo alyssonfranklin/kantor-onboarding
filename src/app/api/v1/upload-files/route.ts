@@ -112,18 +112,23 @@ export async function POST(req: Request) {
         
         console.log(`Temporary file created at: ${tempFilePath}`);
         
-        // Create a file object using SDK with file stream
-        let uploadedFile;
+        // Upload file directly to vector store using Vector Store Files API
+        console.log(`Uploading file directly to vector store ${vectorStoreId}...`);
+        
         try {
-          uploadedFile = await openai.files.create({
-            file: fs.createReadStream(tempFilePath),
-            purpose: 'assistants'
-          });
-          console.log(`File uploaded successfully with ID: ${uploadedFile.id}`);
-          fileIds.push(uploadedFile.id);
-        } catch (uploadError) {
-          console.error('Error uploading file with SDK:', uploadError);
-          throw new Error(`Failed to upload file: ${uploadError instanceof Error ? uploadError.message : 'Unknown error'}`);
+          const vectorStoreFile = await openai.beta.vectorStores.files.createAndPoll(
+            vectorStoreId as string,
+            {
+              file: fs.createReadStream(tempFilePath)
+            }
+          );
+          
+          console.log(`File successfully uploaded to vector store: ${JSON.stringify(vectorStoreFile)}`);
+          fileIds.push(vectorStoreFile.id);
+          successfulAttachments.push(vectorStoreFile.id);
+        } catch (vectorStoreError) {
+          console.error(`Error uploading file to vector store:`, vectorStoreError);
+          throw new Error(`Failed to upload file to vector store: ${vectorStoreError instanceof Error ? vectorStoreError.message : 'Unknown error'}`);
         }
         
         // Clean up temporary file
@@ -132,28 +137,6 @@ export async function POST(req: Request) {
           console.log(`Temporary file deleted: ${tempFilePath}`);
         } catch (cleanupError) {
           console.error(`Error cleaning up temporary file: ${cleanupError}`);
-        }
-        
-        // Wait for file processing
-        console.log('Waiting for file to be processed...');
-        await new Promise(resolve => setTimeout(resolve, 2000));
-        
-        // Add file to vector store
-        console.log(`Adding file ${uploadedFile.id} to vector store ${vectorStoreId}...`);
-        
-        try {
-          const vectorStoreFile = await openai.beta.vectorStores.files.create(
-            vectorStoreId as string,
-            {
-              file_id: uploadedFile.id
-            }
-          );
-          
-          console.log(`File successfully added to vector store: ${JSON.stringify(vectorStoreFile)}`);
-          successfulAttachments.push(uploadedFile.id);
-        } catch (vectorStoreError) {
-          console.error(`Error adding file to vector store:`, vectorStoreError);
-          throw new Error(`Failed to add file to vector store: ${vectorStoreError instanceof Error ? vectorStoreError.message : 'Unknown error'}`);
         }
         
       } catch (error) {
