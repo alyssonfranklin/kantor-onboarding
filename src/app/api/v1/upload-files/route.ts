@@ -91,55 +91,6 @@ export async function POST(req: Request) {
       );
     }
     
-    // Define supported file types for vector stores
-    const supportedMimeTypes = [
-      // Text formats
-      'text/plain',
-      'text/markdown',
-      'text/csv',
-      'text/html',
-      'text/xml',
-      'application/json',
-      'application/xml',
-      
-      // Document formats
-      'application/pdf',
-      'application/msword', // .doc
-      'application/vnd.openxmlformats-officedocument.wordprocessingml.document', // .docx
-      'application/rtf',
-      
-      // Presentation formats
-      'application/vnd.ms-powerpoint', // .ppt
-      'application/vnd.openxmlformats-officedocument.presentationml.presentation', // .pptx
-      
-      // Spreadsheet formats
-      'application/vnd.ms-excel', // .xls
-      'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet', // .xlsx
-      
-      // Other text-based formats
-      'application/x-yaml',
-      'text/yaml',
-      'application/vnd.oasis.opendocument.text', // .odt
-      'application/vnd.oasis.opendocument.presentation', // .odp
-      'application/vnd.oasis.opendocument.spreadsheet' // .ods
-    ];
-
-    const supportedExtensions = [
-      '.txt', '.md', '.csv', '.html', '.htm', '.xml', '.json', '.yaml', '.yml',
-      '.pdf', '.doc', '.docx', '.rtf',
-      '.ppt', '.pptx',
-      '.xls', '.xlsx',
-      '.odt', '.odp', '.ods'
-    ];
-
-    // Function to validate file type
-    const isFileSupported = (file: File): boolean => {
-      const fileName = file.name.toLowerCase();
-      const fileExtension = fileName.substring(fileName.lastIndexOf('.'));
-      
-      return supportedMimeTypes.includes(file.type) || supportedExtensions.includes(fileExtension);
-    };
-
     // Upload files and add to vector store
     const fileIds: string[] = [];
     const fileErrors: FileError[] = [];
@@ -147,13 +98,6 @@ export async function POST(req: Request) {
     
     for (const file of files) {
       try {
-        // Validate file type first
-        if (!isFileSupported(file)) {
-          const fileName = file.name.toLowerCase();
-          const fileExtension = fileName.substring(fileName.lastIndexOf('.'));
-          throw new Error(`Unsupported file type: ${fileExtension}. Supported formats: ${supportedExtensions.join(', ')}`);
-        }
-
         // Upload the file using OpenAI SDK via filesystem
         console.log(`Uploading file: ${file.name} (${file.size} bytes, ${file.type})`);
         

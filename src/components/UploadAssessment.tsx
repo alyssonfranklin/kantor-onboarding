@@ -251,17 +251,6 @@ const UploadAssessment = () => {
             <label className="block font-bold text-white mb-2">
               Upload Files (Max 10 files, 5MB each)
             </label>
-            <div className="mb-2 p-3 bg-gray-700 rounded-md">
-              <p className="text-sm text-gray-300 mb-1">
-                <strong>Supported formats:</strong>
-              </p>
-              <p className="text-xs text-gray-400">
-                Documents: PDF, DOC, DOCX, RTF, ODT<br/>
-                Text: TXT, MD, CSV, HTML, XML, JSON, YAML<br/>
-                Presentations: PPT, PPTX, ODP<br/>
-                Spreadsheets: XLS, XLSX, ODS
-              </p>
-            </div>
             <div className="border-2 border-dashed border-gray-600 rounded-md p-6 text-center cursor-pointer hover:border-gray-400 transition-colors">
               <input
                 type="file"
@@ -269,7 +258,6 @@ const UploadAssessment = () => {
                 onChange={handleFileChange}
                 className="hidden"
                 multiple
-                accept=".txt,.md,.csv,.html,.htm,.xml,.json,.yaml,.yml,.pdf,.doc,.docx,.rtf,.ppt,.pptx,.xls,.xlsx,.odt,.odp,.ods"
               />
               <label htmlFor="fileUpload" className="cursor-pointer flex flex-col items-center">
                 <Upload className="h-10 w-10 text-gray-400 mb-2" />
