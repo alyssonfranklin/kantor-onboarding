@@ -112,23 +112,37 @@ export async function POST(req: Request) {
         
         console.log(`Temporary file created at: ${tempFilePath}`);
         
-        // Upload file directly to vector store using Vector Store Files API
-        console.log(`Uploading file directly to vector store ${vectorStoreId}...`);
+        // First upload the file to OpenAI
+        console.log(`Uploading file to OpenAI storage...`);
+        let uploadedFile;
+        try {
+          uploadedFile = await openai.files.create({
+            file: fs.createReadStream(tempFilePath),
+            purpose: 'assistants'
+          });
+          console.log(`File uploaded successfully with ID: ${uploadedFile.id}`);
+          fileIds.push(uploadedFile.id);
+        } catch (uploadError) {
+          console.error('Error uploading file:', uploadError);
+          throw new Error(`Failed to upload file: ${uploadError instanceof Error ? uploadError.message : 'Unknown error'}`);
+        }
+
+        // Now add the file to the vector store using the file_id
+        console.log(`Adding file ${uploadedFile.id} to vector store ${vectorStoreId}...`);
         
         try {
           const vectorStoreFile = await openai.beta.vectorStores.files.createAndPoll(
             vectorStoreId as string,
             {
-              file: fs.createReadStream(tempFilePath)
+              file_id: uploadedFile.id
             }
           );
           
-          console.log(`File successfully uploaded to vector store: ${JSON.stringify(vectorStoreFile)}`);
-          fileIds.push(vectorStoreFile.id);
-          successfulAttachments.push(vectorStoreFile.id);
+          console.log(`File successfully added to vector store: ${JSON.stringify(vectorStoreFile)}`);
+          successfulAttachments.push(uploadedFile.id);
         } catch (vectorStoreError) {
-          console.error(`Error uploading file to vector store:`, vectorStoreError);
-          throw new Error(`Failed to upload file to vector store: ${vectorStoreError instanceof Error ? vectorStoreError.message : 'Unknown error'}`);
+          console.error(`Error adding file to vector store:`, vectorStoreError);
+          throw new Error(`Failed to add file to vector store: ${vectorStoreError instanceof Error ? vectorStoreError.message : 'Unknown error'}`);
         }
         
         // Clean up temporary file
