@@ -30,50 +30,68 @@ export async function POST(req: Request) {
       );
     }
 
-    // Verify assistant exists using SDK
+    // Verify assistant exists and get/create vector store
+    let vectorStoreId: string | null = null;
+    
     try {
       console.log(`Verifying assistant ID: ${assistantId}`);
       
-      try {
-        // Using OpenAI SDK to retrieve assistant (SDK handles API versioning properly)
-        const assistant = await openai.beta.assistants.retrieve(assistantId);
+      // Using OpenAI SDK to retrieve assistant
+      const assistant = await openai.beta.assistants.retrieve(assistantId);
+      
+      console.log(`Assistant found: ${assistant.name} (ID: ${assistant.id})`);
+      console.log(`Assistant details: model=${assistant.model}, tools=${JSON.stringify(assistant.tools || [])}`);
+      
+      // Check if file_search is enabled
+      const hasFileSearch = assistant.tools?.some((tool: { type: string }) => tool.type === 'file_search');
+      if (!hasFileSearch) {
+        console.log('Warning: This assistant does not have file_search enabled. Enabling it now...');
         
-        console.log(`Assistant found: ${assistant.name} (ID: ${assistant.id})`);
-        console.log(`Assistant details: model=${assistant.model}, tools=${JSON.stringify(assistant.tools || [])}`);
+        // Enable file_search if not already enabled
+        await openai.beta.assistants.update(assistantId, {
+          tools: [
+            ...(assistant.tools || []), 
+            { type: "file_search" }
+          ]
+        });
         
-        // Check if file_search is enabled
-        const hasFileSearch = assistant.tools?.some((tool: { type: string }) => tool.type === 'file_search');
-        if (!hasFileSearch) {
-          console.log('Warning: This assistant does not have file_search enabled. Files might not be searchable.');
-          
-          // Attempt to enable file_search if not already enabled
-          console.log('Attempting to enable file_search tool...');
-          try {
-            const updatedAssistant = await openai.beta.assistants.update(assistantId, {
-              tools: [
-                ...(assistant.tools || []), 
-                { type: "file_search" }
-              ]
-            });
-            
-            console.log(`Assistant updated with file_search tool: ${JSON.stringify(updatedAssistant.tools)}`);
-          } catch (updateError) {
-            console.error('Error updating assistant:', updateError);
+        console.log('Assistant updated with file_search tool');
+      }
+
+      // Check if assistant already has a vector store
+      const toolResources = assistant.tool_resources;
+      if (toolResources?.file_search?.vector_store_ids && toolResources.file_search.vector_store_ids.length > 0) {
+        vectorStoreId = toolResources.file_search.vector_store_ids[0];
+        console.log(`Assistant already has vector store: ${vectorStoreId}`);
+      } else {
+        console.log('No vector store found for assistant, creating one...');
+        
+        // Create new vector store
+        const vectorStore = await openai.beta.vectorStores.create({
+          name: `Files for Assistant ${assistantId}`,
+        });
+        vectorStoreId = vectorStore.id;
+        console.log(`Created new vector store: ${vectorStoreId}`);
+
+        // Update assistant to use the new vector store
+        await openai.beta.assistants.update(assistantId, {
+          tool_resources: {
+            file_search: {
+              vector_store_ids: [vectorStoreId]
+            }
           }
-        }
-      } catch (sdkError) {
-        console.error('SDK Error retrieving assistant:', sdkError);
-        throw new Error(`Failed to get assistant: ${sdkError instanceof Error ? sdkError.message : 'Unknown error'}`);
+        });
+        console.log(`Assistant updated with new vector store: ${vectorStoreId}`);
       }
     } catch (error) {
-      console.error('Error verifying assistant:', error);
+      console.error('Error setting up assistant and vector store:', error);
       return NextResponse.json(
-        { error: error instanceof Error ? error.message : 'Failed to verify assistant.' },
+        { error: error instanceof Error ? error.message : 'Failed to setup assistant and vector store.' },
         { status: 400 }
       );
     }
     
-    // Upload files and attach to assistant
+    // Upload files and add to vector store
     const fileIds: string[] = [];
     const fileErrors: FileError[] = [];
     const successfulAttachments: string[] = [];
@@ -118,52 +136,24 @@ export async function POST(req: Request) {
         
         // Wait for file processing
         console.log('Waiting for file to be processed...');
-        await new Promise(resolve => setTimeout(resolve, 5000));
+        await new Promise(resolve => setTimeout(resolve, 2000));
         
-        // Verify file is processed and ready to be attached
-        try {
-          const fileStatus = await openai.files.retrieve(uploadedFile.id);
-          console.log(`File status: ${fileStatus.status}, purpose: ${fileStatus.purpose}`);
-          
-          if (fileStatus.status !== 'processed') {
-            console.log(`Waiting additional time for file to complete processing...`);
-            await new Promise(resolve => setTimeout(resolve, 3000));
-          }
-        } catch (statusError) {
-          console.error(`Error checking file status with SDK: ${statusError}`);
-        }
-        
-        console.log('Continuing after file processing wait...');
-        
-        // Attach file to the assistant using direct API call
-        console.log(`Attaching file ${uploadedFile.id} to assistant ${assistantId}...`);
+        // Add file to vector store
+        console.log(`Adding file ${uploadedFile.id} to vector store ${vectorStoreId}...`);
         
         try {
-          const attachResponse = await fetch(`https://api.openai.com/v1/assistants/${assistantId}/files`, {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-              'Authorization': `Bearer ${process.env.OPENAI_API_KEY}`,
-              'OpenAI-Beta': 'assistants=v2'
-            },
-            body: JSON.stringify({ 
-              file_id: uploadedFile.id 
-            })
-          });
+          const vectorStoreFile = await openai.beta.vectorStores.files.create(
+            vectorStoreId as string,
+            {
+              file_id: uploadedFile.id
+            }
+          );
           
-          if (!attachResponse.ok) {
-            const errorText = await attachResponse.text();
-            console.log(`Attachment failed: ${errorText}`);
-            throw new Error(`Failed to attach file: ${errorText}`);
-          }
-          
-          const attachedFile = await attachResponse.json();
-          
-          console.log(`File successfully attached: ${JSON.stringify(attachedFile)}`);
+          console.log(`File successfully added to vector store: ${JSON.stringify(vectorStoreFile)}`);
           successfulAttachments.push(uploadedFile.id);
-        } catch (attachError) {
-          console.error(`Error attaching file:`, attachError);
-          throw new Error(`Failed to attach file: ${attachError instanceof Error ? attachError.message : 'Unknown error'}`);
+        } catch (vectorStoreError) {
+          console.error(`Error adding file to vector store:`, vectorStoreError);
+          throw new Error(`Failed to add file to vector store: ${vectorStoreError instanceof Error ? vectorStoreError.message : 'Unknown error'}`);
         }
         
       } catch (error) {
@@ -175,43 +165,29 @@ export async function POST(req: Request) {
       }
     }
     
-    // Get list of files attached to the assistant
-    let assistantFiles = [];
+    // Get list of files in the vector store
+    let vectorStoreFiles = [];
     try {
-      console.log(`Checking files attached to assistant ${assistantId}...`);
+      console.log(`Checking files in vector store ${vectorStoreId}...`);
       
-      try {
-        const listResponse = await fetch(`https://api.openai.com/v1/assistants/${assistantId}/files`, {
-          method: 'GET',
-          headers: {
-            'Authorization': `Bearer ${process.env.OPENAI_API_KEY}`,
-            'OpenAI-Beta': 'assistants=v2'
-          }
-        });
-        
-        if (listResponse.ok) {
-          const listData = await listResponse.json();
-          assistantFiles = listData.data || [];
-          console.log(`Assistant has ${assistantFiles.length} files attached`);
-        } else {
-          console.log(`Failed to list files: ${await listResponse.text()}`);
-        }
-      } catch (listError) {
-        console.error(`Error listing files: ${listError}`);
-      }
+      const listResponse = await openai.beta.vectorStores.files.list(vectorStoreId as string);
+      vectorStoreFiles = listResponse.data || [];
+      console.log(`Vector store has ${vectorStoreFiles.length} files`);
     } catch (err) {
-      console.error(`Error in file listing process: ${err}`);
+      console.error(`Error listing vector store files: ${err}`);
     }
     
     return NextResponse.json({
       success: successfulAttachments.length > 0,
       message: successfulAttachments.length > 0 
-        ? `${successfulAttachments.length} files uploaded and attached successfully` 
-        : 'No files were successfully attached',
+        ? `${successfulAttachments.length} files uploaded and added to vector store successfully` 
+        : 'No files were successfully added to vector store',
       assistantId,
+      vectorStoreId,
       fileIds,
       successfulAttachments,
-      assistantFiles,
+      vectorStoreFiles,
+      hasRetrieval: true,
       errors: fileErrors.length > 0 ? fileErrors : undefined
     });
   } catch (error) {
