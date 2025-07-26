@@ -65,8 +65,9 @@ export default function ManualProcessingPage() {
             'Content-Type': 'application/json',
           },
           body: JSON.stringify({
+            email: 'admin@voxerion.com',
             password: 'admin123'
-          })
+          }),
         });
         
         const loginData = await loginResponse.json();
@@ -83,41 +84,39 @@ export default function ManualProcessingPage() {
     initializeAndLogin();
   }, []);
 
-  // Load companies when token is available
+  // Fetch companies when token is available
   useEffect(() => {
     if (!token) return;
-    loadCompanies();
+    
+    const fetchCompanies = async () => {
+      setIsLoadingCompanies(true);
+      try {
+        const response = await fetch('/api/v1/companies', {
+          headers: {
+            'Authorization': `Bearer ${token}`
+          }
+        });
+        
+        if (response.ok) {
+          const result = await response.json();
+          if (result.success) {
+            setCompanies(result.data || []);
+          } else {
+            setError('Failed to fetch companies');
+          }
+        } else {
+          setError('Failed to fetch companies');
+        }
+      } catch (err) {
+        setError('Error fetching companies');
+      } finally {
+        setIsLoadingCompanies(false);
+      }
+    };
+    
+    fetchCompanies();
   }, [token]);
 
-  const loadCompanies = async () => {
-    if (!token) return;
-    
-    setIsLoadingCompanies(true);
-    setError('');
-    
-    try {
-      const response = await fetch('/api/v1/companies', {
-        headers: {
-          'Authorization': `Bearer ${token}`
-        }
-      });
-      
-      if (!response.ok) {
-        throw new Error('Failed to load companies');
-      }
-      
-      const result = await response.json();
-      if (result.success) {
-        setCompanies(result.data || []);
-      } else {
-        setError('Failed to fetch companies');
-      }
-    } catch (error) {
-      setError(`Failed to load companies: ${error instanceof Error ? error.message : 'Unknown error'}`);
-    } finally {
-      setIsLoadingCompanies(false);
-    }
-  };
 
   const loadVectorStoreFiles = async (companyId: string) => {
     if (!token) return;
@@ -274,7 +273,7 @@ export default function ManualProcessingPage() {
                     ))}
                   </select>
                   <Button
-                    onClick={loadCompanies}
+                    onClick={() => window.location.reload()}
                     disabled={isLoadingCompanies}
                     variant="outline"
                     className="border-gray-600"

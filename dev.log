@@ -1,0 +1,17 @@
+
+> kantor-onboarding@0.1.0 dev
+> next dev --turbopack
+
+   ▲ Next.js 15.1.7 (Turbopack)
+   - Local:        http://localhost:3000
+   - Network:      http://192.168.1.81:3000
+   - Environments: .env.local, .env.development, .env
+
+ ✓ Starting...
+ ✓ Compiled in 176ms
+ ✓ Ready in 954ms
+ ⚠ Webpack is configured while Turbopack is not, which may cause problems.
+ ⚠ See instructions if you need to configure Turbopack:
+  https://nextjs.org/docs/app/api-reference/next-config-js/turbo
+
+[?25h

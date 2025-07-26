@@ -241,6 +241,7 @@ export default function CreateUserPage() {
       }
       
       // Log company status after successful user creation
+      const selectedCompany = companies.find(company => company.name === formData.companyName);
       if (data.companyId || selectedCompany?.company_id) {
         const companyId = data.companyId || selectedCompany?.company_id;
         try {
