@@ -3,6 +3,9 @@ import { dbConnect } from '@/lib/mongodb/connect';
 import { getEnvironment } from '@/lib/environment';
 import Company from '@/lib/mongodb/models/company.model';
 import OpenAI from 'openai';
+import { FileProcessor } from '@/lib/fileProcessor';
+import { ContactExtractor } from '@/lib/contactExtractor';
+import { DatabaseService } from '@/lib/database';
 
 /**
  * GET /api/health
@@ -209,33 +212,101 @@ export async function POST(req: NextRequest) {
     
     console.log(`🔄 Processing ${fileIds.length} files for company ${companyId}`);
 
-    // For now, just simulate processing and return success
+    // Process each file with REAL email extraction logic
     for (const fileId of fileIds) {
+      let result = {
+        fileId,
+        filename: `File ${fileId}`,
+        emailsExtracted: 0,
+        usersUpdated: 0,
+        success: false,
+        error: undefined as string | undefined
+      };
+
       try {
         // Get file details
         const fileDetails = await openai.files.retrieve(fileId);
+        result.filename = fileDetails.filename;
+        
         console.log(`📄 Processing file: ${fileDetails.filename} (${fileId})`);
+
+        // Download file content
+        const fileContent = await openai.files.content(fileId);
+        const fileBuffer = Buffer.from(await fileContent.arrayBuffer());
+
+        // Process file to extract text
+        const processResult = await FileProcessor.processFileBuffer(
+          fileBuffer, 
+          fileDetails.filename, 
+          ''
+        );
+
+        if (!processResult.success) {
+          result.error = processResult.error || 'Failed to process file';
+          results.push(result);
+          continue;
+        }
+
+        console.log(`📝 Extracted ${processResult.text.length} characters from ${fileDetails.filename}`);
+
+        // Extract contacts from text
+        const contactResult = ContactExtractor.extractContacts(processResult.text);
         
-        // Simulate processing (replace this with actual processing logic later)
-        results.push({
-          fileId,
-          filename: fileDetails.filename,
-          emailsExtracted: Math.floor(Math.random() * 50) + 1, // Simulated
-          usersUpdated: Math.floor(Math.random() * 30) + 1, // Simulated
-          success: true
-        });
+        if (!contactResult.success) {
+          result.error = contactResult.error || 'Failed to extract contacts';
+          results.push(result);
+          continue;
+        }
+
+        result.emailsExtracted = contactResult.uniqueCount;
         
+        if (contactResult.uniqueCount === 0) {
+          result.success = true;
+          result.error = 'No email addresses found in file';
+          results.push(result);
+          continue;
+        }
+
+        console.log(`📧 Found ${contactResult.uniqueCount} unique emails in ${fileDetails.filename}`);
+
+        // Query database for existing users
+        const userQueryResult = await DatabaseService.queryUsersByEmails(
+          contactResult.uniqueEmails, 
+          companyId
+        );
+
+        if (userQueryResult.eligibleCount === 0) {
+          result.success = true;
+          result.error = 'No matching users found in database';
+          results.push(result);
+          continue;
+        }
+
+        console.log(`👥 Found ${userQueryResult.eligibleCount} eligible users for update`);
+
+        // Update users with file ID
+        const eligibleEmails = userQueryResult.eligibleUsers.map(user => user.email);
+        const updateResult = await DatabaseService.updateUsersWithFileId(
+          eligibleEmails,
+          companyId,
+          fileId
+        );
+
+        if (updateResult.success) {
+          result.usersUpdated = updateResult.modifiedCount;
+          result.success = true;
+          console.log(`✅ Updated ${updateResult.modifiedCount} users with fileID ${fileId}`);
+        } else {
+          result.error = updateResult.error || 'Failed to update users';
+          console.log(`❌ Failed to update users: ${result.error}`);
+        }
+
       } catch (error) {
         console.error(`❌ Error processing file ${fileId}:`, error);
-        results.push({
-          fileId,
-          filename: `File ${fileId}`,
-          emailsExtracted: 0,
-          usersUpdated: 0,
-          success: false,
-          error: (error as Error).message
-        });
+        result.error = error instanceof Error ? error.message : 'Unknown error';
       }
+
+      results.push(result);
     }
 
     const successfulFiles = results.filter(r => r.success).length;
