@@ -1,3 +1,4 @@
+// Vector Store Files API Route
 import { NextRequest, NextResponse } from 'next/server';
 import { dbConnect } from '@/lib/mongodb/connect';
 import Company from '@/lib/mongodb/models/company.model';
