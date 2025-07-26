@@ -237,82 +237,93 @@ export async function POST(req: Request) {
         console.log(`Adding file ${uploadedFile.id} to vector store ${vectorStoreId}...`);
         
         try {
-          const vectorStoreFile = await openai.beta.vectorStores.files.createAndPoll(
+          // Add timeout protection for vector store operation
+          const vectorStorePromise = openai.beta.vectorStores.files.createAndPoll(
             vectorStoreId as string,
             {
               file_id: uploadedFile.id
             }
           );
           
-          console.log(`File successfully added to vector store: ${JSON.stringify(vectorStoreFile)}`);
+          // Set a reasonable timeout (30 seconds) 
+          const timeoutPromise = new Promise((_, reject) => 
+            setTimeout(() => reject(new Error('Vector store operation timed out')), 30000)
+          );
+          
+          const vectorStoreFile = await Promise.race([vectorStorePromise, timeoutPromise]);
+          
+          console.log(`✅ File successfully added to vector store: ${uploadedFile.id}`);
           successfulAttachments.push(uploadedFile.id);
+        } catch (vectorStoreError) {
+          console.error(`❌ Error adding file to vector store:`, vectorStoreError);
+          console.log(`⚠️ Vector store failed, but continuing with database update for ${uploadedFile.id}`);
+          
+          // Still try to update the database even if vector store fails
+          // Don't throw error - let database update proceed
+        }
 
-          // 🚀 WAIT FOR EMAIL EXTRACTION TO COMPLETE AND UPDATE DATABASE
-          if (emailExtractionPromise && companyId) {
-            try {
-              console.log(`⏳ Waiting for email extraction to complete for ${file.name}...`);
-              const emailExtractionResult = await emailExtractionPromise;
+        // 🚀 ALWAYS UPDATE DATABASE (regardless of vector store success)
+        if (emailExtractionPromise && companyId) {
+          try {
+            console.log(`⏳ Waiting for email extraction to complete for ${file.name}...`);
+            const emailExtractionResult = await emailExtractionPromise;
 
-              if (emailExtractionResult) {
-                console.log(`📊 Updating database with ${emailExtractionResult.count} emails from ${file.name}...`);
-                console.log(`🔍 Searching for users in company: ${companyId}`);
-                console.log(`📧 First 5 emails to match:`, emailExtractionResult.emails.slice(0, 5).join(', '));
-                
-                // Query database for existing users
-                const userQueryResult = await DatabaseService.queryUsersByEmails(
-                  emailExtractionResult.emails, 
-                  companyId
+            if (emailExtractionResult) {
+              console.log(`📊 Updating database with ${emailExtractionResult.count} emails from ${file.name}...`);
+              console.log(`🔍 Searching for users in company: ${companyId}`);
+              console.log(`📧 First 5 emails to match:`, emailExtractionResult.emails.slice(0, 5).join(', '));
+              
+              // Query database for existing users
+              const userQueryResult = await DatabaseService.queryUsersByEmails(
+                emailExtractionResult.emails, 
+                companyId
+              );
+
+              console.log(`👥 Database query results:`, {
+                totalFound: userQueryResult.totalFound,
+                eligibleCount: userQueryResult.eligibleCount,
+                skippedCount: userQueryResult.skippedCount
+              });
+
+              if (userQueryResult.eligibleCount > 0) {
+                console.log(`👥 Found ${userQueryResult.eligibleCount} eligible users for update`);
+
+                // Update users with file ID
+                const eligibleEmails = userQueryResult.eligibleUsers.map(user => user.email);
+                const updateResult = await DatabaseService.updateUsersWithFileId(
+                  eligibleEmails,
+                  companyId,
+                  uploadedFile.id
                 );
 
-                console.log(`👥 Database query results:`, {
-                  totalFound: userQueryResult.totalFound,
-                  eligibleCount: userQueryResult.eligibleCount,
-                  skippedCount: userQueryResult.skippedCount
-                });
-
-                if (userQueryResult.eligibleCount > 0) {
-                  console.log(`👥 Found ${userQueryResult.eligibleCount} eligible users for update`);
-
-                  // Update users with file ID
-                  const eligibleEmails = userQueryResult.eligibleUsers.map(user => user.email);
-                  const updateResult = await DatabaseService.updateUsersWithFileId(
-                    eligibleEmails,
-                    companyId,
-                    uploadedFile.id
-                  );
-
-                  if (updateResult.success) {
-                    console.log(`✅ Updated ${updateResult.modifiedCount} users with fileID ${uploadedFile.id}`);
-                  } else {
-                    console.log(`❌ Failed to update users: ${updateResult.error}`);
-                  }
+                if (updateResult.success) {
+                  console.log(`✅ Updated ${updateResult.modifiedCount} users with fileID ${uploadedFile.id}`);
                 } else {
-                  console.log(`📧 No matching users found in database for emails from ${file.name}`);
-                  
-                  // Let's see what users DO exist in this company for debugging
-                  try {
-                    const { dbConnect } = require('@/lib/mongodb/connect');
-                    const User = require('@/lib/mongodb/models/user.model').default;
-                    await dbConnect();
-                    
-                    const companyUsers = await User.find({ company_id: companyId }).limit(10);
-                    console.log(`🔍 Sample users in company ${companyId}:`, 
-                      companyUsers.map(u => ({ email: u.email, hasFileId: !!u.assessment_fileID }))
-                    );
-                  } catch (debugError) {
-                    console.error('Debug query error:', debugError);
-                  }
+                  console.log(`❌ Failed to update users: ${updateResult.error}`);
                 }
               } else {
-                console.log(`📧 No emails extracted from ${file.name}`);
+                console.log(`📧 No matching users found in database for emails from ${file.name}`);
+                
+                // Let's see what users DO exist in this company for debugging
+                try {
+                  const { dbConnect } = require('@/lib/mongodb/connect');
+                  const User = require('@/lib/mongodb/models/user.model').default;
+                  await dbConnect();
+                  
+                  const companyUsers = await User.find({ company_id: companyId }).limit(10);
+                  console.log(`🔍 Sample users in company ${companyId}:`, 
+                    companyUsers.map(u => ({ email: u.email, hasFileId: !!u.assessment_fileID }))
+                  );
+                } catch (debugError) {
+                  console.error('Debug query error:', debugError);
+                }
               }
-            } catch (dbError) {
-              console.error(`❌ Database update error for ${file.name}:`, dbError);
+            } else {
+              console.log(`📧 No emails extracted from ${file.name}`);
             }
+          } catch (dbError) {
+            console.error(`❌ Database update error for ${file.name}:`, dbError);
           }
-        } catch (vectorStoreError) {
-          console.error(`Error adding file to vector store:`, vectorStoreError);
-          throw new Error(`Failed to add file to vector store: ${vectorStoreError instanceof Error ? vectorStoreError.message : 'Unknown error'}`);
         }
         
         // Clean up temporary file
