@@ -1,4 +1,4 @@
-// Vector Store Files API Route
+// Vector Store Files API Route - Updated for cookie auth
 import { NextRequest, NextResponse } from 'next/server';
 import { dbConnect } from '@/lib/mongodb/connect';
 import Company from '@/lib/mongodb/models/company.model';
