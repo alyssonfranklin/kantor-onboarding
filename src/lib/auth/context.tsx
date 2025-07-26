@@ -59,16 +59,8 @@ export function AuthProvider({ children }: AuthProviderProps) {
       try {
         setLoading(true);
         
-        // Check if we have a token in cookies
-        const token = getTokenFromBrowser();
-        
-        if (!token) {
-          setIsAuthenticated(false);
-          setUser(null);
-          return;
-        }
-        
-        // Validate token with server
+        // Always validate with server since we use httpOnly cookies
+        // Skip client-side token check as httpOnly cookies can't be read by JavaScript
         const response = await fetch(AUTH_URLS.VALIDATE, {
           method: 'GET',
           credentials: 'include', // Include cookies
