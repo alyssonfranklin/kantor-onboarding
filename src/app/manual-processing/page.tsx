@@ -11,8 +11,10 @@ import PasswordProtection from '@/components/PasswordProtection';
 
 interface Company {
   _id: string;
+  company_id: string;
   name: string;
-  domain: string;
+  assistant_id?: string;
+  status: string;
 }
 
 interface VectorStoreFile {
@@ -42,24 +44,74 @@ export default function ManualProcessingPage() {
   const [isProcessing, setIsProcessing] = useState(false);
   const [processingResults, setProcessingResults] = useState<ProcessingResult[]>([]);
   const [error, setError] = useState('');
+  const [token, setToken] = useState('');
 
-  // Load companies on mount
+  // Initialize and get authentication token
   useEffect(() => {
-    loadCompanies();
+    const initializeAndLogin = async () => {
+      try {
+        // Initialize database
+        const initResponse = await fetch('/api/v1/admin/initialize-db', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          }
+        });
+        
+        // Login to get token
+        const loginResponse = await fetch('/api/v1/verify-password', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            password: 'admin123'
+          })
+        });
+        
+        const loginData = await loginResponse.json();
+        if (loginData.token) {
+          setToken(loginData.token);
+        } else {
+          setError('Failed to authenticate');
+        }
+      } catch (err) {
+        setError('Failed to initialize');
+      }
+    };
+    
+    initializeAndLogin();
   }, []);
 
+  // Load companies when token is available
+  useEffect(() => {
+    if (!token) return;
+    loadCompanies();
+  }, [token]);
+
   const loadCompanies = async () => {
+    if (!token) return;
+    
     setIsLoadingCompanies(true);
     setError('');
     
     try {
-      const response = await fetch('/api/companies');
+      const response = await fetch('/api/v1/companies', {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+      
       if (!response.ok) {
         throw new Error('Failed to load companies');
       }
       
-      const data = await response.json();
-      setCompanies(data.companies || []);
+      const result = await response.json();
+      if (result.success) {
+        setCompanies(result.data || []);
+      } else {
+        setError('Failed to fetch companies');
+      }
     } catch (error) {
       setError(`Failed to load companies: ${error instanceof Error ? error.message : 'Unknown error'}`);
     } finally {
@@ -68,19 +120,30 @@ export default function ManualProcessingPage() {
   };
 
   const loadVectorStoreFiles = async (companyId: string) => {
+    if (!token) return;
+    
     setIsLoadingFiles(true);
     setError('');
     setVectorStoreFiles([]);
     setSelectedFiles(new Set());
     
     try {
-      const response = await fetch(`/api/vector-store-files?companyId=${companyId}`);
+      const response = await fetch(`/api/vector-store-files?companyId=${companyId}`, {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+      
       if (!response.ok) {
         throw new Error('Failed to load vector store files');
       }
       
       const data = await response.json();
-      setVectorStoreFiles(data.files || []);
+      if (data.success) {
+        setVectorStoreFiles(data.files || []);
+      } else {
+        setError(data.message || 'Failed to load files');
+      }
     } catch (error) {
       setError(`Failed to load files: ${error instanceof Error ? error.message : 'Unknown error'}`);
     } finally {
@@ -117,7 +180,7 @@ export default function ManualProcessingPage() {
   };
 
   const processSelectedFiles = async () => {
-    if (!selectedCompany || selectedFiles.size === 0) {
+    if (!token || !selectedCompany || selectedFiles.size === 0) {
       setError('Please select a company and at least one file');
       return;
     }
@@ -131,6 +194,7 @@ export default function ManualProcessingPage() {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
         },
         body: JSON.stringify({
           companyId: selectedCompany,
@@ -143,11 +207,12 @@ export default function ManualProcessingPage() {
       }
 
       const data = await response.json();
-      setProcessingResults(data.results || []);
-      
       if (data.success) {
+        setProcessingResults(data.results || []);
         // Reset selections after successful processing
         setSelectedFiles(new Set());
+      } else {
+        setError(data.message || 'Processing failed');
       }
     } catch (error) {
       setError(`Processing failed: ${error instanceof Error ? error.message : 'Unknown error'}`);
@@ -203,8 +268,8 @@ export default function ManualProcessingPage() {
                   >
                     <option value="">-- Select a company --</option>
                     {companies.map((company) => (
-                      <option key={company._id} value={company._id}>
-                        {company.name} ({company.domain})
+                      <option key={company._id} value={company.company_id}>
+                        {company.name} ({company.status})
                       </option>
                     ))}
                   </select>

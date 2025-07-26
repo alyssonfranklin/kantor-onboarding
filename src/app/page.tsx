@@ -47,6 +47,15 @@ export default function LandingPage() {
                 Go to Form
               </div>
             </Link>
+
+            <Link href="/manual-processing" 
+              className="bg-gray-700 hover:bg-gray-600 text-white rounded-lg p-8 flex flex-col items-center justify-center transition-colors">
+              <h2 className="text-xl font-semibold mb-4">Manual Contact Processing</h2>
+              <p className="text-gray-300">Extract contacts from uploaded files and update user database records by company.</p>
+              <div className="mt-6 bg-[#E64A19] text-white font-bold py-2 px-4 rounded">
+                Go to Processing
+              </div>
+            </Link>
           </div>
           
           <div className="mt-16 border-t border-gray-600 pt-12">
