@@ -129,12 +129,17 @@ export class DatabaseService {
         acknowledged: updateResult.acknowledged
       });
 
-      // Get the IDs of updated users for reporting
+      // VERIFICATION: Check if users were actually updated in the database
       const updatedUsers = await User.find({
         email: { $in: emails },
         company_id: companyId,
         assessment_fileID: fileId
-      });
+      }).select('email assessment_fileID');
+
+      console.log(`✅ Verification: Users actually updated in database:`, updatedUsers.map(u => ({
+        email: u.email,
+        assessment_fileID: u.assessment_fileID
+      })));
 
       const updatedUserIds = updatedUsers.map(user => user._id.toString());
 

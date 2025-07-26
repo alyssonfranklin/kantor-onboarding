@@ -14,6 +14,7 @@ export interface IUser extends Document {
   reports_to?: string; // ID of the user this person reports to
   insightsLeft?: number; // Number of insights credits remaining
   insightsDay?: number;  // The day of the month when insights reset
+  assessment_fileID?: string; // OpenAI file ID for assessment file
   // Subscription fields
   stripe_customer_id?: string;
   subscription_id?: string;
@@ -40,6 +41,7 @@ const UserSchema: Schema = new Schema(
     reports_to: { type: String, required: false }, // ID of the user this person reports to
     insightsLeft: { type: Number, default: 20 }, // Default number of insights credits
     insightsDay: { type: Number, default: 1 },   // Default day of month for reset
+    assessment_fileID: { type: String, required: false }, // OpenAI file ID for assessment file
     // Subscription fields
     stripe_customer_id: { type: String, required: false },
     subscription_id: { type: String, required: false },
