@@ -6,7 +6,11 @@ import { withAuth } from '@/lib/middleware/auth';
 import OpenAI from 'openai';
 
 export async function GET(req: NextRequest) {
+  // Add immediate logging to verify the route is being hit
+  console.log('🔍 Vector store files API called:', req.url);
+  
   return withAuth(req, async (req, user) => {
+    console.log('✅ Auth passed, user:', user.email, 'role:', user.role);
     await dbConnect();
     
     try {
