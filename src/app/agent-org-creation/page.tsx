@@ -3,12 +3,12 @@
 
 import AgentOrgAdminCreation from '@/components/AgentOrgAdminCreation';
 import Link from 'next/link';
-import PasswordProtection from '@/components/PasswordProtection';
+import AdminJWTProtection from '@/components/AdminJWTProtection';
 import { PageSEOWrapper } from '@/components/ui/page-seo-wrapper';
 
 export default function AgentOrgCreationPage() {
   return (
-    <PasswordProtection>
+    <AdminJWTProtection>
       <PageSEOWrapper>
         <main className="min-h-screen bg-gray-800 py-8 px-4">
           <div className="max-w-4xl mx-auto mb-6">
@@ -22,6 +22,6 @@ export default function AgentOrgCreationPage() {
           <AgentOrgAdminCreation />
         </main>
       </PageSEOWrapper>
-    </PasswordProtection>
+    </AdminJWTProtection>
   );
 }

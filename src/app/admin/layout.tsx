@@ -1,4 +1,4 @@
-import PasswordProtection from '@/components/PasswordProtection';
+import AdminJWTProtection from '@/components/AdminJWTProtection';
 
 export const metadata = {
   title: 'Kantor Admin',
@@ -11,7 +11,7 @@ export default function AdminLayout({
   children: React.ReactNode;
 }) {
   return (
-    <PasswordProtection>
+    <AdminJWTProtection>
       <div className="flex min-h-screen flex-col bg-gray-900 text-white">
         <header className="border-b border-gray-700 bg-gray-800 p-4">
           <div className="container mx-auto flex items-center justify-between">
@@ -38,6 +38,6 @@ export default function AdminLayout({
           </div>
         </footer>
       </div>
-    </PasswordProtection>
+    </AdminJWTProtection>
   );
 }

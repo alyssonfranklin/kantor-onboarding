@@ -3,11 +3,11 @@
 
 import CompanyOnboardingForm from '@/components/CompanyOnboardingForm';
 import Link from 'next/link';
-import PasswordProtection from '@/components/PasswordProtection';
+import AdminJWTProtection from '@/components/AdminJWTProtection';
 
 export default function OnboardingCompanyPage() {
   return (
-    <PasswordProtection>
+    <AdminJWTProtection>
       <main className="min-h-screen bg-gray-800 py-8 px-4">
         <div className="max-w-4xl mx-auto mb-6">
           <Link href="/" className="text-white hover:text-gray-300 flex items-center">
@@ -19,6 +19,6 @@ export default function OnboardingCompanyPage() {
         </div>
         <CompanyOnboardingForm />
       </main>
-    </PasswordProtection>
+    </AdminJWTProtection>
   );
 }
