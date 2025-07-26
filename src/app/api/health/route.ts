@@ -55,10 +55,41 @@ export async function GET(req: NextRequest) {
             console.log('📚 Vector store check:', { hasVectorStore, vectorStoreId });
             
             let fileCount = 0;
+            let filesWithDetails = [];
             if (vectorStoreId) {
               const listResponse = await openai.beta.vectorStores.files.list(vectorStoreId);
-              fileCount = listResponse.data?.length || 0;
+              const vectorStoreFiles = listResponse.data || [];
+              fileCount = vectorStoreFiles.length;
               console.log('📄 Files in vector store:', fileCount);
+              
+              // Get file details for each file (same logic as original endpoint)
+              filesWithDetails = await Promise.all(
+                vectorStoreFiles.map(async (vectorFile) => {
+                  try {
+                    const fileDetails = await openai.files.retrieve(vectorFile.id);
+                    return {
+                      id: vectorFile.id,
+                      filename: fileDetails.filename,
+                      created_at: fileDetails.created_at,
+                      bytes: fileDetails.bytes,
+                      status: vectorFile.status,
+                      vectorStoreStatus: vectorFile.status
+                    };
+                  } catch (error) {
+                    console.error(`Error getting details for file ${vectorFile.id}:`, error);
+                    return {
+                      id: vectorFile.id,
+                      filename: `File ${vectorFile.id}`,
+                      created_at: Date.now() / 1000,
+                      bytes: 0,
+                      status: vectorFile.status,
+                      vectorStoreStatus: vectorFile.status
+                    };
+                  }
+                })
+              );
+              
+              console.log('✅ File details retrieved:', filesWithDetails.length);
             }
             
             vectorStoreTest = {
@@ -68,6 +99,7 @@ export async function GET(req: NextRequest) {
               hasVectorStore,
               vectorStoreId,
               fileCount,
+              files: filesWithDetails.sort((a, b) => b.created_at - a.created_at),
               companyId,
               openaiApiWorking: true
             };
