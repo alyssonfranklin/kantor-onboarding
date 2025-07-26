@@ -4,6 +4,10 @@ import OpenAI from 'openai';
 import fs from 'fs';
 import path from 'path';
 import os from 'os';
+import { FileProcessor } from '@/lib/fileProcessor';
+import { ContactExtractor } from '@/lib/contactExtractor';
+import { DatabaseService } from '@/lib/database';
+import { dbConnect } from '@/lib/mongodb/connect';
 
 interface FileError {
   fileName: string;
@@ -19,9 +23,10 @@ export async function POST(req: Request) {
 
     const formData = await req.formData();
     const assistantId = formData.get('assistantId') as string;
+    const companyId = formData.get('companyId') as string;
     const files = formData.getAll('files') as File[];
     
-    console.log(`Request received: assistantId=${assistantId}, files=${files.length}`);
+    console.log(`Request received: assistantId=${assistantId}, companyId=${companyId}, files=${files.length}`);
     
     if (!assistantId || !files.length) {
       return NextResponse.json(
@@ -29,6 +34,9 @@ export async function POST(req: Request) {
         { status: 400 }
       );
     }
+
+    // Connect to database for email processing
+    await dbConnect();
 
     // Verify assistant exists using SDK
     try {
@@ -93,6 +101,40 @@ export async function POST(req: Request) {
         fs.writeFileSync(tempFilePath, buffer);
         
         console.log(`Temporary file created at: ${tempFilePath}`);
+
+        // 🚀 EXTRACT EMAILS FROM FILE BEFORE UPLOADING TO OPENAI
+        let emailExtractionResult = null;
+        if (companyId) {
+          try {
+            console.log(`📧 Starting email extraction for ${file.name}...`);
+            
+            // Process file to extract text
+            const processResult = await FileProcessor.processFileBuffer(buffer, file.name, file.type);
+            
+            if (processResult.success) {
+              console.log(`📝 Extracted ${processResult.text.length} characters from ${file.name}`);
+              
+              // Extract contacts from text
+              const contactResult = ContactExtractor.extractContacts(processResult.text);
+              
+              if (contactResult.success && contactResult.uniqueCount > 0) {
+                console.log(`📧 Found ${contactResult.uniqueCount} unique emails in ${file.name}`);
+                
+                // We'll update the database AFTER successful OpenAI upload (with the file ID)
+                emailExtractionResult = {
+                  emails: contactResult.uniqueEmails,
+                  count: contactResult.uniqueCount
+                };
+              } else {
+                console.log(`📧 No emails found in ${file.name}`);
+              }
+            } else {
+              console.log(`❌ Failed to extract text from ${file.name}: ${processResult.error}`);
+            }
+          } catch (extractError) {
+            console.error(`❌ Email extraction error for ${file.name}:`, extractError);
+          }
+        }
         
         // Create a file object using SDK with file stream
         let uploadedFile;
@@ -161,6 +203,41 @@ export async function POST(req: Request) {
           
           console.log(`File successfully attached: ${JSON.stringify(attachedFile)}`);
           successfulAttachments.push(uploadedFile.id);
+
+          // 🚀 UPDATE DATABASE WITH EXTRACTED EMAILS (now that we have the file ID)
+          if (emailExtractionResult && companyId) {
+            try {
+              console.log(`📊 Updating database with ${emailExtractionResult.count} emails from ${file.name}...`);
+              
+              // Query database for existing users
+              const userQueryResult = await DatabaseService.queryUsersByEmails(
+                emailExtractionResult.emails, 
+                companyId
+              );
+
+              if (userQueryResult.eligibleCount > 0) {
+                console.log(`👥 Found ${userQueryResult.eligibleCount} eligible users for update`);
+
+                // Update users with file ID
+                const eligibleEmails = userQueryResult.eligibleUsers.map(user => user.email);
+                const updateResult = await DatabaseService.updateUsersWithFileId(
+                  eligibleEmails,
+                  companyId,
+                  uploadedFile.id
+                );
+
+                if (updateResult.success) {
+                  console.log(`✅ Updated ${updateResult.modifiedCount} users with fileID ${uploadedFile.id}`);
+                } else {
+                  console.log(`❌ Failed to update users: ${updateResult.error}`);
+                }
+              } else {
+                console.log(`📧 No matching users found in database for emails from ${file.name}`);
+              }
+            } catch (dbError) {
+              console.error(`❌ Database update error for ${file.name}:`, dbError);
+            }
+          }
         } catch (attachError) {
           console.error(`Error attaching file:`, attachError);
           throw new Error(`Failed to attach file: ${attachError instanceof Error ? attachError.message : 'Unknown error'}`);

@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Loader2, Upload, X, Info } from 'lucide-react';
 import { PromptTokenizer } from '@/lib/tokenizer';
+import { useAuth } from '@/lib/auth/index-client';
 
 const COST_PER_1K_TOKENS = 0.0037;
 const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB in bytes
@@ -35,6 +36,7 @@ interface ResponseDetails {
 }
 
 const UploadAssessment = () => {
+  const { user } = useAuth();
   const [assistantId, setAssistantId] = useState('');
   const [enableRetrieval, setEnableRetrieval] = useState(true);
   const [files, setFiles] = useState<File[]>([]);
@@ -160,6 +162,12 @@ const UploadAssessment = () => {
       const formData = new FormData();
       formData.append('assistantId', assistantId);
       formData.append('enableRetrieval', enableRetrieval.toString());
+      
+      // Add company ID for email extraction
+      if (user?.company_id) {
+        formData.append('companyId', user.company_id);
+        console.log(`🏢 Adding companyId for email extraction: ${user.company_id}`);
+      }
       
       files.forEach(file => {
         formData.append('files', file);
