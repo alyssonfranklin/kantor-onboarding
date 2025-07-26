@@ -1,10 +1,4 @@
 // src/lib/fileProcessor.ts
-import pdfParse from 'pdf-parse';
-import * as mammoth from 'mammoth';
-import * as XLSX from 'xlsx';
-import { createReadStream } from 'fs';
-import { pipeline } from 'stream/promises';
-import * as csv from 'csv-parser';
 
 export interface ProcessedFileResult {
   text: string;
@@ -81,7 +75,15 @@ export class FileProcessor {
    */
   private static async processPDF(filePath: string): Promise<ProcessedFileResult> {
     try {
-      const fs = require('fs');
+      // Dynamic imports to avoid build issues
+      const [pdfParseModule, fsModule] = await Promise.all([
+        import('pdf-parse'),
+        import('fs')
+      ]);
+      
+      const pdfParse = pdfParseModule.default;
+      const fs = fsModule.default;
+      
       const dataBuffer = fs.readFileSync(filePath);
       const data = await pdfParse(dataBuffer);
       
@@ -107,6 +109,8 @@ export class FileProcessor {
    */
   private static async processWord(filePath: string): Promise<ProcessedFileResult> {
     try {
+      const mammoth = await import('mammoth');
+      
       const result = await mammoth.extractRawText({ path: filePath });
       
       return {
@@ -130,8 +134,8 @@ export class FileProcessor {
    */
   private static async processTextFile(filePath: string): Promise<ProcessedFileResult> {
     try {
-      const fs = require('fs');
-      const text = fs.readFileSync(filePath, 'utf8');
+      const fs = await import('fs');
+      const text = fs.default.readFileSync(filePath, 'utf8');
       
       return {
         text,
@@ -154,8 +158,15 @@ export class FileProcessor {
    */
   private static async processCSV(filePath: string): Promise<ProcessedFileResult> {
     try {
+      const [csvModule, fsModule] = await Promise.all([
+        import('csv-parser'),
+        import('fs')
+      ]);
+      
+      const csv = csvModule.default;
+      const fs = fsModule.default;
+      
       const results: any[] = [];
-      const fs = require('fs');
       
       await new Promise<void>((resolve, reject) => {
         fs.createReadStream(filePath)
@@ -197,6 +208,8 @@ export class FileProcessor {
    */
   private static async processExcel(filePath: string): Promise<ProcessedFileResult> {
     try {
+      const XLSX = await import('xlsx');
+      
       const workbook = XLSX.readFile(filePath);
       let allText = '';
 
