@@ -4,26 +4,10 @@ import OpenAI from 'openai';
 import fs from 'fs';
 import path from 'path';
 import os from 'os';
-import { FileProcessor } from '@/lib/fileProcessor';
-import { ContactExtractor } from '@/lib/contactExtractor';
-import { DatabaseService } from '@/lib/database';
 
 interface FileError {
   fileName: string;
   error: string;
-}
-
-interface ContactExtractionResult {
-  fileName: string;
-  extractedEmails: string[];
-  uniqueEmails: string[];
-  totalFound: number;
-  uniqueCount: number;
-  isWithinRecommendedLimit: boolean;
-  processingSuccess: boolean;
-  extractionSuccess: boolean;
-  error?: string;
-  warning?: string;
 }
 
 export async function POST(req: Request) {
@@ -156,131 +140,6 @@ export async function POST(req: Request) {
       return supportedMimeTypes.includes(file.type) || supportedExtensions.includes(fileExtension);
     };
     
-    // PHASE A: Contact Extraction (BEFORE OpenAI upload)
-    console.log('Starting contact extraction phase...');
-    const contactExtractionResults: ContactExtractionResult[] = [];
-    const allExtractedEmails: string[] = [];
-    
-    // Process each file for contact extraction
-    for (const file of files) {
-      const fileName = file.name;
-      let extractionResult: ContactExtractionResult = {
-        fileName,
-        extractedEmails: [],
-        uniqueEmails: [],
-        totalFound: 0,
-        uniqueCount: 0,
-        isWithinRecommendedLimit: true,
-        processingSuccess: false,
-        extractionSuccess: false
-      };
-
-      try {
-        // Validate file type first
-        if (!isFileSupported(file)) {
-          const fileExtension = fileName.toLowerCase().substring(fileName.lastIndexOf('.'));
-          extractionResult.error = `Unsupported file type: ${fileExtension}`;
-          contactExtractionResults.push(extractionResult);
-          continue;
-        }
-
-        // Create temporary file for processing
-        const tempDir = os.tmpdir();
-        const tempFilePath = path.join(tempDir, fileName);
-        
-        const arrayBuffer = await file.arrayBuffer();
-        const buffer = Buffer.from(arrayBuffer);
-        fs.writeFileSync(tempFilePath, buffer);
-
-        // Process file to extract text (A1)
-        const fileProcessResult = await FileProcessor.processFile(tempFilePath, fileName, file.type);
-        
-        if (!fileProcessResult.success) {
-          extractionResult.error = fileProcessResult.error;
-          extractionResult.processingSuccess = false;
-        } else {
-          extractionResult.processingSuccess = true;
-          
-          // Extract contacts from text (A2)
-          const contactResult = ContactExtractor.extractContacts(fileProcessResult.text);
-          
-          if (contactResult.success) {
-            extractionResult.extractionSuccess = true;
-            extractionResult.extractedEmails = contactResult.emails;
-            extractionResult.uniqueEmails = contactResult.uniqueEmails;
-            extractionResult.totalFound = contactResult.totalFound;
-            extractionResult.uniqueCount = contactResult.uniqueCount;
-            extractionResult.isWithinRecommendedLimit = contactResult.isWithinRecommendedLimit;
-            
-            // Add to master list
-            allExtractedEmails.push(...contactResult.uniqueEmails);
-            
-            // Add warning if over recommended limit
-            if (!contactResult.isWithinRecommendedLimit) {
-              extractionResult.warning = ContactExtractor.getRecommendationMessage(contactResult.uniqueCount);
-            }
-          } else {
-            extractionResult.extractionSuccess = false;
-            extractionResult.error = contactResult.error;
-          }
-        }
-
-        // Clean up temp file
-        try {
-          fs.unlinkSync(tempFilePath);
-        } catch (cleanupError) {
-          console.error(`Error cleaning up temp file: ${cleanupError}`);
-        }
-
-      } catch (error) {
-        extractionResult.error = `File processing failed: ${error instanceof Error ? error.message : 'Unknown error'}`;
-      }
-
-      contactExtractionResults.push(extractionResult);
-    }
-
-    // Remove duplicates from all extracted emails
-    const uniqueExtractedEmails = [...new Set(allExtractedEmails)];
-    
-    const isDevelopment = process.env.NODE_ENV === 'development';
-    if (isDevelopment) {
-      console.log(`Contact extraction completed:`);
-      console.log(`- Total unique emails extracted: ${uniqueExtractedEmails.length}`);
-      console.log(`- Emails: ${uniqueExtractedEmails.join(', ')}`);
-    }
-
-    // PHASE B1: Query database for existing users
-    let userQueryResult;
-    let companyID = 'default-company'; // TODO: Get actual company ID from request/session
-    
-    try {
-      if (uniqueExtractedEmails.length > 0) {
-        userQueryResult = await DatabaseService.queryUsersByEmails(uniqueExtractedEmails, companyID);
-        
-        if (isDevelopment) {
-          console.log(`Database query completed: Found ${userQueryResult.totalFound} users`);
-        }
-      } else {
-        userQueryResult = {
-          eligibleUsers: [],
-          skippedUsers: [],
-          totalFound: 0,
-          eligibleCount: 0,
-          skippedCount: 0
-        };
-      }
-    } catch (dbError) {
-      console.error('Database query failed:', dbError);
-      // Continue with file upload even if DB query fails
-      userQueryResult = {
-        eligibleUsers: [],
-        skippedUsers: [],
-        totalFound: 0,
-        eligibleCount: 0,
-        skippedCount: 0
-      };
-    }
-    
     // Upload files and add to vector store
     const fileIds: string[] = [];
     const fileErrors: FileError[] = [];
@@ -370,56 +229,7 @@ export async function POST(req: Request) {
     } catch (err) {
       console.error(`Error listing vector store files: ${err}`);
     }
-
-    // PHASE B2/B3: Update database with file IDs (AFTER OpenAI upload)
-    let databaseUpdateResult = {
-      modifiedCount: 0,
-      updatedUserIds: [],
-      success: true,
-      error: undefined
-    };
-
-    if (successfulAttachments.length > 0 && userQueryResult.eligibleCount > 0) {
-      console.log('Starting database update phase...');
-      
-      try {
-        // Use the first successfully uploaded file ID for all users
-        const fileIdToAssign = fileIds[0]; // All files get same treatment for now
-        
-        const eligibleEmails = userQueryResult.eligibleUsers.map(user => user.email);
-        
-        if (eligibleEmails.length > 0) {
-          databaseUpdateResult = await DatabaseService.updateUsersWithFileId(
-            eligibleEmails,
-            companyID,
-            fileIdToAssign
-          );
-          
-          if (isDevelopment) {
-            console.log(`Database update completed: Updated ${databaseUpdateResult.modifiedCount} users`);
-          }
-        }
-      } catch (dbUpdateError) {
-        console.error('Database update failed:', dbUpdateError);
-        databaseUpdateResult.success = false;
-        databaseUpdateResult.error = dbUpdateError instanceof Error ? dbUpdateError.message : 'Database update failed';
-      }
-    }
     
-    // Calculate summary statistics
-    const totalEmailsExtracted = uniqueExtractedEmails.length;
-    const usersFound = userQueryResult.totalFound;
-    const usersUpdated = databaseUpdateResult.modifiedCount;
-    const usersSkipped = userQueryResult.skippedCount;
-    
-    // Prepare warnings
-    const warnings: string[] = [];
-    contactExtractionResults.forEach(result => {
-      if (result.warning) {
-        warnings.push(`${result.fileName}: ${result.warning}`);
-      }
-    });
-
     return NextResponse.json({
       success: successfulAttachments.length > 0,
       message: successfulAttachments.length > 0 
@@ -431,27 +241,6 @@ export async function POST(req: Request) {
       successfulAttachments,
       vectorStoreFiles,
       hasRetrieval: true,
-      
-      // Contact extraction results
-      contactExtraction: {
-        totalEmailsExtracted,
-        uniqueEmailsExtracted: uniqueExtractedEmails.length,
-        extractedEmails: isDevelopment ? uniqueExtractedEmails : undefined,
-        fileResults: contactExtractionResults
-      },
-      
-      // Database results
-      userMatching: {
-        usersFound,
-        usersUpdated,
-        usersSkipped,
-        updatedUserIds: isDevelopment ? databaseUpdateResult.updatedUserIds : undefined,
-        databaseSuccess: databaseUpdateResult.success,
-        databaseError: databaseUpdateResult.error
-      },
-      
-      // Warnings and errors
-      warnings: warnings.length > 0 ? warnings : undefined,
       errors: fileErrors.length > 0 ? fileErrors : undefined
     });
   } catch (error) {
