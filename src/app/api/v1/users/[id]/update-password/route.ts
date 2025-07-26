@@ -15,7 +15,6 @@ export async function PUT(
   return withAuth(req, async (req, authUser) => {
     try {
       await dbConnect();
-      const { id } = await params;
     } catch (error) {
       console.error('Database connection failed:', error);
       return NextResponse.json(
@@ -25,6 +24,7 @@ export async function PUT(
     }
     
     try {
+      const { id } = await params;
       const body = await req.json();
       
       // Validate required fields
