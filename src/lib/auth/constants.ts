@@ -12,8 +12,15 @@ export const PRODUCTION_DOMAIN = 'voxerion.com';
 export const PRODUCTION_APP_DOMAIN = 'app.voxerion.com';
 export const DEV_DOMAIN = 'localhost';
 
-// The root domain to use for cookies - in production this allows sharing between subdomains
-export const ROOT_DOMAIN = isProduction() ? `.${PRODUCTION_DOMAIN}` : undefined;
+// Check if we're on Vercel deployment
+const isVercelDeployment = typeof window !== 'undefined' 
+  ? window.location.hostname.includes('vercel.app')
+  : process.env.VERCEL_URL?.includes('vercel.app');
+
+// The root domain to use for cookies - handle Vercel deployment
+export const ROOT_DOMAIN = isProduction() 
+  ? (isVercelDeployment ? undefined : `.${PRODUCTION_DOMAIN}`)
+  : undefined;
 
 // Authentication Token Settings
 export const AUTH_TOKEN_NAME = 'auth_token';
