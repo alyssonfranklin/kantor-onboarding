@@ -29,9 +29,11 @@ export default function ProtectedRoute({
     // Only redirect after authentication check is complete
     if (loading) return;
     
-    // If not authenticated, redirect to login
+    // If not authenticated, redirect to login with current URL as redirect parameter
     if (!isAuthenticated) {
-      router.push(redirectTo);
+      const currentUrl = window.location.pathname + window.location.search;
+      const loginUrl = `${redirectTo}?redirect=${encodeURIComponent(currentUrl)}`;
+      router.push(loginUrl);
       return;
     }
     

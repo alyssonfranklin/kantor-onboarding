@@ -2,11 +2,11 @@
 "use client";
 
 import Link from 'next/link';
-import AdminJWTProtection from '@/components/AdminJWTProtection';
+import ProtectedRoute from '@/components/auth/ProtectedRoute';
 
 export default function LandingPage() {
   return (
-    <AdminJWTProtection>
+    <ProtectedRoute requiredRole="admin">
       <main className="min-h-screen bg-gray-800 py-16 px-4 flex flex-col items-center">
         <div className="max-w-4xl w-full text-center">
           <h1 className="text-4xl font-bold text-white mb-8">Voxerion Admin Portal</h1>
@@ -101,6 +101,6 @@ export default function LandingPage() {
           </div>
         </div>
       </main>
-    </AdminJWTProtection>
+    </ProtectedRoute>
   );
 }

@@ -7,8 +7,9 @@ import { Button } from '@/components/ui/button';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Loader2, FileText, Users, CheckCircle, AlertCircle } from 'lucide-react';
 import Link from 'next/link';
-import AdminJWTProtection from '@/components/AdminJWTProtection';
-// import PasswordProtection from '@/components/PasswordProtection';
+import ProtectedRoute from '@/components/auth/ProtectedRoute';
+import { useAuth } from '@/lib/auth/index-client';
+import { getTokenFromBrowser } from '@/lib/auth/token-client';
 
 interface Company {
   _id: string;
@@ -35,7 +36,7 @@ interface ProcessingResult {
   error?: string;
 }
 
-export default function ManualProcessingPage({ adminToken }: { adminToken?: string }) {
+export default function ManualProcessingPage() {
   const [companies, setCompanies] = useState<Company[]>([]);
   const [selectedCompany, setSelectedCompany] = useState<string>('');
   const [vectorStoreFiles, setVectorStoreFiles] = useState<VectorStoreFile[]>([]);
@@ -45,22 +46,17 @@ export default function ManualProcessingPage({ adminToken }: { adminToken?: stri
   const [isProcessing, setIsProcessing] = useState(false);
   const [processingResults, setProcessingResults] = useState<ProcessingResult[]>([]);
   const [error, setError] = useState('');
-  const [token, setToken] = useState('');
 
-  // Set token from AdminJWTProtection  
-  useEffect(() => {
-    if (adminToken) {
-      setToken(adminToken);
-    }
-  }, [adminToken]);
+  const { isAuthenticated } = useAuth();
 
-  // Fetch companies when token is available
+  // Fetch companies when authenticated
   useEffect(() => {
-    if (!token) return;
+    if (!isAuthenticated) return;
     
     const fetchCompanies = async () => {
       setIsLoadingCompanies(true);
       try {
+        const token = getTokenFromBrowser();
         const response = await fetch('/api/v1/companies', {
           headers: {
             'Authorization': `Bearer ${token}`
@@ -85,11 +81,11 @@ export default function ManualProcessingPage({ adminToken }: { adminToken?: stri
     };
     
     fetchCompanies();
-  }, [token]);
+  }, [isAuthenticated]);
 
 
   const loadVectorStoreFiles = async (companyId: string) => {
-    if (!token) return;
+    if (!isAuthenticated) return;
     
     setIsLoadingFiles(true);
     setError('');
@@ -97,6 +93,7 @@ export default function ManualProcessingPage({ adminToken }: { adminToken?: stri
     setSelectedFiles(new Set());
     
     try {
+      const token = getTokenFromBrowser();
       const response = await fetch(`/api/vector-store-files?companyId=${companyId}`, {
         headers: {
           'Authorization': `Bearer ${token}`
@@ -149,7 +146,7 @@ export default function ManualProcessingPage({ adminToken }: { adminToken?: stri
   };
 
   const processSelectedFiles = async () => {
-    if (!token || !selectedCompany || selectedFiles.size === 0) {
+    if (!isAuthenticated || !selectedCompany || selectedFiles.size === 0) {
       setError('Please select a company and at least one file');
       return;
     }
@@ -159,6 +156,7 @@ export default function ManualProcessingPage({ adminToken }: { adminToken?: stri
     setProcessingResults([]);
 
     try {
+      const token = getTokenFromBrowser();
       const response = await fetch('/api/process-files', {
         method: 'POST',
         headers: {
@@ -201,7 +199,7 @@ export default function ManualProcessingPage({ adminToken }: { adminToken?: stri
   };
 
   return (
-    <AdminJWTProtection>
+    <ProtectedRoute requiredRole="admin">
       <main className="min-h-screen bg-gray-800 py-8 px-4">
         <div className="max-w-6xl mx-auto mb-6">
           <Link href="/" className="text-white hover:text-gray-300 flex items-center mb-6">
@@ -397,6 +395,6 @@ export default function ManualProcessingPage({ adminToken }: { adminToken?: stri
           </Card>
         </div>
       </main>
-    </AdminJWTProtection>
+    </ProtectedRoute>
   );
 }
