@@ -33,7 +33,7 @@ export const generateToken = async (user: IUser): Promise<string> => {
       company_id: user.company_id
     };
 
-    const token = jwt.sign(payload, String(JWT_SECRET), { expiresIn: JWT_EXPIRY });
+    const token = jwt.sign(payload, JWT_SECRET, { expiresIn: JWT_EXPIRY });
     
     // Calculate expiry date
     const expiryDays = parseInt(JWT_EXPIRY.replace('d', ''), 10);
@@ -104,7 +104,7 @@ export const setServerActionAuthCookie = (
     ...(isProduction() && { domain: options.domain || COOKIE_DOMAIN }),
   };
   
-  cookieStore.set('auth_token', token, cookieOptions);
+  (await cookieStore).set('auth_token', token, cookieOptions);
 };
 
 /**

@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 
 export async function GET(req: NextRequest) {
-  console.log('🔍 DEBUG: Vector files API called:', req.url);
+  console.log('🔍 DEBUG: Vector files API called (v2):', req.url);
   console.log('🔍 DEBUG: Headers:', Object.fromEntries(req.headers.entries()));
   console.log('🔍 DEBUG: Method:', req.method);
   
