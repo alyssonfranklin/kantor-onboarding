@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useAuth } from "@/lib/auth/index-client";
 import { LoginForm } from "@/components/auth";
@@ -11,12 +11,9 @@ import { Button } from "@/components/ui/button";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 
 /**
- * Login Page
- * 
- * The main login page that uses the auth system.
- * Redirects to dashboard if already authenticated.
+ * Login Content Component that uses useSearchParams
  */
-export default function LoginPage() {
+function LoginContent() {
   const { isAuthenticated, loading } = useAuth();
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -205,5 +202,23 @@ export default function LoginPage() {
         </div>
       </div>
     </div>
+  );
+}
+
+/**
+ * Login Page
+ * 
+ * The main login page that uses the auth system.
+ * Redirects to dashboard if already authenticated.
+ */
+export default function LoginPage() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen flex items-center justify-center">
+        <p>Loading...</p>
+      </div>
+    }>
+      <LoginContent />
+    </Suspense>
   );
 }

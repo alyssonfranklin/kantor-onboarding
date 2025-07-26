@@ -17,8 +17,7 @@ const LabelSchema: Schema = new Schema(
   { timestamps: true }
 );
 
-// Index on key for faster lookups
-LabelSchema.index({ key: 1 });
+// Index already created by unique: true on key field
 
 // Export the model or create it if it doesn't exist
 export default mongoose.models.Label || mongoose.model<ILabel>('Label', LabelSchema);
