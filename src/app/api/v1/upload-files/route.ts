@@ -148,12 +148,15 @@ export async function POST(req: Request) {
       return supportedMimeTypes.includes(file.type) || supportedExtensions.includes(fileExtension);
     };
     
-    // Upload files and add to vector store
+    // Upload files and add to vector store (with parallel processing when possible)
     const fileIds: string[] = [];
     const fileErrors: FileError[] = [];
     const successfulAttachments: string[] = [];
     
+    console.log(`🚀 Processing ${files.length} files with optimized parallel processing...`);
+    
     for (const file of files) {
+      const fileStartTime = Date.now();
       try {
         // Validate file type first
         if (!isFileSupported(file)) {
@@ -163,7 +166,7 @@ export async function POST(req: Request) {
         }
 
         // Upload the file using OpenAI SDK via filesystem
-        console.log(`Uploading file: ${file.name} (${file.size} bytes, ${file.type})`);
+        console.log(`⏱️ Processing file: ${file.name} (${file.size} bytes, ${file.type})`);
         
         // First write the file to disk (temporary file)
         const tempDir = os.tmpdir();
@@ -176,42 +179,46 @@ export async function POST(req: Request) {
         
         console.log(`Temporary file created at: ${tempFilePath}`);
 
-        // 🚀 EXTRACT EMAILS FROM FILE BEFORE UPLOADING TO OPENAI
-        let emailExtractionResult = null;
-        if (companyId) {
-          try {
-            console.log(`📧 Starting email extraction for ${file.name}...`);
-            
-            // Process file to extract text
-            const processResult = await FileProcessor.processFileBuffer(buffer, file.name, file.type);
-            
-            if (processResult.success) {
-              console.log(`📝 Extracted ${processResult.text.length} characters from ${file.name}`);
-              
-              // Extract contacts from text
-              const contactResult = ContactExtractor.extractContacts(processResult.text);
-              
-              if (contactResult.success && contactResult.uniqueCount > 0) {
-                console.log(`📧 Found ${contactResult.uniqueCount} unique emails in ${file.name}`);
-                console.log(`📧 Sample emails found:`, contactResult.uniqueEmails.slice(0, 5).join(', '));
-                
-                // Store for database update after successful upload
-                emailExtractionResult = {
-                  emails: contactResult.uniqueEmails,
-                  count: contactResult.uniqueCount
-                };
-              } else {
-                console.log(`📧 No emails found in ${file.name}`);
-              }
-            } else {
-              console.log(`❌ Failed to extract text from ${file.name}: ${processResult.error}`);
-            }
-          } catch (extractError) {
-            console.error(`❌ Email extraction error for ${file.name}:`, extractError);
-          }
-        }
+        // 🚀 START PARALLEL PROCESSING: Email extraction + OpenAI upload
+        let emailExtractionPromise = null;
         
-        // First upload the file to OpenAI
+        if (companyId) {
+          console.log(`📧 Starting parallel email extraction for ${file.name}...`);
+          emailExtractionPromise = (async () => {
+            try {
+              // Process file to extract text
+              const processResult = await FileProcessor.processFileBuffer(buffer, file.name, file.type);
+              
+              if (processResult.success) {
+                console.log(`📝 Extracted ${processResult.text.length} characters from ${file.name}`);
+                
+                // Extract contacts from text
+                const contactResult = ContactExtractor.extractContacts(processResult.text);
+                
+                if (contactResult.success && contactResult.uniqueCount > 0) {
+                  console.log(`📧 Found ${contactResult.uniqueCount} unique emails in ${file.name}`);
+                  console.log(`📧 Sample emails found:`, contactResult.uniqueEmails.slice(0, 5).join(', '));
+                  
+                  return {
+                    emails: contactResult.uniqueEmails,
+                    count: contactResult.uniqueCount
+                  };
+                } else {
+                  console.log(`📧 No emails found in ${file.name}`);
+                  return null;
+                }
+              } else {
+                console.log(`❌ Failed to extract text from ${file.name}: ${processResult.error}`);
+                return null;
+              }
+            } catch (extractError) {
+              console.error(`❌ Email extraction error for ${file.name}:`, extractError);
+              return null;
+            }
+          })();
+        }
+
+        // Upload file to OpenAI (runs in parallel with email extraction)
         console.log(`Uploading file to OpenAI storage...`);
         let uploadedFile;
         try {
@@ -240,57 +247,64 @@ export async function POST(req: Request) {
           console.log(`File successfully added to vector store: ${JSON.stringify(vectorStoreFile)}`);
           successfulAttachments.push(uploadedFile.id);
 
-          // 🚀 UPDATE DATABASE WITH EXTRACTED EMAILS (now that we have the file ID)
-          if (emailExtractionResult && companyId) {
+          // 🚀 WAIT FOR EMAIL EXTRACTION TO COMPLETE AND UPDATE DATABASE
+          if (emailExtractionPromise && companyId) {
             try {
-              console.log(`📊 Updating database with ${emailExtractionResult.count} emails from ${file.name}...`);
-              console.log(`🔍 Searching for users in company: ${companyId}`);
-              console.log(`📧 First 5 emails to match:`, emailExtractionResult.emails.slice(0, 5).join(', '));
-              
-              // Query database for existing users
-              const userQueryResult = await DatabaseService.queryUsersByEmails(
-                emailExtractionResult.emails, 
-                companyId
-              );
+              console.log(`⏳ Waiting for email extraction to complete for ${file.name}...`);
+              const emailExtractionResult = await emailExtractionPromise;
 
-              console.log(`👥 Database query results:`, {
-                totalFound: userQueryResult.totalFound,
-                eligibleCount: userQueryResult.eligibleCount,
-                skippedCount: userQueryResult.skippedCount
-              });
-
-              if (userQueryResult.eligibleCount > 0) {
-                console.log(`👥 Found ${userQueryResult.eligibleCount} eligible users for update`);
-
-                // Update users with file ID
-                const eligibleEmails = userQueryResult.eligibleUsers.map(user => user.email);
-                const updateResult = await DatabaseService.updateUsersWithFileId(
-                  eligibleEmails,
-                  companyId,
-                  uploadedFile.id
+              if (emailExtractionResult) {
+                console.log(`📊 Updating database with ${emailExtractionResult.count} emails from ${file.name}...`);
+                console.log(`🔍 Searching for users in company: ${companyId}`);
+                console.log(`📧 First 5 emails to match:`, emailExtractionResult.emails.slice(0, 5).join(', '));
+                
+                // Query database for existing users
+                const userQueryResult = await DatabaseService.queryUsersByEmails(
+                  emailExtractionResult.emails, 
+                  companyId
                 );
 
-                if (updateResult.success) {
-                  console.log(`✅ Updated ${updateResult.modifiedCount} users with fileID ${uploadedFile.id}`);
+                console.log(`👥 Database query results:`, {
+                  totalFound: userQueryResult.totalFound,
+                  eligibleCount: userQueryResult.eligibleCount,
+                  skippedCount: userQueryResult.skippedCount
+                });
+
+                if (userQueryResult.eligibleCount > 0) {
+                  console.log(`👥 Found ${userQueryResult.eligibleCount} eligible users for update`);
+
+                  // Update users with file ID
+                  const eligibleEmails = userQueryResult.eligibleUsers.map(user => user.email);
+                  const updateResult = await DatabaseService.updateUsersWithFileId(
+                    eligibleEmails,
+                    companyId,
+                    uploadedFile.id
+                  );
+
+                  if (updateResult.success) {
+                    console.log(`✅ Updated ${updateResult.modifiedCount} users with fileID ${uploadedFile.id}`);
+                  } else {
+                    console.log(`❌ Failed to update users: ${updateResult.error}`);
+                  }
                 } else {
-                  console.log(`❌ Failed to update users: ${updateResult.error}`);
+                  console.log(`📧 No matching users found in database for emails from ${file.name}`);
+                  
+                  // Let's see what users DO exist in this company for debugging
+                  try {
+                    const { dbConnect } = require('@/lib/mongodb/connect');
+                    const User = require('@/lib/mongodb/models/user.model').default;
+                    await dbConnect();
+                    
+                    const companyUsers = await User.find({ company_id: companyId }).limit(10);
+                    console.log(`🔍 Sample users in company ${companyId}:`, 
+                      companyUsers.map(u => ({ email: u.email, hasFileId: !!u.assessment_fileID }))
+                    );
+                  } catch (debugError) {
+                    console.error('Debug query error:', debugError);
+                  }
                 }
               } else {
-                console.log(`📧 No matching users found in database for emails from ${file.name}`);
-                
-                // Let's see what users DO exist in this company for debugging
-                try {
-                  const { dbConnect } = require('@/lib/mongodb/connect');
-                  const User = require('@/lib/mongodb/models/user.model').default;
-                  await dbConnect();
-                  
-                  const companyUsers = await User.find({ company_id: companyId }).limit(10);
-                  console.log(`🔍 Sample users in company ${companyId}:`, 
-                    companyUsers.map(u => ({ email: u.email, hasFileId: !!u.assessment_fileID }))
-                  );
-                } catch (debugError) {
-                  console.error('Debug query error:', debugError);
-                }
+                console.log(`📧 No emails extracted from ${file.name}`);
               }
             } catch (dbError) {
               console.error(`❌ Database update error for ${file.name}:`, dbError);
@@ -308,6 +322,10 @@ export async function POST(req: Request) {
         } catch (cleanupError) {
           console.error(`Error cleaning up temporary file: ${cleanupError}`);
         }
+
+        const fileEndTime = Date.now();
+        const processingTime = ((fileEndTime - fileStartTime) / 1000).toFixed(2);
+        console.log(`✅ File ${file.name} processed successfully in ${processingTime}s`);
         
       } catch (error) {
         console.error(`Error processing file ${file.name}:`, error);
