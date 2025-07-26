@@ -75,17 +75,59 @@ export class DatabaseService {
     try {
       await dbConnect();
 
+      // First, let's see what users we're trying to update
+      const targetUsers = await User.find({
+        email: { $in: emails },
+        company_id: companyId
+      }).select('email assessment_fileID');
+
+      console.log(`🔍 Users to update:`, targetUsers.map(u => ({ 
+        email: u.email, 
+        currentFileId: u.assessment_fileID,
+        fieldType: typeof u.assessment_fileID,
+        fieldValue: JSON.stringify(u.assessment_fileID),
+        isEmpty: !u.assessment_fileID || u.assessment_fileID === "",
+        isNull: u.assessment_fileID === null,
+        isUndefined: u.assessment_fileID === undefined,
+        exists: u.assessment_fileID !== undefined
+      })));
+
+      // Update query conditions
+      const updateQuery = {
+        email: { $in: emails },
+        company_id: companyId,
+        $or: [
+          { assessment_fileID: { $exists: false } }, // Field doesn't exist
+          { assessment_fileID: null }, // Field is null
+          { assessment_fileID: "" }, // Field is empty string
+          { assessment_fileID: undefined } // Field is undefined
+        ]
+      };
+
+      console.log(`🔍 MongoDB update query:`, JSON.stringify(updateQuery, null, 2));
+      console.log(`🔍 Update data:`, { assessment_fileID: fileId });
+
+      // Test query to see which users would match BEFORE the update
+      const matchingUsers = await User.find(updateQuery).select('email assessment_fileID');
+      console.log(`🔍 Users that match the update query (should be updated):`, matchingUsers.map(u => ({
+        email: u.email,
+        currentFileId: u.assessment_fileID,
+        fieldType: typeof u.assessment_fileID
+      })));
+
       // Update only users that don't already have an assessment_fileID
       const updateResult = await User.updateMany(
-        {
-          email: { $in: emails },
-          company_id: companyId,
-          assessment_fileID: { $exists: false } // Double protection against overwriting
-        },
+        updateQuery,
         {
           $set: { assessment_fileID: fileId }
         }
       );
+
+      console.log(`📊 MongoDB update result:`, {
+        matchedCount: updateResult.matchedCount,
+        modifiedCount: updateResult.modifiedCount,
+        acknowledged: updateResult.acknowledged
+      });
 
       // Get the IDs of updated users for reporting
       const updatedUsers = await User.find({
