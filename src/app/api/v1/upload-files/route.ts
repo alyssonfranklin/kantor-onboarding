@@ -262,68 +262,77 @@ export async function POST(req: Request) {
           // Don't throw error - let database update proceed
         }
 
-        // 🚀 ALWAYS UPDATE DATABASE (regardless of vector store success)
+        // 🚀 BACKGROUND DATABASE UPDATE (fire-and-forget to avoid timeout)
         if (emailExtractionPromise && companyId) {
-          try {
-            console.log(`⏳ Waiting for email extraction to complete for ${file.name}...`);
-            const emailExtractionResult = await emailExtractionPromise;
+          console.log(`🔄 Starting background database update for ${file.name}...`);
+          
+          // Don't await - let it run in background to avoid timeout
+          const backgroundUpdate = async () => {
+            try {
+              const emailExtractionResult = await emailExtractionPromise;
 
-            if (emailExtractionResult) {
-              console.log(`📊 Updating database with ${emailExtractionResult.count} emails from ${file.name}...`);
-              console.log(`🔍 Searching for users in company: ${companyId}`);
-              console.log(`📧 First 5 emails to match:`, emailExtractionResult.emails.slice(0, 5).join(', '));
-              
-              // Query database for existing users
-              const userQueryResult = await DatabaseService.queryUsersByEmails(
-                emailExtractionResult.emails, 
-                companyId
-              );
-
-              console.log(`👥 Database query results:`, {
-                totalFound: userQueryResult.totalFound,
-                eligibleCount: userQueryResult.eligibleCount,
-                skippedCount: userQueryResult.skippedCount
-              });
-
-              if (userQueryResult.eligibleCount > 0) {
-                console.log(`👥 Found ${userQueryResult.eligibleCount} eligible users for update`);
-
-                // Update users with file ID
-                const eligibleEmails = userQueryResult.eligibleUsers.map(user => user.email);
-                const updateResult = await DatabaseService.updateUsersWithFileId(
-                  eligibleEmails,
-                  companyId,
-                  uploadedFile.id
+              if (emailExtractionResult) {
+                console.log(`📊 Background: Updating database with ${emailExtractionResult.count} emails from ${file.name}...`);
+                console.log(`🔍 Background: Searching for users in company: ${companyId}`);
+                console.log(`📧 Background: First 5 emails to match:`, emailExtractionResult.emails.slice(0, 5).join(', '));
+                
+                // Query database for existing users
+                const userQueryResult = await DatabaseService.queryUsersByEmails(
+                  emailExtractionResult.emails, 
+                  companyId
                 );
 
-                if (updateResult.success) {
-                  console.log(`✅ Updated ${updateResult.modifiedCount} users with fileID ${uploadedFile.id}`);
+                console.log(`👥 Background: Database query results:`, {
+                  totalFound: userQueryResult.totalFound,
+                  eligibleCount: userQueryResult.eligibleCount,
+                  skippedCount: userQueryResult.skippedCount
+                });
+
+                if (userQueryResult.eligibleCount > 0) {
+                  console.log(`👥 Background: Found ${userQueryResult.eligibleCount} eligible users for update`);
+
+                  // Update users with file ID
+                  const eligibleEmails = userQueryResult.eligibleUsers.map(user => user.email);
+                  const updateResult = await DatabaseService.updateUsersWithFileId(
+                    eligibleEmails,
+                    companyId,
+                    uploadedFile.id
+                  );
+
+                  if (updateResult.success) {
+                    console.log(`✅ Background: Updated ${updateResult.modifiedCount} users with fileID ${uploadedFile.id}`);
+                  } else {
+                    console.log(`❌ Background: Failed to update users: ${updateResult.error}`);
+                  }
                 } else {
-                  console.log(`❌ Failed to update users: ${updateResult.error}`);
+                  console.log(`📧 Background: No matching users found in database for emails from ${file.name}`);
+                  
+                  // Let's see what users DO exist in this company for debugging
+                  try {
+                    const { dbConnect } = require('@/lib/mongodb/connect');
+                    const User = require('@/lib/mongodb/models/user.model').default;
+                    await dbConnect();
+                    
+                    const companyUsers = await User.find({ company_id: companyId }).limit(10);
+                    console.log(`🔍 Background: Sample users in company ${companyId}:`, 
+                      companyUsers.map(u => ({ email: u.email, hasFileId: !!u.assessment_fileID }))
+                    );
+                  } catch (debugError) {
+                    console.error('Background: Debug query error:', debugError);
+                  }
                 }
               } else {
-                console.log(`📧 No matching users found in database for emails from ${file.name}`);
-                
-                // Let's see what users DO exist in this company for debugging
-                try {
-                  const { dbConnect } = require('@/lib/mongodb/connect');
-                  const User = require('@/lib/mongodb/models/user.model').default;
-                  await dbConnect();
-                  
-                  const companyUsers = await User.find({ company_id: companyId }).limit(10);
-                  console.log(`🔍 Sample users in company ${companyId}:`, 
-                    companyUsers.map(u => ({ email: u.email, hasFileId: !!u.assessment_fileID }))
-                  );
-                } catch (debugError) {
-                  console.error('Debug query error:', debugError);
-                }
+                console.log(`📧 Background: No emails extracted from ${file.name}`);
               }
-            } else {
-              console.log(`📧 No emails extracted from ${file.name}`);
+            } catch (dbError) {
+              console.error(`❌ Background: Database update error for ${file.name}:`, dbError);
             }
-          } catch (dbError) {
-            console.error(`❌ Database update error for ${file.name}:`, dbError);
-          }
+          };
+
+          // Start background processing (don't await)
+          backgroundUpdate().catch(err => 
+            console.error('Background update failed:', err)
+          );
         }
         
         // Clean up temporary file
