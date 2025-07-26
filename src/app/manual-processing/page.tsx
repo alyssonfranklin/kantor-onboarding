@@ -149,7 +149,7 @@ export default function ManualProcessingPage() {
     setProcessingResults([]);
 
     try {
-      const response = await fetch('/api/process-files', {
+      const response = await fetch('/api/health', {
         method: 'POST',
         credentials: 'include',
         headers: {

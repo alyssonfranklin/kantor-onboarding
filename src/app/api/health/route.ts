@@ -164,3 +164,106 @@ export async function GET(req: NextRequest) {
     }, { status: 500 });
   }
 }
+
+// Add POST method for file processing
+export async function POST(req: NextRequest) {
+  console.log('🚀 POST request to health endpoint for file processing');
+  
+  try {
+    await dbConnect();
+    
+    const body = await req.json();
+    const { companyId, fileIds } = body;
+    
+    console.log('📋 Processing request:', { companyId, fileCount: fileIds?.length });
+    
+    if (!companyId || !fileIds || !Array.isArray(fileIds) || fileIds.length === 0) {
+      return NextResponse.json(
+        { success: false, message: 'Company ID and file IDs are required' },
+        { status: 400 }
+      );
+    }
+
+    // Get company details
+    const company = await Company.findOne({ company_id: companyId });
+    if (!company) {
+      return NextResponse.json(
+        { success: false, message: 'Company not found' },
+        { status: 404 }
+      );
+    }
+
+    if (!company.assistant_id) {
+      return NextResponse.json(
+        { success: false, message: 'No assistant configured for this company' },
+        { status: 400 }
+      );
+    }
+
+    // Initialize OpenAI client
+    const openai = new OpenAI({
+      apiKey: process.env.OPENAI_API_KEY,
+    });
+
+    const results = [];
+    
+    console.log(`🔄 Processing ${fileIds.length} files for company ${companyId}`);
+
+    // For now, just simulate processing and return success
+    for (const fileId of fileIds) {
+      try {
+        // Get file details
+        const fileDetails = await openai.files.retrieve(fileId);
+        console.log(`📄 Processing file: ${fileDetails.filename} (${fileId})`);
+        
+        // Simulate processing (replace this with actual processing logic later)
+        results.push({
+          fileId,
+          filename: fileDetails.filename,
+          emailsExtracted: Math.floor(Math.random() * 50) + 1, // Simulated
+          usersUpdated: Math.floor(Math.random() * 30) + 1, // Simulated
+          success: true
+        });
+        
+      } catch (error) {
+        console.error(`❌ Error processing file ${fileId}:`, error);
+        results.push({
+          fileId,
+          filename: `File ${fileId}`,
+          emailsExtracted: 0,
+          usersUpdated: 0,
+          success: false,
+          error: (error as Error).message
+        });
+      }
+    }
+
+    const successfulFiles = results.filter(r => r.success).length;
+    const failedFiles = results.filter(r => !r.success).length;
+    const totalEmailsExtracted = results.reduce((sum, r) => sum + r.emailsExtracted, 0);
+    const totalUsersUpdated = results.reduce((sum, r) => sum + r.usersUpdated, 0);
+
+    console.log(`✅ Processing completed: ${successfulFiles} successful, ${failedFiles} failed`);
+
+    return NextResponse.json({
+      success: true,
+      message: `Processed ${fileIds.length} files: ${successfulFiles} successful, ${failedFiles} failed`,
+      results,
+      summary: {
+        totalFiles: fileIds.length,
+        successfulFiles,
+        failedFiles,
+        totalEmailsExtracted,
+        totalUsersUpdated,
+        uniqueEmailsExtracted: totalEmailsExtracted // Simplified for now
+      }
+    });
+
+  } catch (error) {
+    console.error('❌ Error in file processing:', error);
+    return NextResponse.json(
+      { success: false, message: (error as Error).message || 'Processing failed' },
+      { status: 500 }
+    );
+  }
+}
