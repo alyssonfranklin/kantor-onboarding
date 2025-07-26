@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { dbConnect } from '@/lib/mongodb/connect';
 import { getEnvironment } from '@/lib/environment';
 import Company from '@/lib/mongodb/models/company.model';
+import OpenAI from 'openai';
 
 /**
  * GET /api/health
@@ -34,11 +35,60 @@ export async function GET(req: NextRequest) {
       try {
         const company = await Company.findOne({ company_id: companyId });
         console.log('🏢 Company found:', !!company, company?.assistant_id);
-        vectorStoreTest = {
-          companyFound: !!company,
-          assistantId: company?.assistant_id || null,
-          companyId
-        };
+        
+        if (company?.assistant_id) {
+          // Test OpenAI API connection
+          console.log('🤖 Testing OpenAI API connection...');
+          const openai = new OpenAI({
+            apiKey: process.env.OPENAI_API_KEY,
+          });
+          
+          try {
+            const assistant = await openai.beta.assistants.retrieve(company.assistant_id);
+            console.log('👨‍💼 Assistant retrieved:', assistant.id);
+            
+            // Check vector store
+            const toolResources = assistant.tool_resources;
+            const hasVectorStore = toolResources?.file_search?.vector_store_ids?.length > 0;
+            const vectorStoreId = hasVectorStore ? toolResources.file_search.vector_store_ids[0] : null;
+            
+            console.log('📚 Vector store check:', { hasVectorStore, vectorStoreId });
+            
+            let fileCount = 0;
+            if (vectorStoreId) {
+              const listResponse = await openai.beta.vectorStores.files.list(vectorStoreId);
+              fileCount = listResponse.data?.length || 0;
+              console.log('📄 Files in vector store:', fileCount);
+            }
+            
+            vectorStoreTest = {
+              companyFound: true,
+              assistantId: company.assistant_id,
+              assistantName: assistant.name,
+              hasVectorStore,
+              vectorStoreId,
+              fileCount,
+              companyId,
+              openaiApiWorking: true
+            };
+          } catch (openaiError) {
+            console.error('🚨 OpenAI API error:', openaiError);
+            vectorStoreTest = {
+              companyFound: true,
+              assistantId: company.assistant_id,
+              companyId,
+              openaiApiWorking: false,
+              openaiError: (openaiError as Error).message
+            };
+          }
+        } else {
+          vectorStoreTest = {
+            companyFound: true,
+            assistantId: null,
+            companyId,
+            message: 'No assistant configured'
+          };
+        }
       } catch (error) {
         console.error('🚨 Vector store test error:', error);
         vectorStoreTest = {
