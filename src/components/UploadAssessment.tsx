@@ -262,6 +262,13 @@ const UploadAssessment = () => {
                 Spreadsheets: XLS, XLSX, ODS
               </p>
             </div>
+            
+            <div className="mb-2 p-3 bg-blue-900/30 border border-blue-600 rounded-md">
+              <p className="text-sm text-blue-300">
+                💡 <strong>Contact Processing:</strong> Files will be automatically scanned for email addresses. 
+                For optimal processing, limit files to ~100 contacts each. For larger lists, split into multiple files.
+              </p>
+            </div>
             <div className="border-2 border-dashed border-gray-600 rounded-md p-6 text-center cursor-pointer hover:border-gray-400 transition-colors">
               <input
                 type="file"
@@ -326,8 +333,30 @@ const UploadAssessment = () => {
                 <p>Retrieval enabled: {responseDetails.hasRetrieval ? 'Yes' : 'No'}</p>
                 {responseDetails.retrievalEnabled && <p>Retrieval was successfully enabled for this assistant</p>}
                 <p>Files uploaded: {responseDetails.fileIds?.length || 0}</p>
+                
+                {/* Contact Extraction Results */}
+                {(responseDetails as any).contactExtraction && (
+                  <div className="mt-3 p-3 bg-gray-600 rounded-md">
+                    <h4 className="text-blue-300 font-medium mb-2">📧 Contact Extraction:</h4>
+                    <p>Emails found: {(responseDetails as any).contactExtraction.totalEmailsExtracted}</p>
+                    <p>Unique emails: {(responseDetails as any).contactExtraction.uniqueEmailsExtracted}</p>
+                  </div>
+                )}
+                
+                {/* User Matching Results */}
+                {(responseDetails as any).userMatching && (
+                  <div className="mt-3 p-3 bg-gray-600 rounded-md">
+                    <h4 className="text-green-300 font-medium mb-2">👥 User Matching:</h4>
+                    <p>Users found in database: {(responseDetails as any).userMatching.usersFound}</p>
+                    <p>Users updated: {(responseDetails as any).userMatching.usersUpdated}</p>
+                    {(responseDetails as any).userMatching.usersSkipped > 0 && (
+                      <p>Users skipped (already had file): {(responseDetails as any).userMatching.usersSkipped}</p>
+                    )}
+                  </div>
+                )}
+                
                 {responseDetails.fileIds && (
-                  <div>
+                  <div className="mt-3">
                     <p>File IDs:</p>
                     <ul className="list-disc list-inside">
                       {responseDetails.fileIds.map((id: string, idx: number) => (
