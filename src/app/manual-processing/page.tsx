@@ -89,7 +89,7 @@ export default function ManualProcessingPage() {
     setSelectedFiles(new Set());
     
     try {
-      const response = await fetch(`/api/vector-store-files?companyId=${companyId}`, {
+      const response = await fetch(`/api/health?companyId=${companyId}`, {
         credentials: 'include'
       });
       
@@ -98,10 +98,10 @@ export default function ManualProcessingPage() {
       }
       
       const data = await response.json();
-      if (data.success) {
-        setVectorStoreFiles(data.files || []);
+      if (data.status === 'success' && data.vectorStoreTest?.files) {
+        setVectorStoreFiles(data.vectorStoreTest.files || []);
       } else {
-        setError(data.message || 'Failed to load files');
+        setError(data.vectorStoreTest?.error || 'Failed to load files');
       }
     } catch (error) {
       setError(`Failed to load files: ${error instanceof Error ? error.message : 'Unknown error'}`);
