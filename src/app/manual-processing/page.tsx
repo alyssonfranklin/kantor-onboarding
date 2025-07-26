@@ -7,7 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Loader2, FileText, Users, CheckCircle, AlertCircle } from 'lucide-react';
 import Link from 'next/link';
-import PasswordProtection from '@/components/PasswordProtection';
+import AdminJWTProtection from '@/components/AdminJWTProtection';
 
 interface Company {
   _id: string;
@@ -34,7 +34,7 @@ interface ProcessingResult {
   error?: string;
 }
 
-export default function ManualProcessingPage() {
+export default function ManualProcessingPage({ adminToken }: { adminToken?: string }) {
   const [companies, setCompanies] = useState<Company[]>([]);
   const [selectedCompany, setSelectedCompany] = useState<string>('');
   const [vectorStoreFiles, setVectorStoreFiles] = useState<VectorStoreFile[]>([]);
@@ -46,43 +46,18 @@ export default function ManualProcessingPage() {
   const [error, setError] = useState('');
   const [token, setToken] = useState('');
 
-  // Initialize and get authentication token
+  // Use the JWT token from AdminJWTProtection
   useEffect(() => {
-    const initializeAndLogin = async () => {
-      try {
-        // Initialize database
-        const initResponse = await fetch('/api/v1/admin/initialize-db', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          }
-        });
-        
-        // Login to get token
-        const loginResponse = await fetch('/api/v1/verify-password', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            email: 'admin@voxerion.com',
-            password: 'admin123'
-          }),
-        });
-        
-        const loginData = await loginResponse.json();
-        if (loginData.token) {
-          setToken(loginData.token);
-        } else {
-          setError('Failed to authenticate');
-        }
-      } catch (err) {
-        setError('Failed to initialize');
+    if (adminToken) {
+      setToken(adminToken);
+    } else {
+      // Fallback: try to get token from sessionStorage
+      const storedToken = sessionStorage.getItem('kantor_jwt_token');
+      if (storedToken) {
+        setToken(storedToken);
       }
-    };
-    
-    initializeAndLogin();
-  }, []);
+    }
+  }, [adminToken]);
 
   // Fetch companies when token is available
   useEffect(() => {
@@ -231,7 +206,7 @@ export default function ManualProcessingPage() {
   };
 
   return (
-    <PasswordProtection>
+    <AdminJWTProtection>
       <main className="min-h-screen bg-gray-800 py-8 px-4">
         <div className="max-w-6xl mx-auto mb-6">
           <Link href="/" className="text-white hover:text-gray-300 flex items-center mb-6">
@@ -427,6 +402,6 @@ export default function ManualProcessingPage() {
           </Card>
         </div>
       </main>
-    </PasswordProtection>
+    </AdminJWTProtection>
   );
 }
