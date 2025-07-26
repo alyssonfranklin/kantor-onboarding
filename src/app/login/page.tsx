@@ -20,13 +20,20 @@ function LoginContent() {
   
   // Handle post-login redirect based on user role and redirect parameter
   useEffect(() => {
+    console.log('Login redirect check:', { loading, isAuthenticated, user, redirectUrl });
     if (!loading && isAuthenticated && user) {
+      console.log('User logged in:', user);
+      console.log('User role:', user.role);
+      console.log('Redirect URL:', redirectUrl);
+      
       // If there's a redirect URL and user is admin, redirect there
       if (redirectUrl !== '/dashboard' && user.role === 'admin') {
+        console.log('Redirecting admin to:', redirectUrl);
         window.location.href = redirectUrl;
       } 
       // Otherwise, redirect to dashboard (regular users)
       else {
+        console.log('Redirecting to dashboard');
         router.push("/dashboard");
       }
     }
