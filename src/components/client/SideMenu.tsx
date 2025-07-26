@@ -33,6 +33,12 @@ const menuOptions = [
     icon: '/images/icons/user.svg', 
     active: true,
     link: '/dashboard/employees'
+  },
+  { 
+    name: "Manual Processing", 
+    icon: '/images/icons/settings.svg', 
+    active: true,
+    link: '/manual-processing'
   }
 ];
 
