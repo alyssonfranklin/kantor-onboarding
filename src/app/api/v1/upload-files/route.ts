@@ -193,6 +193,7 @@ export async function POST(req: Request) {
               
               if (contactResult.success && contactResult.uniqueCount > 0) {
                 console.log(`📧 Found ${contactResult.uniqueCount} unique emails in ${file.name}`);
+                console.log(`📧 Sample emails found:`, contactResult.uniqueEmails.slice(0, 5).join(', '));
                 
                 // Store for database update after successful upload
                 emailExtractionResult = {
@@ -243,12 +244,20 @@ export async function POST(req: Request) {
           if (emailExtractionResult && companyId) {
             try {
               console.log(`📊 Updating database with ${emailExtractionResult.count} emails from ${file.name}...`);
+              console.log(`🔍 Searching for users in company: ${companyId}`);
+              console.log(`📧 First 5 emails to match:`, emailExtractionResult.emails.slice(0, 5).join(', '));
               
               // Query database for existing users
               const userQueryResult = await DatabaseService.queryUsersByEmails(
                 emailExtractionResult.emails, 
                 companyId
               );
+
+              console.log(`👥 Database query results:`, {
+                totalFound: userQueryResult.totalFound,
+                eligibleCount: userQueryResult.eligibleCount,
+                skippedCount: userQueryResult.skippedCount
+              });
 
               if (userQueryResult.eligibleCount > 0) {
                 console.log(`👥 Found ${userQueryResult.eligibleCount} eligible users for update`);
@@ -268,6 +277,20 @@ export async function POST(req: Request) {
                 }
               } else {
                 console.log(`📧 No matching users found in database for emails from ${file.name}`);
+                
+                // Let's see what users DO exist in this company for debugging
+                try {
+                  const { dbConnect } = require('@/lib/mongodb/connect');
+                  const User = require('@/lib/mongodb/models/user.model').default;
+                  await dbConnect();
+                  
+                  const companyUsers = await User.find({ company_id: companyId }).limit(10);
+                  console.log(`🔍 Sample users in company ${companyId}:`, 
+                    companyUsers.map(u => ({ email: u.email, hasFileId: !!u.assessment_fileID }))
+                  );
+                } catch (debugError) {
+                  console.error('Debug query error:', debugError);
+                }
               }
             } catch (dbError) {
               console.error(`❌ Database update error for ${file.name}:`, dbError);

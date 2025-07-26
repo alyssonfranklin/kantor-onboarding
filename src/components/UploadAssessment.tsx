@@ -35,9 +35,20 @@ interface ResponseDetails {
   }>;
 }
 
+interface Company {
+  _id: string;
+  company_id: string;
+  name: string;
+  assistant_id?: string;
+  status: string;
+}
+
 const UploadAssessment = () => {
-  const { user } = useAuth();
-  const [assistantId, setAssistantId] = useState('');
+  const { user, isAuthenticated } = useAuth();
+  const [companies, setCompanies] = useState<Company[]>([]);
+  const [selectedCompany, setSelectedCompany] = useState<string>('');
+  const [selectedCompanyData, setSelectedCompanyData] = useState<Company | null>(null);
+  const [isLoadingCompanies, setIsLoadingCompanies] = useState(false);
   const [enableRetrieval, setEnableRetrieval] = useState(true);
   const [files, setFiles] = useState<File[]>([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -46,6 +57,37 @@ const UploadAssessment = () => {
   const [tokenCount, setTokenCount] = useState(0);
   const [fileContents, setFileContents] = useState<string[]>([]);
   const [responseDetails, setResponseDetails] = useState<ResponseDetails | null>(null);
+
+  // Fetch companies when authenticated
+  useEffect(() => {
+    if (!isAuthenticated) return;
+    
+    const fetchCompanies = async () => {
+      setIsLoadingCompanies(true);
+      try {
+        const response = await fetch('/api/v1/companies', {
+          credentials: 'include'
+        });
+        
+        if (response.ok) {
+          const result = await response.json();
+          if (result.success) {
+            setCompanies(result.data || []);
+          } else {
+            setError('Failed to fetch companies');
+          }
+        } else {
+          setError('Failed to fetch companies');
+        }
+      } catch (err) {
+        setError('Error fetching companies');
+      } finally {
+        setIsLoadingCompanies(false);
+      }
+    };
+    
+    fetchCompanies();
+  }, [isAuthenticated]);
 
   // Calculate tokens whenever file contents change
   useEffect(() => {
@@ -134,17 +176,31 @@ const UploadAssessment = () => {
     setFileContents(prevContents => prevContents.filter((_, i) => i !== index));
   };
 
+  const handleCompanySelect = (companyId: string) => {
+    setSelectedCompany(companyId);
+    if (companyId) {
+      const company = companies.find(c => c.company_id === companyId);
+      setSelectedCompanyData(company || null);
+      if (!company?.assistant_id) {
+        setError('Selected company does not have an assistant configured');
+      } else {
+        setError('');
+      }
+    } else {
+      setSelectedCompanyData(null);
+    }
+  };
+
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     
-    if (!assistantId) {
-      setError('Assistant ID is required');
+    if (!selectedCompany || !selectedCompanyData) {
+      setError('Please select a company');
       return;
     }
-    
-    // Validate assistant ID format
-    if (!assistantId.startsWith('asst_')) {
-      setError('Invalid assistant ID format. Assistant IDs should start with "asst_"');
+
+    if (!selectedCompanyData.assistant_id) {
+      setError('Selected company does not have an assistant configured');
       return;
     }
     
@@ -160,20 +216,18 @@ const UploadAssessment = () => {
     
     try {
       const formData = new FormData();
-      formData.append('assistantId', assistantId);
+      formData.append('assistantId', selectedCompanyData.assistant_id);
       formData.append('enableRetrieval', enableRetrieval.toString());
       
-      // Add company ID for email extraction
-      if (user?.company_id) {
-        formData.append('companyId', user.company_id);
-        console.log(`🏢 Adding companyId for email extraction: ${user.company_id}`);
-      }
+      // Add company ID for email extraction (from selected company, not admin user)
+      formData.append('companyId', selectedCompany);
+      console.log(`🏢 Adding companyId for email extraction: ${selectedCompany}`);
       
       files.forEach(file => {
         formData.append('files', file);
       });
       
-      console.log(`Uploading ${files.length} files to assistant: ${assistantId}`);
+      console.log(`Uploading ${files.length} files to assistant: ${selectedCompanyData.assistant_id} for company: ${selectedCompany}`);
       
       const response = await fetch('/api/v1/upload-files', {
         method: 'POST',
@@ -227,18 +281,40 @@ const UploadAssessment = () => {
       <CardContent>
         <form onSubmit={handleSubmit} className="space-y-6">
           <div>
-            <label htmlFor="assistantId" className="block font-bold text-white mb-2">
-              Assistant ID
+            <label htmlFor="companySelect" className="block font-bold text-white mb-2">
+              Select Company
             </label>
-            <input
-              type="text"
-              id="assistantId"
-              value={assistantId}
-              onChange={(e) => setAssistantId(e.target.value)}
-              className="w-full p-2 border rounded-md mb-4 text-white placeholder:text-gray-400 focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
-              required
-              placeholder="Enter OpenAI Assistant ID"
-            />
+            <div className="flex gap-2">
+              <select
+                id="companySelect"
+                value={selectedCompany}
+                onChange={(e) => handleCompanySelect(e.target.value)}
+                className="flex-1 p-2 rounded-md bg-gray-700 text-white border border-gray-600 focus:border-blue-500"
+                disabled={isLoadingCompanies}
+                required
+              >
+                <option value="">-- Select a company --</option>
+                {companies.map((company) => (
+                  <option key={company._id} value={company.company_id}>
+                    {company.name} ({company.status}) {company.assistant_id ? '✓' : '⚠️ No Assistant'}
+                  </option>
+                ))}
+              </select>
+              <Button
+                type="button"
+                onClick={() => window.location.reload()}
+                disabled={isLoadingCompanies}
+                variant="outline"
+                className="border-gray-600"
+              >
+                {isLoadingCompanies ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Refresh'}
+              </Button>
+            </div>
+            {selectedCompanyData && (
+              <div className="mt-2 text-sm text-gray-400">
+                Assistant ID: {selectedCompanyData.assistant_id || 'Not configured'}
+              </div>
+            )}
           </div>
           
           <div className="flex items-center mb-4">
