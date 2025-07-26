@@ -84,15 +84,15 @@ export const setAuthCookie = (
 /**
  * Set authentication cookie in server action context
  */
-export const setServerActionAuthCookie = (
+export const setServerActionAuthCookie = async (
   token: string,
   options: {
     maxAge?: number;
     secure?: boolean;
     domain?: string;
   } = {}
-): void => {
-  const cookieStore = cookies();
+): Promise<void> => {
+  const cookieStore = await cookies();
   const cookieOptions = {
     // Default to JWT expiry or 7 days if not specified
     maxAge: options.maxAge || parseInt(JWT_EXPIRY.replace('d', ''), 10) * 24 * 60 * 60,
@@ -104,7 +104,7 @@ export const setServerActionAuthCookie = (
     ...(isProduction() && { domain: options.domain || COOKIE_DOMAIN }),
   };
   
-  (await cookieStore).set('auth_token', token, cookieOptions);
+  cookieStore.set('auth_token', token, cookieOptions);
 };
 
 /**
