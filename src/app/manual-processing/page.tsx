@@ -9,7 +9,6 @@ import { Loader2, FileText, Users, CheckCircle, AlertCircle } from 'lucide-react
 import Link from 'next/link';
 import ProtectedRoute from '@/components/auth/ProtectedRoute';
 import { useAuth } from '@/lib/auth/index-client';
-import { getTokenFromBrowser } from '@/lib/auth/token-client';
 
 interface Company {
   _id: string;
@@ -56,11 +55,8 @@ export default function ManualProcessingPage() {
     const fetchCompanies = async () => {
       setIsLoadingCompanies(true);
       try {
-        const token = getTokenFromBrowser();
         const response = await fetch('/api/v1/companies', {
-          headers: {
-            'Authorization': `Bearer ${token}`
-          }
+          credentials: 'include'
         });
         
         if (response.ok) {
@@ -93,11 +89,8 @@ export default function ManualProcessingPage() {
     setSelectedFiles(new Set());
     
     try {
-      const token = getTokenFromBrowser();
       const response = await fetch(`/api/vector-store-files?companyId=${companyId}`, {
-        headers: {
-          'Authorization': `Bearer ${token}`
-        }
+        credentials: 'include'
       });
       
       if (!response.ok) {
@@ -156,12 +149,11 @@ export default function ManualProcessingPage() {
     setProcessingResults([]);
 
     try {
-      const token = getTokenFromBrowser();
       const response = await fetch('/api/process-files', {
         method: 'POST',
+        credentials: 'include',
         headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
+          'Content-Type': 'application/json'
         },
         body: JSON.stringify({
           companyId: selectedCompany,

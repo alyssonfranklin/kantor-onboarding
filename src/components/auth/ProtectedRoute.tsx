@@ -26,13 +26,11 @@ export default function ProtectedRoute({
   const router = useRouter();
   
   useEffect(() => {
-    console.log('ProtectedRoute check:', { loading, isAuthenticated, user, requiredRole });
     // Only redirect after authentication check is complete
     if (loading) return;
     
     // If not authenticated, redirect to login with current URL as redirect parameter
     if (!isAuthenticated) {
-      console.log('Not authenticated, redirecting to login');
       const currentUrl = window.location.pathname + window.location.search;
       const loginUrl = `${redirectTo}?redirect=${encodeURIComponent(currentUrl)}`;
       router.push(loginUrl);
@@ -45,10 +43,7 @@ export default function ProtectedRoute({
         ? requiredRole.includes(user.role)
         : user.role === requiredRole;
       
-      console.log('Role check:', { userRole: user.role, requiredRole, hasRequiredRole });
-      
       if (!hasRequiredRole) {
-        console.log('User does not have required role, redirecting to unauthorized');
         router.push("/unauthorized");
       }
     }
